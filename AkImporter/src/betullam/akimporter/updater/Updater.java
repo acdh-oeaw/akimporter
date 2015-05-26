@@ -50,13 +50,13 @@ public class Updater {
 			// Merge extracted files from downloaded .tar.gz file(se):
 			print("Merging extracted files ...");
 			pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
-			XmlMerger xmlm = new XmlMerger(false);
+			XmlMerger xmlm = new XmlMerger();
 			xmlm.mergeElementNodes(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
 			print("Done merging.");
 			
 			// Validate merged XML file:
 			print("Validate merged file ...");
-			XmlValidator bxh = new XmlValidator(false);
+			XmlValidator bxh = new XmlValidator();
 			hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
 			print("Done validating");
 			
