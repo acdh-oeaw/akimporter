@@ -28,6 +28,7 @@ import betullam.xmlhelper.XmlValidator;
 
 public class Main {
 
+	static boolean isIndexerTest = false;
 	static boolean isUpdate = false;
 	static boolean isUpdateSuccessful = false;
 
@@ -68,8 +69,11 @@ public class Main {
 
 	public static void main(String[] args) {
 
+
 		if (args.length > 0) {
-			isUpdate = (args[0].equals("-u")) ? true : false;
+			isIndexerTest = (args[0].equals("test")) ? true : false; // ONLY FOR TESTING PURPOSES
+			isUpdate = (args[0].equals("-u")) ? true : false; // Running update
+
 		}
 
 		if (isUpdate) {
@@ -88,21 +92,42 @@ public class Main {
 			return;
 		}
 
+		if (isIndexerTest) {
+
+
+			typeOfDataset = args[1]; 
+			pathToMabXmlFile = (typeOfDataset.equals("1"))? args[2] : null; // 1
+			pathToMultipleXmlFolder = (typeOfDataset.equals("2")) ? args[2] : null; // 2
+			isMergeOk = "J"; // 2
+			isValidationOk = "J"; // 1 + 2
+			isXmlCleanOk = "J"; // 1 + 2
+			solrServerAddress = args[3]; // 1 + 2
+			useDefaultMabPropertiesFile = args[4]; // 1 + 2
+			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N")) ? args[5] : null; // 1 + 2
+			isIndexingOk = "J";
+
+
+
+		}
+
 		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
 		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
 
 		scanner = new Scanner(System.in);
 
-
-		typeOfDataset = getUserInput("\nWie liegt ihr Datenbestand vor?\n 1 = eine große XML-Datei\n 2 = viele einzelne XML-Dateien)?", "1, 2", scanner);
+		if (!isIndexerTest) {
+			typeOfDataset = getUserInput("\nWie liegt ihr Datenbestand vor?\n 1 = eine große XML-Datei\n 2 = viele einzelne XML-Dateien)?", "1, 2", scanner);
+		}
 
 		if (typeOfDataset.equals("1")) { // We have one big XML file
-
-			pathToMabXmlFile = getUserInput("\nWie lautet der Pfad zur XML-Datei?\n Beispiel: /home/username/dateiname.xml)?", "fileExists", scanner);
+			if (!isIndexerTest) {
+				pathToMabXmlFile = getUserInput("\nWie lautet der Pfad zur XML-Datei?\n Beispiel: /home/username/dateiname.xml)?", "fileExists", scanner);
+			}
 
 		} else if (typeOfDataset.equals("2")) { // We have multiple smaller XML files - we need to merge them!
-			pathToMultipleXmlFolder = getUserInput("\nWie lautet der Pfad zur Ordner mit den einzelnen XML-Dateien?\n Beispiel: /home/username/xmldateien)?", "directoryExists", scanner);
-
+			if (!isIndexerTest) {
+				pathToMultipleXmlFolder = getUserInput("\nWie lautet der Pfad zur Ordner mit den einzelnen XML-Dateien?\n Beispiel: /home/username/xmldateien)?", "directoryExists", scanner);
+			}
 			isMergeOk = getUserInput("\nDie XML-Dateien müssen nun in eine einzige XML-Datei zusammengeführt werden."
 					+ " Die Original-Daten werden nicht geändert. Wollen Sie fortfahren? Falls nicht, wird der gesamte"
 					+ " Import-Vorgang abgebrochen! "
@@ -136,9 +161,11 @@ public class Main {
 
 
 
-		isValidationOk = getUserInput("\nDie XML-Datei muss geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
-				+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen! "
-				+ "\n J = Ja, fortfahren\n N = Nein, abbrechen", "J, N", scanner);
+		if (!isIndexerTest) {
+			isValidationOk = getUserInput("\nDie XML-Datei muss geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
+					+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen! "
+					+ "\n J = Ja, fortfahren\n N = Nein, abbrechen", "J, N", scanner);
+		}
 
 		if (isValidationOk.equals("J")) {
 			System.out.println("\nStarte Validierung. Bitte um etwas Geduld ...");
@@ -147,12 +174,13 @@ public class Main {
 
 			while (hasValidationPassed == false) {
 				System.out.println("\nProblem in der XML Datei gefunden!");
-				isXmlCleanOk = getUserInput("\nWollen Sie eine Datenbereinigung durchführen? "
-						+ "Die Originaldaten werden nicht verändert. "
-						+ "Dieser Vorgang kann je nach Datenmenge länger dauern. "
-						+ "Wenn Sie keine Datenbereinigung durchführen, wird der Vorgang abgebrochen."
-						+ "\n J = Ja, Datenbereinigung durchführen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
-
+				if (!isIndexerTest) {
+					isXmlCleanOk = getUserInput("\nWollen Sie eine Datenbereinigung durchführen? "
+							+ "Die Originaldaten werden nicht verändert. "
+							+ "Dieser Vorgang kann je nach Datenmenge länger dauern. "
+							+ "Wenn Sie keine Datenbereinigung durchführen, wird der Vorgang abgebrochen."
+							+ "\n J = Ja, Datenbereinigung durchführen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
+				}
 				if (isXmlCleanOk.equals("J")) {
 					// Start cleaning XML
 					XmlCleaner xmlc = new XmlCleaner();
@@ -182,12 +210,14 @@ public class Main {
 
 			if (hasValidationPassed) {
 				System.out.println("\nValidierung war erfolgreich. Die Daten sind nun bereit für die Indexierung.\n");
-				solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
-
-				useDefaultMabPropertiesFile = getUserInput("\nWollen Sie die \"mab.properties\" Datei in der Standardkonfiguration verwenden? "
-						+ "Wenn Sie dies nicht wollen, können Sie anschließend einen Pfad zu einer eigenen .properties-Datei angeben."
-						+ "\n J = Ja, Standard verwenden\n N = Nein, Standard nicht verwenden", "J, N", scanner);
-
+				if (!isIndexerTest) {
+					solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
+				}
+				if (!isIndexerTest) {
+					useDefaultMabPropertiesFile = getUserInput("\nWollen Sie die \"mab.properties\" Datei in der Standardkonfiguration verwenden? "
+							+ "Wenn Sie dies nicht wollen, können Sie anschließend einen Pfad zu einer eigenen .properties-Datei angeben."
+							+ "\n J = Ja, Standard verwenden\n N = Nein, Standard nicht verwenden", "J, N", scanner);
+				}
 				if (useDefaultMabPropertiesFile.equals("J")) {
 					useDefaultMabProperties = true;
 					pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
@@ -195,11 +225,13 @@ public class Main {
 					propertiesFileInfo = "Standard mab.properties Datei verwenden";
 				} else {
 					useDefaultMabProperties = false;
-					pathToMabPropertiesFile = getUserInput("\nBitte geben den Pfad zu Ihrer eigenen .properties-Datei an (z. B. /home/username/meine.properties). Beachten Sie, dass die Dateiendung wirklich \".properties\" sein muss!", "propertiesExists", scanner);
+					if (!isIndexerTest) {
+						pathToMabPropertiesFile = getUserInput("\nBitte geben den Pfad zu Ihrer eigenen .properties-Datei an (z. B. /home/username/meine.properties). Beachten Sie, dass die Dateiendung wirklich \".properties\" sein muss!", "propertiesExists", scanner);
+					}
 					propertiesFileInfo = "Eigene .properties Datei verwenden: " + pathToMabPropertiesFile;
 
 					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
-					areTranslationFilesOk = translationFilesExist(pathToMabPropertiesFile ,directoryOfTranslationFiles);
+					areTranslationFilesOk = translationFilesExist(pathToMabPropertiesFile, directoryOfTranslationFiles);
 
 					// It the translation files, that are defined in the custom MAB properties file, do not exist
 					// (they have to be in the same directory), that give an appropriate message:
@@ -210,15 +242,17 @@ public class Main {
 
 
 				}
-
-				isIndexingOk = getUserInput("\nAlles ist nun bereit. Hier noch einmal Ihre Angaben:"
-						+ "\n Daten-Datei:\t" + pathToMabXmlFile
-						+ "\n Solr Server:\t" + solrServerAddress
-						+ "\n .properties:\t" + propertiesFileInfo
-						+ "\n\nWollen Sie den Import-Vorgang nun beginnen?"
-						+ "\nACHTUNG: Ja nach Datenmenge und Leistung des Computers kann dieser Vorgang lange dauern!"
-						+ " \n J = Ja, Import-Vorgang beginnen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
-
+				
+				if (!isIndexerTest) {
+					isIndexingOk = getUserInput("\nAlles ist nun bereit. Hier noch einmal Ihre Angaben:"
+							+ "\n Daten-Datei:\t" + pathToMabXmlFile
+							+ "\n Solr Server:\t" + solrServerAddress
+							+ "\n .properties:\t" + propertiesFileInfo
+							+ "\n\nWollen Sie den Import-Vorgang nun beginnen?"
+							+ "\nACHTUNG: Ja nach Datenmenge und Leistung des Computers kann dieser Vorgang lange dauern!"
+							+ " \n J = Ja, Import-Vorgang beginnen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
+				}
+				
 				if (isIndexingOk.equals("J")) {
 					SolrMab sm = new SolrMab();
 					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties);
@@ -247,7 +281,6 @@ public class Main {
 
 
 	/**
-	 * 
 	 * Ask for user input.
 	 * You can define a comma-separated String as possible anwers. If the user-input is not one of them, the questions will be asked again until a
 	 * correct answer is given. If you ask for a path or file and want to check if it exists, use "fileExists" or "directoryExists" for possibleAnswers.

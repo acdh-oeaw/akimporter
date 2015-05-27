@@ -34,7 +34,7 @@ import betullam.akimporter.main.Main;
 
 public class SolrMab {
 
-	
+
 	String mabXMLfile;
 	String mabPropertiesFile;
 	String solrServerName;
@@ -89,7 +89,7 @@ public class SolrMab {
 
 
 			print("\n###############################################################################\n\n");
-			print("Start indexing records from Aleph");
+			print("Start indexing MH records from Aleph");
 			print("\n-------------------------------------------\n");
 
 			// Specify XML-file to parse:
@@ -102,6 +102,24 @@ public class SolrMab {
 
 			// Start parsing & indexing:
 			xmlReader.parse(inputSourceMH);
+
+			// Commit MH records:
+			solrServer.commit();
+
+
+			print("Start indexing serial volume records (see MAB field 453r) from Aleph");
+			print("\n-------------------------------------------\n");
+
+			// Specify XML-file to parse:
+			FileReader readerSerialVolume = new FileReader(mabXMLfile);
+			InputSource inputSourceSerialVolume = new InputSource(readerSerialVolume);
+
+			// Set ContentHandler:
+			MarcContentHandler marcContentHandlerSerialVolume = new MarcContentHandler(listOfMatchingObjs, solrServer, "SerialVolume", false, startTime, print);
+			xmlReader.setContentHandler(marcContentHandlerSerialVolume);
+
+			// Start parsing & indexing:
+			xmlReader.parse(inputSourceSerialVolume);
 
 			// Commit MH records:
 			solrServer.commit();
@@ -370,7 +388,7 @@ public class SolrMab {
 			System.out.println(text);
 		}
 	}
-	
+
 
 
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

@@ -2,7 +2,6 @@
 <classpath>
 	<classpathentry excluding="betullam/akimporter/updater/FtpDownload_V1.java|betullam/akimporter/updater/FtpFilename.java" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/BetullamXmlHelper"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/solrj/solr-solrj-4.5.0.jar"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/solrj/solrj-lib/httpclient-4.2.3.jar"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/solrj/solrj-lib/httpcore-4.2.2.jar"/>
@@ -14,5 +13,6 @@
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/solrj/solrj-lib/noggit-0.5.jar"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/commons-net-3.3.jar"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/commons-compress-1.9/commons-compress-1.9.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/BetullamXmlHelper"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

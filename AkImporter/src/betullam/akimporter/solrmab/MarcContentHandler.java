@@ -43,6 +43,7 @@ public class MarcContentHandler implements ContentHandler {
 	private String startElement;
 	private String recordID;
 	private boolean is001;
+	private boolean is543r;
 	private String satztypOfRecord;
 	private String satztypToIndex;
 	private boolean isFMT;
@@ -120,6 +121,7 @@ public class MarcContentHandler implements ContentHandler {
 				datafield.setInd2(ind2);
 
 				is001 = (tag.equals("001")) ? true : false;
+				is543r = (tag.equals("453") && ind1.equals("r")) ? true : false;
 			}
 
 			if(localName.equals("subfield")) {
@@ -147,21 +149,32 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 
-		if(localName.equals("controlfield")) {
+		if(localName.equals("controlfield") ) {
 			String controlfieldText = nodeContent.toString();
 			controlfield.setFieldvalue(controlfieldText);
 			allMabfields.add(controlfield);
 
+
 			// Make the following check only if controlfield contains "MH" or "MU". Skip all other FMT-fields, e. g. "ML$$2A001"
-			if (isFMT == true) {
+			if (isFMT && (satztypToIndex.equals("MU") || satztypToIndex.equals("MH"))) {
 				if (controlfieldText.equals("MH") || controlfieldText.equals("MU")) {
 					satztypOfRecord = controlfieldText;
-					skipRecord = (satztypOfRecord.equals(satztypToIndex)) ? false : true;
+					//skipRecord = (satztypOfRecord.equals(satztypToIndex)) ? false : true;
 				}
 			}
 
+			/*
 			if (controlfieldText.equals(satztypToIndex)) {
 				counter += 1;
+			}
+			 */
+		}
+
+		if(localName.equals("datafield")) {
+
+			if (is543r && satztypToIndex.equals("SerialVolume")) {
+				satztypOfRecord = "SerialVolume";
+				//skipRecord = (satztypOfRecord.equals(satztypToIndex)) ? false : true;
 			}
 		}
 
@@ -186,11 +199,14 @@ public class MarcContentHandler implements ContentHandler {
 			}
 
 			if(localName.equals("datafield")) {
+
 				datafield.setSubfields(allSubfieldsOfNode);
 				allDatafields.add(datafield);
 			}
 
-			// If the parser encounters the end of the "record"- or "metadata"-tag, add all leader-, controlfield- and datafield-objects to the record-object and add the record-object to the list of all records:
+			// If the parser encounters the end of the "record"- or "metadata"-tag, add all
+			// leader-, controlfield- and datafield-objects to the record-object and add the
+			// record-object to the list of all records:
 			if(localName.equals(startElement)) {
 				record.setControlfields(allControlfields);
 				record.setDatafields(allDatafields);
@@ -199,7 +215,7 @@ public class MarcContentHandler implements ContentHandler {
 				record.setRecordID(recordID);
 				allRecords.add(record);
 
-				/** Every n record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
+				/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
 				 * index it's values to Solr, then empty all objects (set to "null") to save memory and go on with the next n records.
 				 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but now
 				 * only 700 are indexed! The 33 remaining records will be indexed in endDocument()-Method;
@@ -233,8 +249,8 @@ public class MarcContentHandler implements ContentHandler {
 					Double minutes = Math.floor((TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) / 60) % 60);
 					Long seconds = TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) % 60;
 
-					print(counter + " " + satztypToIndex + " records (" + hours.shortValue()+"h"+minutes.shortValue()+"m"+seconds.shortValue()+"s)");
-					print("\n");
+					//print(/*counter + " " + */satztypToIndex + " records (" + hours.shortValue()+"h"+minutes.shortValue()+"m"+seconds.shortValue()+"s)");
+					//print("\n");
 				}
 			}
 
@@ -268,7 +284,7 @@ public class MarcContentHandler implements ContentHandler {
 
 		if (isPublisherData == false) {
 			print("\n-------------------------------------------\n");
-			print("Number of records indexed: " + counter);
+			//print("Number of records indexed: " + counter);
 			print("\n###############################################################################\n\n");
 		}
 
@@ -292,8 +308,10 @@ public class MarcContentHandler implements ContentHandler {
 			for (Record record : recordSet.getRecords()) {
 
 				String satztyp = record.getSatztyp();
+				//System.out.println("satztyp: " + satztyp);
 
-				if (satztyp.equals(satztypToIndex)) {
+
+				if (satztyp != null && satztyp.equals(satztypToIndex)) {
 
 					// Create a document:
 					SolrInputDocument doc = new SolrInputDocument();
@@ -302,11 +320,13 @@ public class MarcContentHandler implements ContentHandler {
 					SolrInputDocument mhAtomicUpdateDoc = new SolrInputDocument();
 
 					// Variables for atomic updates of MH record:
+					// Also used for SerialVolume
 					String muAC = "0";
 					String muSYS = "0";
 					String muParentAC = "0";
 					String muTitle = "0";
 					String muVolumeNo = "0";
+					String muVolumeNoSort = "0";
 					String muEdition = "0";
 					String muPublishDate = "0";
 
@@ -348,6 +368,40 @@ public class MarcContentHandler implements ContentHandler {
 							if (fieldName.equals("volumeNo_str_mv")) {
 								muVolumeNo = fieldValue;
 							}
+							if (fieldName.equals("volumeNoSort_str_mv")) {
+								muVolumeNoSort = fieldValue;
+							}
+							if (fieldName.equals("edition")) {
+								muEdition = fieldValue;
+							}
+							if (fieldName.equals("publishDate")) {
+								muPublishDate = fieldValue;
+							}
+						}
+
+						if (satztyp.equals("SerialVolume")) {
+
+							// Get the AC-No from the top series record:
+							if (fieldName.equals("parentSeriesAC_str_mv")) {
+								muParentAC = fieldValue;
+							}
+
+							// Get all data that should be indexed for the MH record of this MU record:
+							if (fieldName.equals("acNo_str")) {
+								muAC = fieldValue;
+							}
+							if (fieldName.equals("sysNo_str")) {
+								muSYS = fieldValue;
+							}
+							if (fieldName.equals("title")) {
+								muTitle = fieldValue;
+							}
+							if (fieldName.equals("serialVolumeNo_str")) {
+								muVolumeNo = fieldValue;
+							}
+							if (fieldName.equals("serialVolumeNoSort_str")) {
+								muVolumeNoSort = fieldValue;
+							}
 							if (fieldName.equals("edition")) {
 								muEdition = fieldValue;
 							}
@@ -358,7 +412,7 @@ public class MarcContentHandler implements ContentHandler {
 					}
 
 					// Link MH and MU records togehter (add data from MH record to MU record and vice versa)
-					if (satztyp.equals("MU")) {
+					if (satztyp.equals("MU") || satztyp.equals("SerialVolume")) {
 
 						// Get MH record of current MU record, so that we can add values to it via atomic updates.
 						// First, query Solr Server and find out if record/solr-document with the given AC-No. of parent exists:
@@ -394,9 +448,25 @@ public class MarcContentHandler implements ContentHandler {
 							mapMuTitle.put("add", muTitle);
 							mhAtomicUpdateDoc.setField("childTitle_str_mv", mapMuTitle);
 
-							Map<String, String> mapMuVolumeNo = new HashMap<String, String>();
-							mapMuVolumeNo.put("add", muVolumeNo);
-							mhAtomicUpdateDoc.setField("childVolumeNo_str_mv", mapMuVolumeNo);
+							if(satztyp.equals("SerialVolume")) {
+								Map<String, String> mapMuVolumeNo = new HashMap<String, String>();
+								mapMuVolumeNo.put("add", muVolumeNo);
+								mhAtomicUpdateDoc.setField("childSeriesVolumeNo_str_mv", mapMuVolumeNo);
+
+								Map<String, String> mapMuVolumeNoSort = new HashMap<String, String>();
+								mapMuVolumeNoSort.put("add", muVolumeNoSort);
+								mhAtomicUpdateDoc.setField("childSeriesVolumeNoSort_str_mv", mapMuVolumeNoSort);
+							}
+
+							if (satztyp.equals("MU")) {
+								Map<String, String> mapMuVolumeNo = new HashMap<String, String>();
+								mapMuVolumeNo.put("add", muVolumeNo);
+								mhAtomicUpdateDoc.setField("childVolumeNo_str_mv", mapMuVolumeNo);
+
+								Map<String, String> mapMuVolumeNoSort = new HashMap<String, String>();
+								mapMuVolumeNoSort.put("add", muVolumeNoSort);
+								mhAtomicUpdateDoc.setField("childVolumeNoSort_str_mv", mapMuVolumeNoSort);
+							}
 
 							Map<String, String> mapMuEdition = new HashMap<String, String>();
 							mapMuEdition.put("add", muEdition);
