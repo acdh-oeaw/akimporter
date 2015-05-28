@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +45,9 @@ public class SolrMab {
 	public static HashMap<String, List<String>> translateFields = new HashMap<String, List<String>>();
 	private boolean useDefaultMabProperties;
 	boolean print = true;
+	long startTime;
+	long endTime;
+	long timeElapsedMilli;
 
 	public SolrMab() {};
 	public SolrMab(boolean print) {
@@ -61,7 +63,6 @@ public class SolrMab {
 		this.useDefaultMabProperties = useDefaultMabProperties;
 
 		setLogger();
-		long startTime = System.nanoTime();
 
 		try {
 			BufferedInputStream mabPropertiesInputStream = null;
@@ -78,6 +79,8 @@ public class SolrMab {
 			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+			startTime = System.currentTimeMillis();
+			
 			// Get contents of mab.properties files and put them to MatchingObjects
 			listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
 
@@ -88,8 +91,9 @@ public class SolrMab {
 			HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
 
 
+			
 			print("\n###############################################################################\n\n");
-			print("Start indexing all records");
+			print("Start indexing records");
 			print("\n-------------------------------------------\n");
 
 			// Specify XML-file to parse:
@@ -105,15 +109,35 @@ public class SolrMab {
 
 			// Commit MH records:
 			solrServer.commit();
-
+			
+			
 			// Report success:
 			print("\nDone indexing! Everything worked fine.\n");
 
-			long endTime = System.nanoTime();
-			long duration = endTime - startTime;
-			print("Execution time: " + TimeUnit.HOURS.convert(duration, TimeUnit.NANOSECONDS) + " hours, " + TimeUnit.MINUTES.convert(duration, TimeUnit.NANOSECONDS) + " minutes, " + TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) + " seconds, " + TimeUnit.MILLISECONDS.convert(duration, TimeUnit.NANOSECONDS) + " milliseconds");
-
 			isIndexingSuccessful = true;
+
+			endTime = System.currentTimeMillis();
+			
+			timeElapsedMilli =  endTime - startTime;
+			int seconds = (int) (timeElapsedMilli / 1000) % 60 ;
+			int minutes = (int) ((timeElapsedMilli / (1000*60)) % 60);
+			int hours   = (int) ((timeElapsedMilli / (1000*60*60)) % 24);
+			print("Indexing took " + hours + ":" + minutes + ":" + seconds);
+			
+			
+			// ##################################################### //
+			// TODO - ADD CHILD-RECORDS TO PARENT RECORDS (MU AND 453r)
+			MuVolumeToParent muVolumeToParent = new MuVolumeToParent();
+			muVolumeToParent.addMuRecords(solrServer);
+			
+			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent();
+			serialVolumeToParent.addSerialVolumes(solrServer);
+
+			// Commit changes:
+			solrServer.commit();
+			
+			print("\nDone linking parents and childs! Everything worked fine.\n");
+			// ##################################################### //
 
 		} catch (RemoteSolrException e) {
 			isIndexingSuccessful = false;

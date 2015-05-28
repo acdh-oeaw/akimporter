@@ -116,7 +116,6 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 
-		counter = counter + 1;
 
 		if(localName.equals("controlfield") ) {
 			String controlfieldText = nodeContent.toString();
@@ -143,17 +142,20 @@ public class MarcContentHandler implements ContentHandler {
 		// leader-, controlfield- and datafield-objects to the record-object and add the
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
+			
+			counter = counter + 1;			
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
 			allRecords.add(record);
 
+			System.out.print("Indexing record " + recordID + ", No. indexed: " + counter + "\r");
+			
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
 			 * index it's values to Solr, then empty all objects (set to "null") to save memory and go on with the next n records.
 			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but now
 			 * only 700 are indexed! The 33 remaining records will be indexed in endDocument()-Method;
 			 */
-
-			if (counter % 300 == 0) {
+			if (counter % 1000 == 0) {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
@@ -209,7 +211,6 @@ public class MarcContentHandler implements ContentHandler {
 
 			// Create a collection of all documents:
 			Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-			Collection<SolrInputDocument> mhAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 
 			for (Record record : recordSet) {
 
@@ -225,11 +226,8 @@ public class MarcContentHandler implements ContentHandler {
 					doc.addField(fieldName, fieldValue);
 
 				}
-
 				// Add the document to the collection of documents:
 				docs.add(doc);
-
-				print("Indexing record with ID: " + doc.getFieldValue("id"));
 
 			}
 
@@ -241,13 +239,6 @@ public class MarcContentHandler implements ContentHandler {
 				docs = null;
 			}
 
-			if (mhAtomicUpdateDocs.isEmpty() == false) {
-				// Now add the collection of documents to Solr:
-				sServer.add(mhAtomicUpdateDocs);
-
-				// Set "mhAtomicUpdateDocs" to "null" (save memory):
-				mhAtomicUpdateDocs = null;
-			}
 
 		} catch (SolrServerException e) {
 			e.printStackTrace();
@@ -331,11 +322,5 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void startPrefixMapping(String arg0, String arg1) throws SAXException {}
 
-
-	private void print(String text) {
-		if (print) {
-			System.out.println(text);
-		}
-	}
 
 }

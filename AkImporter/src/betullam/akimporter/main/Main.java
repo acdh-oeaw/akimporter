@@ -98,12 +98,14 @@ public class Main {
 			typeOfDataset = args[1]; 
 			pathToMabXmlFile = (typeOfDataset.equals("1"))? args[2] : null; // 1
 			pathToMultipleXmlFolder = (typeOfDataset.equals("2")) ? args[2] : null; // 2
+			pathToMergedFile = (typeOfDataset.equals("2")) ? args[3] : null;
 			isMergeOk = "J"; // 2
 			isValidationOk = "J"; // 1 + 2
 			isXmlCleanOk = "J"; // 1 + 2
-			solrServerAddress = args[3]; // 1 + 2
-			useDefaultMabPropertiesFile = args[4]; // 1 + 2
-			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N")) ? args[5] : null; // 1 + 2
+			solrServerAddress = (typeOfDataset.equals("1")) ? args[3] : args[4]; // 1 + 2
+			useDefaultMabPropertiesFile = (typeOfDataset.equals("1")) ? args[4] : args[5]; // 1 + 2
+			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
+			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
 			isIndexingOk = "J";
 
 
@@ -128,18 +130,23 @@ public class Main {
 			if (!isIndexerTest) {
 				pathToMultipleXmlFolder = getUserInput("\nWie lautet der Pfad zur Ordner mit den einzelnen XML-Dateien?\n Beispiel: /home/username/xmldateien)?", "directoryExists", scanner);
 			}
-			isMergeOk = getUserInput("\nDie XML-Dateien müssen nun in eine einzige XML-Datei zusammengeführt werden."
-					+ " Die Original-Daten werden nicht geändert. Wollen Sie fortfahren? Falls nicht, wird der gesamte"
-					+ " Import-Vorgang abgebrochen! "
-					+ "\n J = Ja, fortfahren\n N = Nein, abbrechen", "J, N", scanner);
+
+			if (!isIndexerTest) {
+				isMergeOk = getUserInput("\nDie XML-Dateien müssen nun in eine einzige XML-Datei zusammengeführt werden."
+						+ " Die Original-Daten werden nicht geändert. Wollen Sie fortfahren? Falls nicht, wird der gesamte"
+						+ " Import-Vorgang abgebrochen! "
+						+ "\n J = Ja, fortfahren\n N = Nein, abbrechen", "J, N", scanner);
+			}
 
 			if (isMergeOk.equals("J")) {
 
-				pathToMergedFile = getUserInput("\nGeben Sie an, wo die Datei mit den zusammengeführten Daten gespeichert werden"
-						+ " sollen. Geben Sie dazu einen Pfad inkl. Dateiname und der Endung \".xml\" an,"
-						+ " z. B.: /home/benutzer/meinedatei.xml. Beachten Sie, dass Sie am angegebenen Ort Schreibberechigungen"
-						+ " haben müssen und es NICHT der gleiche Ort sein darf, in dem die einzelnen XML-Dateien liegen.", "newFile", scanner);
-
+				if (!isIndexerTest) {
+					pathToMergedFile = getUserInput("\nGeben Sie an, wo die Datei mit den zusammengeführten Daten gespeichert werden"
+							+ " sollen. Geben Sie dazu einen Pfad inkl. Dateiname und der Endung \".xml\" an,"
+							+ " z. B.: /home/benutzer/meinedatei.xml. Beachten Sie, dass Sie am angegebenen Ort Schreibberechigungen"
+							+ " haben müssen und es NICHT der gleiche Ort sein darf, in dem die einzelnen XML-Dateien liegen.", "newFile", scanner);
+				}
+				
 				// Start XML merging:
 				XmlMerger xmlm = new XmlMerger();
 				isMergingSuccessful = xmlm.mergeElementNodes(pathToMultipleXmlFolder, pathToMergedFile, "collection", "record", 1);
@@ -242,7 +249,7 @@ public class Main {
 
 
 				}
-				
+
 				if (!isIndexerTest) {
 					isIndexingOk = getUserInput("\nAlles ist nun bereit. Hier noch einmal Ihre Angaben:"
 							+ "\n Daten-Datei:\t" + pathToMabXmlFile
@@ -252,7 +259,7 @@ public class Main {
 							+ "\nACHTUNG: Ja nach Datenmenge und Leistung des Computers kann dieser Vorgang lange dauern!"
 							+ " \n J = Ja, Import-Vorgang beginnen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
 				}
-				
+
 				if (isIndexingOk.equals("J")) {
 					SolrMab sm = new SolrMab();
 					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties);
