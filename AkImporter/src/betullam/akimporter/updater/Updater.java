@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Date;
 
 import betullam.akimporter.main.Main;
-import betullam.akimporter.solrmab.SolrMab;
+import betullam.akimporter.solrmab2.SolrMab;
 import betullam.xmlhelper.XmlMerger;
 import betullam.xmlhelper.XmlValidator;
 
