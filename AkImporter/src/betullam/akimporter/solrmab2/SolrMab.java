@@ -90,8 +90,6 @@ public class SolrMab {
 			// Create Solr Server:
 			HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
 
-
-			
 			print("\n###############################################################################\n\n");
 			print("Start indexing records");
 			print("\n-------------------------------------------\n");
@@ -113,7 +111,7 @@ public class SolrMab {
 			
 			// Report success:
 			print("\nDone indexing! Everything worked fine.\n");
-
+			
 			isIndexingSuccessful = true;
 
 			endTime = System.currentTimeMillis();
@@ -125,15 +123,15 @@ public class SolrMab {
 			print("Indexing took " + hours + ":" + minutes + ":" + seconds);
 			
 			
-			// ##################################################### //
-			// TODO - ADD CHILD-RECORDS TO PARENT RECORDS (MU AND 453r)
+			// Linking MU and MH records
 			MuVolumeToParent muVolumeToParent = new MuVolumeToParent();
 			muVolumeToParent.addMuRecords(solrServer);
 			
+			// Linking serial volumes
 			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent();
 			serialVolumeToParent.addSerialVolumes(solrServer);
 
-			// Commit changes:
+			// Commit linking changes:
 			solrServer.commit();
 			
 			print("\nDone linking parents and childs! Everything worked fine.\n");
