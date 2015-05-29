@@ -159,7 +159,7 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
-
+				
 				// Add to Solr-Index:
 				this.solrAddRecordSet(sServer, newRecordSet);
 				//long opStartTime = System.nanoTime();
@@ -187,7 +187,7 @@ public class MarcContentHandler implements ContentHandler {
 
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
-
+		
 		// Add to Solr-Index:
 		this.solrAddRecordSet(sServer, newRecordSet);
 
@@ -228,10 +228,10 @@ public class MarcContentHandler implements ContentHandler {
 				}
 				// Add the document to the collection of documents:
 				docs.add(doc);
-
 			}
-
+			
 			if (docs.isEmpty() == false) {
+				
 				// Now add the collection of documents to Solr:
 				sServer.add(docs);
 
@@ -248,9 +248,11 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
+	/*
 	public List<Record> getRecordSet() {
 		return this.allRecords;
 	}
+	*/
 
 	public void solrClearIndex(SolrServer sServer) {
 
