@@ -31,7 +31,7 @@ public class MuVolumeToParent {
 		// New Solr query
 		SolrQuery queryMUs = new SolrQuery();
 
-		// Defin a query for getting all documents. We get the MU documents with a filter query because of performance (see below)
+		// Define a query for getting all documents. We get the MU documents with a filter query because of performance (see below)
 		queryMUs.setQuery("*:*");
 
 		// The no of rows over that we can iterate ( see "for(SolrDocument doc : resultDocList)" ):
@@ -42,12 +42,12 @@ public class MuVolumeToParent {
 
 		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
 		queryMUs.setFilterQueries("satztyp_str:MU", "id:*");
-		//queryMUs.setFilterQueries("id:[000009694 TO *]");
 
 		// Set fields that should be given back from the query
 		queryMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
+		
+		// Initialize Variable for query response:
 		QueryResponse responseMUs = null;
-
 
 		try {
 			// Execute query
@@ -138,11 +138,15 @@ public class MuVolumeToParent {
 
 		// Set fields that should be given back from the query
 		filterqueryMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
+		
+		// Initialize Variable for query response:
 		QueryResponse filterresponseMUs = null;
 
-		// Execute query
+
 		try {
+			// Execute query
 			filterresponseMUs = sServer.query(filterqueryMUs);
+			
 			// Get document-list from query result
 			SolrDocumentList resultDocList = filterresponseMUs.getResults();
 			
@@ -150,10 +154,8 @@ public class MuVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				System.out.println("Processing " + docId);
+				System.out.println("Processing MU record " + docId);
 				
-
-				// ######################################################################################################################## //
 				String muParentSYS = (doc.getFieldValue("parentSYS_str") != null) ? doc.getFieldValue("parentSYS_str").toString() : null;
 
 				// If we already have a parentSYS_str, we already linked this MU record to it's parent MH record at some time before.
@@ -241,11 +243,8 @@ public class MuVolumeToParent {
 						mhAtomicUpdateDocs.add(mhAtomicUpdateDoc);
 					}
 				}
-				// ######################################################################################################################## //
-				
 				
 
-				
 				// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 				if (docId.equals(newLastDocId)) {
 					returnValue = docId;
