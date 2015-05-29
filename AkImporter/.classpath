@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="betullam/akimporter/updater/FtpDownload_V1.java|betullam/akimporter/updater/FtpFilename.java" kind="src" path="src"/>
+	<classpathentry excluding="betullam/akimporter/updater/FtpDownload_V1.java|betullam/akimporter/updater/FtpFilename.java|betullam/akimporter/solrmab/" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/solrj/solr-solrj-4.5.0.jar"/>
 	<classpathentry kind="lib" path="/media/windows/Programmierungen/libraries/solrj/solrj-lib/httpclient-4.2.3.jar"/>
