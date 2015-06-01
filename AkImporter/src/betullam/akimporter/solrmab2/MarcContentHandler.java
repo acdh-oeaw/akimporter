@@ -41,10 +41,9 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
-	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer, boolean print) {
+	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer) {
 		this.listOfMatchingObjs = listOfMatchingObjs;
 		this.sServer = solrServer;
-		this.print = print;
 	}
 
 
@@ -158,6 +157,7 @@ public class MarcContentHandler implements ContentHandler {
 			if (counter % 1000 == 0) {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
+				// TODO: Check matching process if it could be more efficient. Most time of indexing process is used for matching!
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 				
 				// Add to Solr-Index:
@@ -166,9 +166,9 @@ public class MarcContentHandler implements ContentHandler {
 				//System.out.println(getDuration(opStartTime));
 
 				// Set all Objects to "null" to save memory
-				// TODO: Are the followoing really all objects which should be set to "null"?
 				allRecords = null;
 				allRecords = new ArrayList<Record>();
+				allFields = null;
 				newRecordSet = null;
 			}
 		}
@@ -184,7 +184,7 @@ public class MarcContentHandler implements ContentHandler {
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 		//+++++++++++++++ Add the remaining rest of the records to the index (see modulo-operation with "%"-operator in endElement()) +++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
+		
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 		
@@ -192,9 +192,9 @@ public class MarcContentHandler implements ContentHandler {
 		this.solrAddRecordSet(sServer, newRecordSet);
 
 		// Clear Objects to save memory
-		// TODO: Are the followoing really all objects which should be set to "null"?
-		allRecords.clear();
-		newRecordSet.clear();	
+		allRecords = null;
+		newRecordSet = null;
+		listOfMatchingObjs = null;
 
 	}
 

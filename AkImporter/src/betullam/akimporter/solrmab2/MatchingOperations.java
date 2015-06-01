@@ -19,13 +19,13 @@ public class MatchingOperations {
 	HashMap<String, List<String>> translateFields = SolrMab.translateFields;
 
 	/**
-	 * 1. Match old Mab-Field to Solrfields. As the old field could match two or more Solrfields, you may get several Solrfields for 1 old Mabfield
+	 * 1. Match old Mab-Field to Solrfields. As the old Mab-Field could match two or more Solrfields, you may get several Solrfields for 1 old Mabfield
 	 *    Therefore, we need to return a List of the new Solrfields.
 	 * 2. Add the List of the new Solrfields (same Datastructure as Mabfields) to a List of Lists (List<List<Mabfield>>), but only if it's not empty (that's
 	 *    how we get rid of none-matching Mabfields).
 	 * 3. For each List in the List of Mabfields (which are now Solrfields), add each Solrfield to a new List<Mabfield> and add that List to a Record.
 	 * 4. Add the Record to a List<Record>.
-	 * 5. Add the List<Record> to a RecordSet and return it.
+	 * 5. Return the List<Record>
 	 */
 
 
