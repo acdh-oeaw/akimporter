@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,6 +33,8 @@ public class MarcContentHandler implements ContentHandler {
 	private boolean is001;
 	private boolean print = true;
 	int counter = 0;
+	long startTime;
+	long endTime;
 	
 	String controlfieldTag;
 	String datafieldTag;
@@ -50,6 +51,10 @@ public class MarcContentHandler implements ContentHandler {
 
 	@Override
 	public void startDocument() throws SAXException {
+		
+		// For tracking the elapsed time:
+		startTime = System.currentTimeMillis();
+
 		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
 		allRecords = new ArrayList<Record>();
 	}
@@ -157,19 +162,19 @@ public class MarcContentHandler implements ContentHandler {
 			if (counter % 1000 == 0) {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
-				// TODO: Check matching process if it could be more efficient. Most time of indexing process is used for matching!
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 				
 				// Add to Solr-Index:
 				this.solrAddRecordSet(sServer, newRecordSet);
-				//long opStartTime = System.nanoTime();
-				//System.out.println(getDuration(opStartTime));
 
 				// Set all Objects to "null" to save memory
 				allRecords = null;
 				allRecords = new ArrayList<Record>();
 				allFields = null;
 				newRecordSet = null;
+				
+				endTime = System.currentTimeMillis();
+				System.out.println("Elapsed time after " + counter + " records: " + getExecutionTime(startTime, endTime));
 			}
 		}
 
@@ -290,7 +295,21 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
+	
+	private String getExecutionTime(long startTime, long endTime) {
+		String executionTime = null;
+		
+		long timeElapsedMilli =  endTime - startTime;
+		int seconds = (int) (timeElapsedMilli / 1000) % 60 ;
+		int minutes = (int) ((timeElapsedMilli / (1000*60)) % 60);
+		int hours   = (int) ((timeElapsedMilli / (1000*60*60)) % 24);
+		
+		executionTime = hours + ":" + minutes + ":" + seconds;
+		return executionTime;
+	}
+	
 
+	/*
 	// Get time that an operation takes
 	public String getDuration(long operationStartTime) {		
 		long operationEndTime = System.nanoTime();
@@ -303,7 +322,7 @@ public class MarcContentHandler implements ContentHandler {
 		//System.out.println("OP took " + seconds + " seconds / " + miliseconds +" miliseconds");
 		return seconds + " s / " + miliseconds + " ms / " + nanoseconds + " ns";
 	}
-
+	 */
 
 
 	@Override

@@ -72,6 +72,17 @@ public class MatchingObject {
 	public void setTranslateProperties(HashMap<String, String> translateProperties) {
 		this.translateProperties = translateProperties;
 	}
+
+	@Override
+	public String toString() {
+		return "MatchingObject [solrFieldname=" + solrFieldname
+				+ ", mabFieldnames=" + mabFieldnames + ", multiValued="
+				+ multiValued + ", customText=" + customText
+				+ ", translateValue=" + translateValue
+				+ ", translateProperties=" + translateProperties + "]";
+	}
 	
 
 }
+
+ 

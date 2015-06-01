@@ -151,7 +151,7 @@ public class SerialVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				System.out.println("Processing serial volume " + docId);
+				System.out.print("Processing serial volume " + docId + "\r");
 				
 				// #####################################
 				String serialParentSYS = (doc.getFieldValue("parentSeriesSYS_str") != null) ? doc.getFieldValue("parentSeriesSYS_str").toString() : null;

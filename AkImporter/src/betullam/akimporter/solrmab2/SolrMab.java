@@ -77,7 +77,7 @@ public class SolrMab {
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
+			long startTimeOverall = System.currentTimeMillis();
 			startTime = System.currentTimeMillis();
 			
 			// Get contents of mab.properties files and put them to MatchingObjects
@@ -142,7 +142,11 @@ public class SolrMab {
 			endTime = System.currentTimeMillis();
 			print("Linking serial volumes took " + getExecutionTime(startTime, endTime));
 			
+			
 			print("\nDone linking parents and childs! Everything worked fine.\n");
+			
+			print("Overall time (indexing + linking): " + getExecutionTime(startTimeOverall, endTime));
+			
 
 		} catch (RemoteSolrException e) {
 			isIndexingSuccessful = false;
@@ -303,7 +307,7 @@ public class SolrMab {
 					}
 				}
 
-				// Get all default fields (the other fields were removed:
+				// Get all default fields (the other fields were removed):
 				for(String lstValue : lstValues) {
 					mabFieldnames.put(lstValue, null);
 					fieldsToRemove.add(lstValue);

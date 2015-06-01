@@ -26,4 +26,12 @@ public class Record {
 	public void setRecordID(String recordID) {
 		this.recordID = recordID;
 	}
+
+
+	@Override
+	public String toString() {
+		return "Record [recordID=" + recordID + ", mabfields=" + mabfields + "]";
+	}
+	
+	
 }

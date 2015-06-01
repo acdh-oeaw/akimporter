@@ -34,7 +34,7 @@ public class MatchingOperations {
 		newListOfRecords = new ArrayList<Record>();		
 
 
-		for (Record oldRecord : oldRecordSet) {
+		for (Record oldRecord : oldRecordSet) {	
 
 			listOfNewSolrfieldLists = new ArrayList<List<Mabfield>>();
 			listOfNewFieldsForNewRecord = new ArrayList<Mabfield>();
@@ -53,6 +53,7 @@ public class MatchingOperations {
 					listOfNewFieldsForNewRecord.add(newSolrField);
 				}
 			}
+			
 
 			for (Mabfield customTextField : customTextFields) {
 				//System.out.println("2. Solr Fieldname: " + customTextField.getFieldname() + ": " + customTextField.getFieldvalue());
@@ -93,14 +94,23 @@ public class MatchingOperations {
 
 	public List<Mabfield> matchField(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {		
 
-
 		String mabFieldnameXml = mabField.getFieldname();
 		listOfMatchedFields = new ArrayList<Mabfield>();
 
-		//System.out.println("mabFieldname: " + mabFieldname);
-
+		// Remove unnecessary MatchingObjects so that we don't have to iterate over all of them. This saves a lot of time!
+		List<MatchingObject> listOfRelevantMatchingObjects = new ArrayList<MatchingObject>();
 		for (MatchingObject matchingObject : listOfMatchingObjects) {
+			String mabFieldNo = mabFieldnameXml.substring(0, 3);
+			boolean containsMabFieldNo = matchingObject.getMabFieldnames().keySet().toString().contains(mabFieldNo);
+			
+			if (containsMabFieldNo) {
+				listOfRelevantMatchingObjects.add(matchingObject);
+			}
+		}
+
+		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
 			String solrFieldname = matchingObject.getSolrFieldname();
+			
 			HashMap<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
 
 
@@ -195,12 +205,12 @@ public class MatchingOperations {
 
 				}
 
-			} else { 
+			} else {
 
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
-
+					
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
@@ -266,6 +276,9 @@ public class MatchingOperations {
 				}
 			}
 		}
+		
+		listOfRelevantMatchingObjects = null;
+		
 		return listOfMatchedFields;
 	}
 
@@ -336,7 +349,7 @@ public class MatchingOperations {
 
 	public boolean matchControlfield(String in, String matchValue) {
 		String fieldName = matchValue;
-		boolean matches = Pattern.matches(fieldName, in);
+		boolean matches = Pattern.matches(fieldName, in);		
 		return matches;
 	}
 	

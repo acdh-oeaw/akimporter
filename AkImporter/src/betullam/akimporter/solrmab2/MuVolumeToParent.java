@@ -154,7 +154,7 @@ public class MuVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				System.out.println("Processing MU record " + docId);
+				System.out.print("Processing MU record " + docId + "\r");
 				
 				String muParentSYS = (doc.getFieldValue("parentSYS_str") != null) ? doc.getFieldValue("parentSYS_str").toString() : null;
 
