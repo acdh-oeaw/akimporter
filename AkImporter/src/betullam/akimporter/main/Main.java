@@ -128,7 +128,7 @@ public class Main {
 
 		} else if (typeOfDataset.equals("2")) { // We have multiple smaller XML files - we need to merge them!
 			if (!isIndexerTest) {
-				pathToMultipleXmlFolder = getUserInput("\nWie lautet der Pfad zur Ordner mit den einzelnen XML-Dateien?\n Beispiel: /home/username/xmldateien)?", "directoryExists", scanner);
+				pathToMultipleXmlFolder = getUserInput("\nWie lautet der Pfad zum Ordner mit den einzelnen XML-Dateien?\n Beispiel: /home/username/xmldateien)?", "directoryExists", scanner);
 			}
 
 			if (!isIndexerTest) {
