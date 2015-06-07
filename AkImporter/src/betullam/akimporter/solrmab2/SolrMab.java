@@ -166,14 +166,13 @@ public class SolrMab {
 
 
 			print("\nDone linking parents and childs!\n");
+			
 
-
-			/*
 			print("\nStart optimizing Solr index. This could take a while. Please wait ...");
 			solrServer.optimize();
-			print("Done optimizing Solr index.\n");
-			 */
+			print("Done optimizing Solr index.\n"); 
 
+			
 			print("Overall time (indexing + linking): " + getExecutionTime(startTimeOverall, endTime));
 			print("Everything is done and worked fine.");
 

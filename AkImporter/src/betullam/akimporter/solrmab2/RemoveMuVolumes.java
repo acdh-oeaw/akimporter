@@ -153,7 +153,7 @@ public class RemoveMuVolumes {
 				
 				// Variables for atomic updates of parent series:
 				String mhSYS = "0";
-
+				
 				SolrQuery queryMH = new SolrQuery(); // New query for parent of current volume
 				queryMH.setQuery("acNo_str:" + mhAC); // Set query for parent
 				queryMH.setFields("id"); // Set fields that should be given back from the query
@@ -165,6 +165,8 @@ public class RemoveMuVolumes {
 					SolrDocument resultDocMH = resultListMHs.get(0); // Get first document from query result (there should be only one!)
 					mhSYS = (resultDocMH.getFieldValue("id") != null) ? resultDocMH.getFieldValue("id").toString() : "0";
 					
+					
+					// TODO: Check if the field for child SYS numbers exists. If not, there is nothing to remove and we can skip this record.
 
 					// Prepare parent record for atomic updates:
 					SolrInputDocument mhRemoveVolumeDoc = null;
