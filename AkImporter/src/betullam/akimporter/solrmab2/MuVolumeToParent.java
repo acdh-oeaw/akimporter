@@ -41,7 +41,7 @@ public class MuVolumeToParent {
 		queryMUs.setSort(SolrQuery.SortClause.asc("id"));
 
 		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
-		queryMUs.setFilterQueries("satztyp_str:MU", "id:*");
+		queryMUs.setFilterQueries("parentAC_str:*", "id:*");
 
 		// Set fields that should be given back from the query
 		queryMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
@@ -128,11 +128,11 @@ public class MuVolumeToParent {
 
 		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
 		if (isFirstPage) { // No range filter on first page
-			fqMUs.setFilterQueries("satztyp_str:MU", "id:*");
+			fqMUs.setFilterQueries("parentAC_str:*", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
 			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
 			fqMUs.setStart(1);
-			fqMUs.setFilterQueries("satztyp_str:MU", "id:[" + lastDocId + " TO *]");
+			fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
 		}
 
 		// Set fields that should be given back from the query
