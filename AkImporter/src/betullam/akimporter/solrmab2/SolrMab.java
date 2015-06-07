@@ -124,13 +124,17 @@ public class SolrMab {
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			startTime = System.currentTimeMillis();
 
-			// First remove all volumes. Later on, we will index all volumes again from scratch. Until now there is no other useful solution.
-			RemoveVolumes rv = new RemoveVolumes();
-			rv.removeSerialVolumes(solrServer);
+			// First remove all MU- and serial-volumes. Later on, we will index all volumes again from scratch. Until now there is no other useful solution.
+			RemoveMuVolumes rmv = new RemoveMuVolumes();
+			rmv.removeMuVolumes(solrServer);
+			System.out.print("\n");
+			RemoveSerialVolumes rsv = new RemoveSerialVolumes();
+			rsv.removeSerialVolumes(solrServer);
+
 
 			// Commit removals of volumes:
 			solrServer.commit();
-			
+
 			endTime = System.currentTimeMillis();
 			print("Removing volumes for fresh re-indexing took " + getExecutionTime(startTime, endTime));
 

@@ -38,7 +38,7 @@ public class RemoveSerialVolumes {
 		// Sort by id (more efficient for deep paging):
 		querySerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
+		// Set a filter query (more efficient for deep paging).
 		querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
 
 		// Set fields that should be given back from the query
@@ -126,7 +126,7 @@ public class RemoveSerialVolumes {
 		// Sort by id (more efficient for deep paging):
 		fqSerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
+		// Set a filter query (more efficient for deep paging).
 		if (isFirstPage) { // No range filter on first page
 			fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
