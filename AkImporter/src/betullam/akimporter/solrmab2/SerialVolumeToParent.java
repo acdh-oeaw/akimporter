@@ -14,8 +14,10 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-public class SerialVolumeToParent {
+// For deep paging and the idea of itteration with filter-queries, see:
+// https://lucidworks.com/blog/coming-soon-to-solr-efficient-cursor-based-iteration-of-large-result-sets
 
+public class SerialVolumeToParent {
 
 	Collection<SolrInputDocument> serialVolumeAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	Collection<SolrInputDocument> parentSeriesAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
@@ -83,7 +85,6 @@ public class SerialVolumeToParent {
 				}
 
 
-
 				if (serialVolumeAtomicUpdateDocs.isEmpty() == false) {
 					// Now add the collection of documents to Solr:
 					sServer.add(serialVolumeAtomicUpdateDocs);
@@ -108,9 +109,8 @@ public class SerialVolumeToParent {
 	}
 
 
-
-
 	private String filterQuery(SolrServer sServer, String lastDocId, boolean isFirstPage) {
+
 		// Variable for return value:
 		String returnValue = null;
 
@@ -155,13 +155,11 @@ public class SerialVolumeToParent {
 				String docId = doc.getFieldValue("id").toString();
 				System.out.print("Adding serial volume " + docId + "\r");
 
-				// Variables for atomic updates of parent series:
+				// Variables for atomic updates of serial volume:
 				String parentSeriesSYS = "0";
 				String parentSeriesTitle = "0";
-				//List<?> parentSerialVolumsSYSs = new ArrayList<String>();
 
-				// Variables for atomic updates of serial volume:
-				//String serialParentSYS = (doc.getFieldValue("parentSeriesSYS_str") != null) ? doc.getFieldValue("parentSeriesSYS_str").toString() : null;
+				// Variables for atomic updates of parent series:
 				String serialvolAC = (doc.getFieldValue("acNo_str") != null) ? doc.getFieldValue("acNo_str").toString() : "0";
 				String serialvolSYS = (doc.getFieldValue("id") != null) ? doc.getFieldValue("id").toString() : "0";
 				String serialvolParentAC = (doc.getFieldValue("parentSeriesAC_str") != null) ? doc.getFieldValue("parentSeriesAC_str").toString() : null;
@@ -171,23 +169,18 @@ public class SerialVolumeToParent {
 				String serialvolEdition = (doc.getFieldValue("edition") != null) ? doc.getFieldValue("edition").toString() : "0";
 				String serialvolPublishDate = (doc.getFieldValue("publishDate") != null) ? doc.getFieldValue("publishDate").toString().replace("[", "").replace("]", "") : "0";
 
-
 				// First "set" data (SYS-No and title) from parent series record to current serial volume record:
 				// "set" data means: Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
 				SolrQuery queryParentSeries = new SolrQuery(); // Query for parent series of current serial voume
 				queryParentSeries.setQuery("acNo_str:" + serialvolParentAC); // Query parent series
-				queryParentSeries.setFields("id", "title", "serialvolumeSYS_str_mv"); // Set fields that should be given back from the query
+				queryParentSeries.setFields("id", "title"); // Set fields that should be given back from the query
 				QueryResponse responseParentSeries = sServer.query(queryParentSeries); // Execute query
 				SolrDocumentList resultListParentSeries = responseParentSeries.getResults();
-
-
 
 				if (!resultListParentSeries.isEmpty() && resultListParentSeries != null && resultListParentSeries.getNumFound() > 0) { // Parent record exists
 					SolrDocument resultDocParentSeries = resultListParentSeries.get(0); // Get first document from query result (there should be only one!)
 					parentSeriesSYS = (resultDocParentSeries.getFieldValue("id") != null) ? resultDocParentSeries.getFieldValue("id").toString() : "0";
 					parentSeriesTitle = (resultDocParentSeries.getFieldValue("title") != null) ? resultDocParentSeries.getFieldValue("title").toString() : "0";
-					//parentSerialVolumsSYSs = (resultDocParentSeries.getFieldValues("serialvolumeSYS_str_mv") != null) ? (List<?>)resultDocParentSeries.getFieldValues("serialvolumeSYS_str_mv") : null;
-
 
 					if (!parentSeriesSYS.equals("0")) {
 						
@@ -249,18 +242,13 @@ public class SerialVolumeToParent {
 						// Add all values of serial volume to parent series record:
 						parentSeriesAtomicUpdateDocs.add(parentSeriesAtomicUpdateDoc);
 					}
-
-
 				}
-
 
 				// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 				if (docId.equals(newLastDocId)) {
 					returnValue = docId;
 				}
-
 			}
-
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
