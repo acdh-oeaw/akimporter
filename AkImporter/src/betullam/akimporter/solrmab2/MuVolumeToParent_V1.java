@@ -15,9 +15,9 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
 // For deep paging and the idea of itteration with filter-queries, see:
-// https://lucidworks.com/blog/coming-soon-to-solr-efficient-cursor-based-iteration-of-large-result-sets
+// https://lucidworks.com/blog/coming-soon-to-solr-efficient-cursor-based-iteration-of-large-result-sets/
 
-public class MuVolumeToParent {
+public class MuVolumeToParent_V1 {
 
 	Collection<SolrInputDocument> muAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	Collection<SolrInputDocument> mhAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
@@ -45,7 +45,7 @@ public class MuVolumeToParent {
 
 		// Set fields that should be given back from the query
 		queryMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
-
+		
 		// Initialize Variable for query response:
 		QueryResponse responseMUs = null;
 
@@ -66,24 +66,24 @@ public class MuVolumeToParent {
 				// Calculate the number of solr result pages we need to iterate over
 				long wholePages = (noOfMuRecords/NO_OF_ROWS);
 				long fractionPages = (noOfMuRecords%NO_OF_ROWS);
-
+				
 				// Variable for lastDocId
 				String lastDocId = null;
-
+				
 				for (long l = 0; l < wholePages; l++) {
 					boolean isFirstPage = (l == 0) ? true : false;
-
+					
 					// Get the ID of the last document in the current page so that we can build a new filter query to iterate over the next page:
 					lastDocId = filterQuery(sServer, lastDocId, isFirstPage);
 				}
-
+				
 				// Add documents on the last page:
 				if (fractionPages != 0) {
 					// If there is no whole page but only a fraction page, the fraction page is the first page, because it's the only one
 					boolean isFirstPage = (wholePages <= 0) ? true : false;
 					filterQuery(sServer, lastDocId, isFirstPage);
 				}
-
+				
 
 				if (muAtomicUpdateDocs.isEmpty() == false) {
 					// Now add the collection of documents to Solr:
@@ -115,99 +115,100 @@ public class MuVolumeToParent {
 		String returnValue = null;
 
 		// New Solr query
-		SolrQuery fqMUs = new SolrQuery();
+		SolrQuery filterqueryMUs = new SolrQuery();
 
 		// Defin a query for getting all documents. We get the MU documents with a filter query because of performance (see below)
-		fqMUs.setQuery("*:*");
+		filterqueryMUs.setQuery("*:*");
 
 		// The no of rows over that we can iterate ( see "for(SolrDocument doc : resultDocList)" ):
-		fqMUs.setRows(NO_OF_ROWS);
-
+		filterqueryMUs.setRows(NO_OF_ROWS);
+		
 		// Sort by id (more efficient for deep paging):
-		fqMUs.setSort(SolrQuery.SortClause.asc("id"));
+		filterqueryMUs.setSort(SolrQuery.SortClause.asc("id"));
 
 		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
 		if (isFirstPage) { // No range filter on first page
-			fqMUs.setFilterQueries("satztyp_str:MU", "id:*");
+			filterqueryMUs.setFilterQueries("satztyp_str:MU", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
 			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
-			fqMUs.setStart(1);
-			fqMUs.setFilterQueries("satztyp_str:MU", "id:[" + lastDocId + " TO *]");
+			filterqueryMUs.setStart(1);
+			filterqueryMUs.setFilterQueries("satztyp_str:MU", "id:[" + lastDocId + " TO *]");
 		}
 
-		// Set fields that should be given back from the query
-		fqMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
 
+		// Set fields that should be given back from the query
+		filterqueryMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
+		
 		// Initialize Variable for query response:
-		QueryResponse fqResponse = null;
+		QueryResponse filterresponseMUs = null;
 
 
 		try {
 			// Execute query
-			fqResponse = sServer.query(fqMUs);
-
+			filterresponseMUs = sServer.query(filterqueryMUs);
+			
 			// Get document-list from query result
-			SolrDocumentList resultDocList = fqResponse.getResults();
-
+			SolrDocumentList resultDocList = filterresponseMUs.getResults();
+			
 			String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
 				System.out.print("Adding MU record " + docId + "\r");
-
-				// Variables for atomic updates of MU record:
-				String mhSYS = "0";
-				String mhTitle = "0";
-
-				// Variables for atomic updates of MH records:
-				String muAC = (doc.getFieldValue("acNo_str") != null) ? doc.getFieldValue("acNo_str").toString() : "0";
-				String muSYS = (doc.getFieldValue("id") != null) ? doc.getFieldValue("id").toString() : "0";
-				String muParentAC = (doc.getFieldValue("parentAC_str") != null) ? doc.getFieldValue("parentAC_str").toString() : null;
-				String muTitle = (doc.getFieldValue("title") != null) ? doc.getFieldValue("title").toString() : "0";
-				String muVolumeNo = (doc.getFieldValue("volumeNo_str") != null) ? doc.getFieldValue("volumeNo_str").toString() : "0";
-				String muVolumeNoSort = (doc.getFieldValue("volumeNoSort_str") != null) ? doc.getFieldValue("volumeNoSort_str").toString() : "0";
-				String muEdition = (doc.getFieldValue("edition") != null) ? doc.getFieldValue("edition").toString() : "0";
-				String muPublishDate = (doc.getFieldValue("publishDate") != null) ? doc.getFieldValue("publishDate").toString().replace("[", "").replace("]", "") : "0";
 				
-				// First "set" data (SYS-No and title) from MH record to current MU record:
-				// "set" data means: Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
-				SolrQuery queryMH = new SolrQuery(); // Query MH record of current MU record
-				queryMH.setQuery("acNo_str:" + muParentAC); // Query all MU-fields
-				queryMH.setFields("id", "title"); // Set fields that should be given back from the query
-				QueryResponse responseMH = sServer.query(queryMH); // Execute query
-				SolrDocumentList resultListMH = responseMH.getResults();
+				String muParentSYS = (doc.getFieldValue("parentSYS_str") != null) ? doc.getFieldValue("parentSYS_str").toString() : null;
 
-				if (!resultListMH.isEmpty() && resultListMH != null && resultListMH.getNumFound() > 0) { // Parent record exists
-					SolrDocument resultDocMH = resultListMH.get(0); // Get first document from query result (there should be only one!)
-					mhSYS = (resultDocMH.getFieldValue("id") != null) ? resultDocMH.getFieldValue("id").toString() : "0";
-					mhTitle = (resultDocMH.getFieldValue("title") != null) ? resultDocMH.getFieldValue("title").toString() : "0";
+				// If we already have a parentSYS_str, we already linked this MU record to it's parent MH record at some time before.
+				// So we have to skip the linking process. If not, we will have the same value a second time in all the
+				// multivalued fields.
+				// So ONLY LINK IF muParentSYS is NULL!
+				if (muParentSYS == null) {
 
-					if (!mhSYS.equals("0")) {
-						
+					// Variables for atomic updates of MH and MU records:
+					String muAC = (doc.getFieldValue("acNo_str") != null) ? doc.getFieldValue("acNo_str").toString() : "0";
+					String muSYS = (doc.getFieldValue("id") != null) ? doc.getFieldValue("id").toString() : "0";
+					String muParentAC = (doc.getFieldValue("parentAC_str") != null) ? doc.getFieldValue("parentAC_str").toString() : null;
+					String muTitle = (doc.getFieldValue("title") != null) ? doc.getFieldValue("title").toString() : "0";
+					String muVolumeNo = (doc.getFieldValue("volumeNo_str") != null) ? doc.getFieldValue("volumeNo_str").toString() : "0";
+					String muVolumeNoSort = (doc.getFieldValue("volumeNoSort_str") != null) ? doc.getFieldValue("volumeNoSort_str").toString() : "0";
+					String muEdition = (doc.getFieldValue("edition") != null) ? doc.getFieldValue("edition").toString() : "0";
+					String muPublishDate = (doc.getFieldValue("publishDate") != null) ? doc.getFieldValue("publishDate").toString().replace("[", "").replace("]", "") : "0";						
+
+					// First add data (SYS-No and title) from MH record to current MU record:
+					SolrQuery queryMH = new SolrQuery(); // Query MH record of current MU record
+					queryMH.setQuery("acNo_str:" + muParentAC); // Query all MU-fields
+					queryMH.setFields("id", "title"); // Set fields that should be given back from the query
+					QueryResponse responseMH = sServer.query(queryMH); // Execute query
+					SolrDocumentList resultListMH = responseMH.getResults();
+
+					if (!resultListMH.isEmpty() && resultListMH != null && resultListMH.getNumFound() > 0) { // Parent record exists
+						SolrDocument resultDocMH = resultListMH.get(0); // Get first document from query result (there should be only one!)
+						String mhSYS = (resultDocMH.getFieldValue("id") != null) ? resultDocMH.getFieldValue("id").toString() : "0";
+						String mhTitle = (resultDocMH.getFieldValue("title") != null) ? resultDocMH.getFieldValue("title").toString() : "0";
+
+
 						// Prepare MU record for atomic updates:
 						SolrInputDocument muAtomicUpdateDoc = null;
 						muAtomicUpdateDoc = new SolrInputDocument();
-						muAtomicUpdateDoc.setField("id", muSYS);
+						muAtomicUpdateDoc.addField("id", muSYS);
 
 						// Add values for atomic update of MU record:
 						Map<String, String> mapMhSYS = new HashMap<String, String>();
-						mapMhSYS.put("set", mhSYS);
+						mapMhSYS.put("add", mhSYS);
 						muAtomicUpdateDoc.setField("parentSYS_str", mapMhSYS);
 
 						Map<String, String> mapMhTitle = new HashMap<String, String>();
-						mapMhTitle.put("set", mhTitle);
+						mapMhTitle.put("add", mhTitle);
 						muAtomicUpdateDoc.setField("parentTitle_str", mapMhTitle);
 
 						// Add all values of MU child record to MH parent record:
 						muAtomicUpdateDocs.add(muAtomicUpdateDoc);
-						
-						
-						
-						
+
+
 						// Prepare MH record for atomic updates:
 						SolrInputDocument mhAtomicUpdateDoc = null;
 						mhAtomicUpdateDoc = new SolrInputDocument();
-						mhAtomicUpdateDoc.setField("id", mhSYS);
+						mhAtomicUpdateDoc.addField("id", mhSYS);
 
 						// Add values for atomic update of MH record:
 						Map<String, String> mapMuSYS = new HashMap<String, String>();
@@ -242,6 +243,7 @@ public class MuVolumeToParent {
 						mhAtomicUpdateDocs.add(mhAtomicUpdateDoc);
 					}
 				}
+				
 
 				// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 				if (docId.equals(newLastDocId)) {
