@@ -204,7 +204,7 @@ public class RemoveMuVolumes {
 					mhRemoveVolumeDoc.setField("childPublishDate_str_mv", mapRemoveVolumePublishDate);
 					 
 
-					// Add all values of serial volume to parent series record:
+					// Remove all values of serial volume to parent series record:
 					mhRecordAtomicUpdateDocs.add(mhRemoveVolumeDoc);
 
 				}

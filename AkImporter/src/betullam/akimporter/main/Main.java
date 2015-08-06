@@ -31,6 +31,8 @@ public class Main {
 	static boolean isIndexerTest = false;
 	static boolean isUpdate = false;
 	static boolean isUpdateSuccessful = false;
+	static boolean isIndexingOnly = false;
+	static boolean isLinkingOnly = false;
 
 	// 1
 	static Scanner scanner;
@@ -56,6 +58,7 @@ public class Main {
 	static boolean isMergingSuccessful;
 
 
+
 	/**
 	 * TESTANGABEN:
 	 * /home/mbirkner/AkFind/a.xml
@@ -69,13 +72,19 @@ public class Main {
 
 	public static void main(String[] args) {
 
-
+		scanner = new Scanner(System.in);
+		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
+		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
+		
+		
 		if (args.length > 0) {
-			isIndexerTest = (args[0].equals("test")) ? true : false; // ONLY FOR TESTING PURPOSES
+			isIndexerTest = (args[0].equals("-test")) ? true : false; // ONLY FOR TESTING PURPOSES
 			isUpdate = (args[0].equals("-u")) ? true : false; // Running update
-
+			isIndexingOnly = (args[0].equals("-i")) ? true : false; // Index only without linking parent and child volumes
+			isLinkingOnly = (args[0].equals("-l")) ? true : false; // Link only parent and child volumes
 		}
 
+		
 		if (isUpdate) {
 			String remotePath = args[1];
 			String localPath = args[2];
@@ -92,9 +101,8 @@ public class Main {
 			return;
 		}
 
+		
 		if (isIndexerTest) {
-
-
 			typeOfDataset = args[1]; 
 			pathToMabXmlFile = (typeOfDataset.equals("1"))? args[2] : null; // 1
 			pathToMultipleXmlFolder = (typeOfDataset.equals("2")) ? args[2] : null; // 2
@@ -107,16 +115,20 @@ public class Main {
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
 			isIndexingOk = "J";
-
-
-
+		}
+		
+		if (isLinkingOnly) {
+			solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
+			SolrMab sm = new SolrMab();
+			sm.startIndexing(null, solrServerAddress, null, null, false, false, true);
+			return;
 		}
 
-		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
-		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
+		
 
-		scanner = new Scanner(System.in);
-
+		
+		// NORMAL IMPORT PROCESS STARTS HERE
+		
 		if (!isIndexerTest) {
 			typeOfDataset = getUserInput("\nWie liegt ihr Datenbestand vor?\n 1 = eine große XML-Datei\n 2 = viele einzelne XML-Dateien)?", "1, 2", scanner);
 		}
@@ -171,52 +183,64 @@ public class Main {
 		if (!isIndexerTest) {
 			isValidationOk = getUserInput("\nDie XML-Datei muss geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
 					+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen! "
-					+ "\n J = Ja, fortfahren\n N = Nein, abbrechen", "J, N", scanner);
+					+ "\n J = Ja, fortfahren\n U = Überspringen\n N = Nein, abbrechen", "J, U, N", scanner);
 		}
 
-		if (isValidationOk.equals("J")) {
-			System.out.println("\nStarte Validierung. Bitte um etwas Geduld ...");
-			XmlValidator bxh = new XmlValidator();
-			hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
-
-			while (hasValidationPassed == false) {
-				System.out.println("\nProblem in der XML Datei gefunden!");
-				if (!isIndexerTest) {
-					isXmlCleanOk = getUserInput("\nWollen Sie eine Datenbereinigung durchführen? "
-							+ "Die Originaldaten werden nicht verändert. "
-							+ "Dieser Vorgang kann je nach Datenmenge länger dauern. "
-							+ "Wenn Sie keine Datenbereinigung durchführen, wird der Vorgang abgebrochen."
-							+ "\n J = Ja, Datenbereinigung durchführen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
-				}
-				if (isXmlCleanOk.equals("J")) {
-					// Start cleaning XML
-					XmlCleaner xmlc = new XmlCleaner();
-					boolean cleaningProcessDone = xmlc.cleanXml(pathToMabXmlFile);
-					boolean isNewXmlFileClean = false;
-					if (cleaningProcessDone == true) {
-						pathToMabXmlFile = xmlc.getCleanedFile();
-						isNewXmlFileClean = bxh.validateXML(xmlc.getCleanedFile());
-						if (isNewXmlFileClean == false) {
-							System.out.println("\nDaten konnten nicht bereinigt werden! Import-Vorgang wurde abgebrochen.");
-							return;
+		if (isValidationOk.equals("J") || isValidationOk.equals("U")) {
+			
+			if (isValidationOk.equals("J")) {
+				System.out.println("\nStarte Validierung. Bitte um etwas Geduld ...");
+				XmlValidator bxh = new XmlValidator();
+				hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
+	
+				while (hasValidationPassed == false) {
+					System.out.println("\nProblem in der XML Datei gefunden!");
+					if (!isIndexerTest) {
+						isXmlCleanOk = getUserInput("\nWollen Sie eine Datenbereinigung durchführen? "
+								+ "Die Originaldaten werden nicht verändert. "
+								+ "Dieser Vorgang kann je nach Datenmenge länger dauern. "
+								+ "Wenn Sie keine Datenbereinigung durchführen, wird der Vorgang abgebrochen."
+								+ "\n J = Ja, Datenbereinigung durchführen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
+					}
+					if (isXmlCleanOk.equals("J")) {
+						// Start cleaning XML
+						XmlCleaner xmlc = new XmlCleaner();
+						boolean cleaningProcessDone = xmlc.cleanXml(pathToMabXmlFile);
+						boolean isNewXmlFileClean = false;
+						if (cleaningProcessDone == true) {
+							pathToMabXmlFile = xmlc.getCleanedFile();
+							isNewXmlFileClean = bxh.validateXML(xmlc.getCleanedFile());
+							if (isNewXmlFileClean == false) {
+								System.out.println("\nDaten konnten nicht bereinigt werden! Import-Vorgang wurde abgebrochen.");
+								return;
+							} else {
+								hasValidationPassed = true;
+							}
 						} else {
-							hasValidationPassed = true;
+							System.out.println("\nProblem bei der Datenbereinigung! Möglicherweise haben Sie keine"
+									+ " Schreibberechtigung für den Ordner, in den die bereinigte Datei geschrieben wird"
+									+ " (der gleiche wie die Ausgangsdatei \"" + pathToMabXmlFile + "\").");
+							return;
 						}
 					} else {
-						System.out.println("\nProblem bei der Datenbereinigung! Möglicherweise haben Sie keine"
-								+ " Schreibberechtigung für den Ordner, in den die bereinigte Datei geschrieben wird"
-								+ " (der gleiche wie die Ausgangsdatei \"" + pathToMabXmlFile + "\").");
+						System.out.println("\nImport-Vorgang auf Benutzerwunsch abgebrochen!");
 						return;
 					}
-				} else {
-					System.out.println("\nImport-Vorgang auf Benutzerwunsch abgebrochen!");
-					return;
 				}
+			} else {
+				
+				hasValidationPassed = true;
 			}
 
 
 			if (hasValidationPassed) {
-				System.out.println("\nValidierung war erfolgreich. Die Daten sind nun bereit für die Indexierung.\n");
+				if (isValidationOk.equals("J")) {
+					System.out.println("\nValidierung war erfolgreich. Die Daten sind nun bereit für die Indexierung.\n");
+				}
+				if (isValidationOk.equals("U")) {
+					System.out.println("\nValidierung übersprungen!");
+				}
+				
 				if (!isIndexerTest) {
 					solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
 				}
@@ -262,7 +286,7 @@ public class Main {
 
 				if (isIndexingOk.equals("J")) {
 					SolrMab sm = new SolrMab();
-					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties);
+					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly);
 
 					if (isIndexingSuccessful == true) {
 						System.out.println("\nImport-Vorgang erfolgreich abgeschlossen.\n");
