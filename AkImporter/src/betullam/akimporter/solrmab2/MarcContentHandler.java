@@ -35,6 +35,7 @@ public class MarcContentHandler implements ContentHandler {
 	int counter = 0;
 	long startTime;
 	long endTime;
+	String timeStamp;
 	
 	String controlfieldTag;
 	String datafieldTag;
@@ -42,9 +43,10 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
-	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer, boolean print) {
+	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.listOfMatchingObjs = listOfMatchingObjs;
 		this.sServer = solrServer;
+		this.timeStamp = timeStamp;
 		this.print = print;
 	}
 
@@ -151,6 +153,7 @@ public class MarcContentHandler implements ContentHandler {
 			counter = counter + 1;			
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
+			record.setIndexTimestamp(timeStamp);
 			allRecords.add(record);
 
 			print("Indexing record " + recordID + ", No. indexed: " + counter + "\r");
@@ -232,6 +235,10 @@ public class MarcContentHandler implements ContentHandler {
 					doc.addField(fieldName, fieldValue);
 
 				}
+				
+				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process - see betullam.akimporter.main.Main):
+				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
+				
 				// Add the document to the collection of documents:
 				docs.add(doc);
 			}

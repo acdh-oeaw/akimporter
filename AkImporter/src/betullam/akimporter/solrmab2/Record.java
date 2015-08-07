@@ -6,6 +6,7 @@ public class Record {
 
 	private List<Mabfield> mabfields;
 	private String recordID;
+	private String indexTimestamp;
 	
 
 	public Record() {}
@@ -27,11 +28,21 @@ public class Record {
 		this.recordID = recordID;
 	}
 
+	public String getIndexTimestamp() {
+		return indexTimestamp;
+	}
+
+	public void setIndexTimestamp(String indexTimestamp) {
+		this.indexTimestamp = indexTimestamp;
+	}
 
 	@Override
 	public String toString() {
-		return "Record [recordID=" + recordID + ", mabfields=" + mabfields + "]";
+		return "Record [mabfields=" + mabfields + ", recordID=" + recordID + ", indexTimestamp=" + indexTimestamp + "]";
 	}
+
+
+	
 	
 	
 }

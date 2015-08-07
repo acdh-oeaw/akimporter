@@ -20,10 +20,13 @@ public class RemoveSerialVolumes {
 	Collection<SolrInputDocument> parentSeriesAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	static private int NO_OF_ROWS = 1000;
 	int rowCounter = 0;
+	String timeStamp = null;
 	boolean print = true;
+	
 
 	public RemoveSerialVolumes() {};
-	public RemoveSerialVolumes(boolean print) {
+	public RemoveSerialVolumes(String timeStamp, boolean print) {
+		this.timeStamp = timeStamp;
 		this.print = print;
 	};
 
@@ -42,7 +45,13 @@ public class RemoveSerialVolumes {
 		querySerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
 		// Set a filter query (more efficient for deep paging).
-		querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.
+		if (timeStamp == null) {
+			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+		} else {
+			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+		}
 
 		// Set fields that should be given back from the query
 		querySerialVolumes.setFields("id", "title", "acNo_str", "parentSeriesSYS_str", "parentSeriesAC_str", "serialVolumeNo_str", "serialVolumeNoSort_str", "publishDate", "edition");
@@ -57,9 +66,9 @@ public class RemoveSerialVolumes {
 			// Get document-list from query result
 			SolrDocumentList resultSerialVolumesList = responseSerialVolumes.getResults();
 
-			// Show how many documents were found
+			// Show how many documents were found by the filter query:
 			long noOfSerialVolumes = resultSerialVolumesList.getNumFound();
-			print("\nNo. of serial volumes found: " + noOfSerialVolumes);
+			print("No. of serial volumes to process: " + noOfSerialVolumes + "\n");
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultSerialVolumesList != null && noOfSerialVolumes > 0) {
@@ -130,6 +139,26 @@ public class RemoveSerialVolumes {
 		fqSerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
 		// Set a filter query (more efficient for deep paging).
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.
+		if (isFirstPage) { // No range filter on first page
+			if (timeStamp == null) {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+			} else {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+			}
+		} else { // After the first query, we need to use ranges to get the appropriate results
+			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
+			fqSerialVolumes.setStart(1);
+			
+			if (timeStamp == null) {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]");
+			} else {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]", "indexTimestamp_str:"+timeStamp);
+			}
+		}
+		/*
+		// CODE BEFORE TIMESTAMP:
 		if (isFirstPage) { // No range filter on first page
 			fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
@@ -137,6 +166,7 @@ public class RemoveSerialVolumes {
 			fqSerialVolumes.setStart(1);
 			fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]");
 		}
+		*/
 
 		// Set fields that should be given back from the query
 		fqSerialVolumes.setFields("id", "parentSeriesAC_str");
@@ -157,7 +187,7 @@ public class RemoveSerialVolumes {
 			for (SolrDocument doc : resultDocList) {
 
 				String docId = doc.getFieldValue("id").toString();
-				print("Removing serial volume " + docId + "\r");
+				print("Unlink serial volume " + docId + "\r");
 				
 				// Get parent AC-No. This is a must to get the parentSysNo (= id):
 				String serialvolParentAC = (doc.getFieldValue("parentSeriesAC_str") != null) ? doc.getFieldValue("parentSeriesAC_str").toString() : null;

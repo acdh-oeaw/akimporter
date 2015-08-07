@@ -23,13 +23,15 @@ public class SerialVolumeToParent {
 	Collection<SolrInputDocument> parentSeriesAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	static private int NO_OF_ROWS = 1000;
 	int rowCounter = 0;
+	String timeStamp = null;
 	boolean print = true;
 
 	public SerialVolumeToParent() {};
-	public SerialVolumeToParent(boolean print) {
+	public SerialVolumeToParent(String timeStamp, boolean print) {
+		this.timeStamp = timeStamp;
 		this.print = print;
 	};
-	
+
 
 	public void addSerialVolumes(SolrServer sServer) {
 
@@ -45,8 +47,15 @@ public class SerialVolumeToParent {
 		// Sort by id (more efficient for deep paging):
 		querySerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
-		querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+		// Set a filter query (more efficient for deep paging).
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.
+		if (timeStamp == null) {
+			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+		} else {
+			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+		}
+
 
 		// Set fields that should be given back from the query
 		querySerialVolumes.setFields("id", "title", "acNo_str", "parentSeriesSYS_str", "parentSeriesAC_str", "serialVolumeNo_str", "serialVolumeNoSort_str", "publishDate", "edition");
@@ -63,7 +72,7 @@ public class SerialVolumeToParent {
 
 			// Show how many documents were found
 			long noOfSerialVolumes = resultSerialVolumesList.getNumFound();
-			print("\nNo. of serial volumes found: " + noOfSerialVolumes);
+			print("No. of serial volumes to process: " + noOfSerialVolumes + "\n");
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultSerialVolumesList != null && noOfSerialVolumes > 0) {
@@ -131,7 +140,28 @@ public class SerialVolumeToParent {
 		// Sort by id (more efficient for deep paging):
 		fqSerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
+
+		// Set a filter query (more efficient for deep paging).
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.
+		if (isFirstPage) { // No range filter on first page
+			if (timeStamp == null) {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+			} else {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+			}
+		} else { // After the first query, we need to use ranges to get the appropriate results
+			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
+			fqSerialVolumes.setStart(1);
+
+			if (timeStamp == null) {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]");
+			} else {
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]", "indexTimestamp_str:"+timeStamp);
+			}
+		}
+		/*
+		// CODE BEFORE TIMESTAMP
 		if (isFirstPage) { // No range filter on first page
 			fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
@@ -139,6 +169,7 @@ public class SerialVolumeToParent {
 			fqSerialVolumes.setStart(1);
 			fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]");
 		}
+		 */
 
 		// Set fields that should be given back from the query
 		fqSerialVolumes.setFields("id", "title", "acNo_str", "parentSeriesSYS_str", "parentSeriesAC_str", "serialVolumeNo_str", "serialVolumeNoSort_str", "publishDate", "edition");
@@ -158,7 +189,7 @@ public class SerialVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				print("Adding serial volume " + docId + "\r");
+				print("Linking serial volume " + docId + "\r");
 
 				// Variables for atomic updates of serial volume:
 				String parentSeriesSYS = "0";
@@ -188,7 +219,7 @@ public class SerialVolumeToParent {
 					parentSeriesTitle = (resultDocParentSeries.getFieldValue("title") != null) ? resultDocParentSeries.getFieldValue("title").toString() : "0";
 
 					if (!parentSeriesSYS.equals("0")) {
-						
+
 						// Prepare serial volume for atomic updates:
 						SolrInputDocument serialvolAtomicUpdateDoc = null;
 						serialvolAtomicUpdateDoc = new SolrInputDocument();
@@ -205,10 +236,10 @@ public class SerialVolumeToParent {
 
 						// Set all values of parent series to serial volume:
 						serialVolumeAtomicUpdateDocs.add(serialvolAtomicUpdateDoc);
-						
-						
-						
-						
+
+
+
+
 						// Prepare parent series record for atomic updates:
 						SolrInputDocument parentSeriesAtomicUpdateDoc = null;
 						parentSeriesAtomicUpdateDoc = new SolrInputDocument();
