@@ -21,10 +21,14 @@ public class MuVolumeToParent {
 
 	Collection<SolrInputDocument> muAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	Collection<SolrInputDocument> mhAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
-
 	static private int NO_OF_ROWS = 1000;
-
 	int rowCounter = 0;
+	boolean print = true;
+
+	public MuVolumeToParent() {};
+	public MuVolumeToParent(boolean print) {
+		this.print = print;
+	};
 
 	public void addMuRecords(SolrServer sServer) {
 
@@ -58,7 +62,7 @@ public class MuVolumeToParent {
 
 			// Show how many documents were found
 			long noOfMuRecords = resultDocList.getNumFound();
-			System.out.println("\nNo. of MU records found: " + noOfMuRecords);
+			print("\nNo. of MU records found: " + noOfMuRecords);
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultDocList != null && noOfMuRecords > 0) {
@@ -153,7 +157,7 @@ public class MuVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				System.out.print("Adding MU record " + docId + "\r");
+				print("Adding MU record " + docId + "\r");
 
 				// Variables for atomic updates of MU record:
 				String mhSYS = "0";
@@ -256,7 +260,11 @@ public class MuVolumeToParent {
 	}
 
 
-
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
+	}
 
 
 }

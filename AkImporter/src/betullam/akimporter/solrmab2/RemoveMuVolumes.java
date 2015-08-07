@@ -17,11 +17,15 @@ import org.apache.solr.common.SolrInputDocument;
 public class RemoveMuVolumes {
 
 	Collection<SolrInputDocument> mhRecordAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
-
 	static private int NO_OF_ROWS = 1000;
-
 	int rowCounter = 0;
+	boolean print = true;
 
+	public RemoveMuVolumes() {};
+	public RemoveMuVolumes(boolean print) {
+		this.print = print;
+	};
+	
 	public void removeMuVolumes(SolrServer sServer) {
 
 		// New Solr query
@@ -54,7 +58,7 @@ public class RemoveMuVolumes {
 
 			// Show how many documents were found
 			long noOfMuVolumes = resultMuVolumesList.getNumFound();
-			System.out.println("\nNo. of MU records found: " + noOfMuVolumes);
+			print("\nNo. of MU records found: " + noOfMuVolumes);
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultMuVolumesList != null && noOfMuVolumes > 0) {
@@ -145,7 +149,7 @@ public class RemoveMuVolumes {
 			for (SolrDocument doc : resultDocList) {
 
 				String docId = doc.getFieldValue("id").toString();
-				System.out.print("Removing MU volume " + docId + "\r");
+				print("Removing MU volume " + docId + "\r");
 				
 				// Get parent AC-No. This is a must to get the parentSysNo (= id):
 				String mhAC = (doc.getFieldValue("parentAC_str") != null) ? doc.getFieldValue("parentAC_str").toString() : null;
@@ -222,6 +226,12 @@ public class RemoveMuVolumes {
 		}
 
 		return returnValue;
+	}
+	
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
 	}
 
 

@@ -113,7 +113,7 @@ public class SolrMab {
 				InputSource inputSource = new InputSource(reader);
 	
 				// Set ContentHandler:
-				MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, solrServer);
+				MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, solrServer, this.print);
 				xmlReader.setContentHandler(marcContentHandler);
 	
 				// Start parsing & indexing:
@@ -143,10 +143,10 @@ public class SolrMab {
 			startTime = System.currentTimeMillis();
 
 			// First remove all MU- and serial-volumes. Later on, we will index all volumes again from scratch. Until now there is no other useful solution.
-			RemoveMuVolumes rmv = new RemoveMuVolumes();
+			RemoveMuVolumes rmv = new RemoveMuVolumes(this.print);
 			rmv.removeMuVolumes(solrServer);
-			System.out.print("\n");
-			RemoveSerialVolumes rsv = new RemoveSerialVolumes();
+			print("\n");
+			RemoveSerialVolumes rsv = new RemoveSerialVolumes(this.print);
 			rsv.removeSerialVolumes(solrServer);
 
 
@@ -160,33 +160,32 @@ public class SolrMab {
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++ LINKING VOLUMES TO PARENTS +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			startTime = System.currentTimeMillis();
-
+			
 			// Linking MU and MH records
-			MuVolumeToParent muVolumeToParent = new MuVolumeToParent();
+			startTime = System.currentTimeMillis();
+			MuVolumeToParent muVolumeToParent = new MuVolumeToParent(this.print);
 			muVolumeToParent.addMuRecords(solrServer);
-
 			endTime = System.currentTimeMillis();
 			print("Linking MU records took " + getExecutionTime(startTime, endTime));
 
-
-			startTime = System.currentTimeMillis();
-
 			// Linking serial volumes
-			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent();
+			startTime = System.currentTimeMillis();
+			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent(this.print);
 			serialVolumeToParent.addSerialVolumes(solrServer);
-
-			// Commit linking changes:
-			solrServer.commit();
-
 			endTime = System.currentTimeMillis();
 			print("Linking serial volumes took " + getExecutionTime(startTime, endTime));
+			
+			// Commit linking changes:
+			print("Commiting changes to Solr server, please wait ...");
+			solrServer.commit();
+
 			print("\nDone linking parents and childs!\n");
 			
 			if (!isIndexingOnly && !isLinkingOnly) {
 				print("\nStart optimizing Solr index. This could take a while. Please wait ...");
 				solrServer.optimize();
-				print("Done optimizing Solr index.\n"); 
+				print("Done optimizing Solr index.\n");
+				endTime = System.currentTimeMillis();
 				print("Overall time (indexing + linking): " + getExecutionTime(startTimeOverall, endTime));
 				print("Everything is done and worked fine.");
 			}

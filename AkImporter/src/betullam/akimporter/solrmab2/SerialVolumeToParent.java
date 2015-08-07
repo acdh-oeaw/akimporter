@@ -21,10 +21,15 @@ public class SerialVolumeToParent {
 
 	Collection<SolrInputDocument> serialVolumeAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	Collection<SolrInputDocument> parentSeriesAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
-
 	static private int NO_OF_ROWS = 1000;
-
 	int rowCounter = 0;
+	boolean print = true;
+
+	public SerialVolumeToParent() {};
+	public SerialVolumeToParent(boolean print) {
+		this.print = print;
+	};
+	
 
 	public void addSerialVolumes(SolrServer sServer) {
 
@@ -58,7 +63,7 @@ public class SerialVolumeToParent {
 
 			// Show how many documents were found
 			long noOfSerialVolumes = resultSerialVolumesList.getNumFound();
-			System.out.println("\nNo. of serial volumes found: " + noOfSerialVolumes);
+			print("\nNo. of serial volumes found: " + noOfSerialVolumes);
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultSerialVolumesList != null && noOfSerialVolumes > 0) {
@@ -153,7 +158,7 @@ public class SerialVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				System.out.print("Adding serial volume " + docId + "\r");
+				print("Adding serial volume " + docId + "\r");
 
 				// Variables for atomic updates of serial volume:
 				String parentSeriesSYS = "0";
@@ -256,6 +261,11 @@ public class SerialVolumeToParent {
 		return returnValue;
 	}
 
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
+	}
 
 
 

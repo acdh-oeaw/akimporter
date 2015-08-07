@@ -16,13 +16,16 @@ import org.apache.solr.common.SolrInputDocument;
 
 public class RemoveSerialVolumes {
 
-
 	Collection<SolrInputDocument> serialVolumeAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	Collection<SolrInputDocument> parentSeriesAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
-
 	static private int NO_OF_ROWS = 1000;
-
 	int rowCounter = 0;
+	boolean print = true;
+
+	public RemoveSerialVolumes() {};
+	public RemoveSerialVolumes(boolean print) {
+		this.print = print;
+	};
 
 	public void removeSerialVolumes(SolrServer sServer) {
 
@@ -56,7 +59,7 @@ public class RemoveSerialVolumes {
 
 			// Show how many documents were found
 			long noOfSerialVolumes = resultSerialVolumesList.getNumFound();
-			System.out.println("\nNo. of serial volumes found: " + noOfSerialVolumes);
+			print("\nNo. of serial volumes found: " + noOfSerialVolumes);
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultSerialVolumesList != null && noOfSerialVolumes > 0) {
@@ -154,7 +157,7 @@ public class RemoveSerialVolumes {
 			for (SolrDocument doc : resultDocList) {
 
 				String docId = doc.getFieldValue("id").toString();
-				System.out.print("Removing serial volume " + docId + "\r");
+				print("Removing serial volume " + docId + "\r");
 				
 				// Get parent AC-No. This is a must to get the parentSysNo (= id):
 				String serialvolParentAC = (doc.getFieldValue("parentSeriesAC_str") != null) ? doc.getFieldValue("parentSeriesAC_str").toString() : null;
@@ -229,6 +232,12 @@ public class RemoveSerialVolumes {
 		}
 
 		return returnValue;
+	}
+	
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
 	}
 
 

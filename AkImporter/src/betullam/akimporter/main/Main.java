@@ -285,7 +285,7 @@ public class Main {
 				}
 
 				if (isIndexingOk.equals("J")) {
-					SolrMab sm = new SolrMab();
+					SolrMab sm = new SolrMab(true);
 					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly);
 
 					if (isIndexingSuccessful == true) {
