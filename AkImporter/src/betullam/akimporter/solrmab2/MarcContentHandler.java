@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -18,10 +17,12 @@ import org.xml.sax.SAXException;
 public class MarcContentHandler implements ContentHandler {
 
 	MatchingOperations matchingOps = new MatchingOperations();
+	DeleteRecords deleteRecords;
 	//List<Mabfield> allControlfields;
 	//List<Mabfield> allDatafields;
 	List<Mabfield> allFields;
 	List<Record> allRecords;
+	List<Record> delRecords;
 	//List<Mabfield> allSubfieldsOfDatafield;
 	private String nodeContent;
 	private Record record;
@@ -30,20 +31,23 @@ public class MarcContentHandler implements ContentHandler {
 	private List<MatchingObject> listOfMatchingObjs;
 	private SolrServer sServer;
 	private String recordID;
+	private String recordSYS;
 	private boolean is001;
+	private boolean isSYS;
+	private boolean isDeleted;
 	private boolean print = true;
 	int counter = 0;
 	long startTime;
 	long endTime;
 	String timeStamp;
-	
+
 	String controlfieldTag;
 	String datafieldTag;
 	String datafieldInd1;
 	String datafieldInd2;
 	String subfieldCode;
 
-	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer, String timeStamp, boolean print) {
+	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, SolrServer solrServer, String timeStamp, boolean print) {
 		this.listOfMatchingObjs = listOfMatchingObjs;
 		this.sServer = solrServer;
 		this.timeStamp = timeStamp;
@@ -54,12 +58,15 @@ public class MarcContentHandler implements ContentHandler {
 
 	@Override
 	public void startDocument() throws SAXException {
-		
+
 		// For tracking the elapsed time:
 		startTime = System.currentTimeMillis();
 
+		deleteRecords = new DeleteRecords(sServer);
+		
 		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
 		allRecords = new ArrayList<Record>();
+		delRecords = new ArrayList<Record>();
 	}
 
 
@@ -83,6 +90,7 @@ public class MarcContentHandler implements ContentHandler {
 		// If the parser encounters the start of the "controlfield"-tag, create a new mabfield-object, get the XML-attributes, set them on the object and add it to the "record"-object:
 		if(localName.equals("controlfield")) {
 			controlfieldTag = attribs.getValue("tag");
+			isSYS = (controlfieldTag.equals("SYS")) ? true : false;
 			controlfield = new Mabfield();
 			controlfield.setFieldname(controlfieldTag);
 		}
@@ -100,6 +108,7 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
 
 			is001 = (datafieldTag.equals("001")) ? true : false;
+			isDeleted = (datafieldTag.equals("DEL")) ? true : false;
 		}
 
 		if(localName.equals("subfield")) {
@@ -128,6 +137,10 @@ public class MarcContentHandler implements ContentHandler {
 			String controlfieldText = nodeContent.toString();
 			controlfield.setFieldvalue(controlfieldText);
 			allFields.add(controlfield);
+			
+			if (isSYS == true) {
+				recordSYS = controlfieldText;
+			}
 		}
 
 
@@ -149,15 +162,23 @@ public class MarcContentHandler implements ContentHandler {
 		// leader-, controlfield- and datafield-objects to the record-object and add the
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
-			
-			counter = counter + 1;			
+
+			counter = counter + 1;
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
+			record.setRecordSYS(recordSYS);
 			record.setIndexTimestamp(timeStamp);
-			allRecords.add(record);
-
-			print("Indexing record " + recordID + ", No. indexed: " + counter + "\r");
 			
+			System.out.println("Deleted: " + isDeleted);
+			
+			if (isDeleted == true) {
+				delRecords.add(record);
+			} else {
+				allRecords.add(record);
+			}
+
+			print("Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "\r");
+
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
 			 * index it's values to Solr, then empty all objects (set to "null") to save memory and go on with the next n records.
 			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but now
@@ -167,16 +188,21 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
-				
+
 				// Add to Solr-Index:
 				this.solrAddRecordSet(sServer, newRecordSet);
+				
+				// Delete the deleted records:
+				this.deleteRecords.delete(delRecords);
 
 				// Set all Objects to "null" to save memory
 				allRecords = null;
 				allRecords = new ArrayList<Record>();
+				delRecords = null;
+				delRecords = new ArrayList<Record>();
 				allFields = null;
 				newRecordSet = null;
-				
+
 				endTime = System.currentTimeMillis();
 				print("\nElapsed time after " + counter + " records: " + getExecutionTime(startTime, endTime));
 			}
@@ -193,15 +219,19 @@ public class MarcContentHandler implements ContentHandler {
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 		//+++++++++++++++ Add the remaining rest of the records to the index (see modulo-operation with "%"-operator in endElement()) +++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-		
+
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
-		
+
 		// Add to Solr-Index:
 		this.solrAddRecordSet(sServer, newRecordSet);
 
+		// Delete the deleted records:
+		this.deleteRecords.delete(delRecords);
+		
 		// Clear Objects to save memory
 		allRecords = null;
+		delRecords = null;
 		newRecordSet = null;
 		listOfMatchingObjs = null;
 
@@ -235,16 +265,16 @@ public class MarcContentHandler implements ContentHandler {
 					doc.addField(fieldName, fieldValue);
 
 				}
-				
+
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process - see betullam.akimporter.main.Main):
 				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
-				
+
 				// Add the document to the collection of documents:
 				docs.add(doc);
 			}
-			
+
 			if (docs.isEmpty() == false) {
-				
+
 				// Now add the collection of documents to Solr:
 				sServer.add(docs);
 
@@ -265,7 +295,7 @@ public class MarcContentHandler implements ContentHandler {
 	public List<Record> getRecordSet() {
 		return this.allRecords;
 	}
-	*/
+	 */
 
 	public void solrClearIndex(SolrServer sServer) {
 
@@ -303,20 +333,20 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 	}
-	*/
-	
+	 */
+
 	private String getExecutionTime(long startTime, long endTime) {
 		String executionTime = null;
-		
+
 		long timeElapsedMilli =  endTime - startTime;
 		int seconds = (int) (timeElapsedMilli / 1000) % 60 ;
 		int minutes = (int) ((timeElapsedMilli / (1000*60)) % 60);
 		int hours   = (int) ((timeElapsedMilli / (1000*60*60)) % 24);
-		
+
 		executionTime = hours + ":" + minutes + ":" + seconds;
 		return executionTime;
 	}
-	
+
 
 	/*
 	// Get time that an operation takes

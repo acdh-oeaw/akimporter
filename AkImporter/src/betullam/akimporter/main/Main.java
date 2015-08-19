@@ -7,6 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -14,6 +17,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -34,6 +38,8 @@ public class Main {
 	static boolean isUpdateSuccessful = false;
 	static boolean isIndexingOnly = false;
 	static boolean isLinkingOnly = false;
+	static boolean isReIndexOngoing = false;
+	//static boolean isReIndexAll = false;
 	static String timeStamp = "";
 
 	// 1
@@ -78,16 +84,17 @@ public class Main {
 		scanner = new Scanner(System.in);
 		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
 		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
-		
-		
+
+
 		if (args.length > 0) {
-			isIndexerTest = (args[0].equals("-test")) ? true : false; // ONLY FOR TESTING PURPOSES
+			isIndexerTest = (args[0].equals("-t")) ? true : false; // ONLY FOR TESTING PURPOSES
 			isUpdate = (args[0].equals("-u")) ? true : false; // Running update
 			isIndexingOnly = (args[0].equals("-i")) ? true : false; // Index only without linking parent and child volumes
 			isLinkingOnly = (args[0].equals("-l")) ? true : false; // Link only parent and child volumes
+			isReIndexOngoing = (args[0].equals("-ro")) ? true : false; // Reindex all ongoing data deliveries from "merged" folder in the right order.
 		}
 
-		
+
 		if (isUpdate) {
 			String remotePath = args[1];
 			String localPath = args[2];
@@ -104,7 +111,7 @@ public class Main {
 			return;
 		}
 
-		
+
 		if (isIndexerTest) {
 			typeOfDataset = args[1]; 
 			pathToMabXmlFile = (typeOfDataset.equals("1"))? args[2] : null; // 1
@@ -118,8 +125,9 @@ public class Main {
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
 			isIndexingOk = "J";
+			isIndexingOnly = true; // 1 + 2
 		}
-		
+
 		if (isLinkingOnly) {
 			solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
 			SolrMab sm = new SolrMab(null, true);
@@ -127,11 +135,47 @@ public class Main {
 			return;
 		}
 
-		
 
-		
+		// TODO: REINDEX ALL ONGOING DATA DELIVERIES FROM "MERGED" FOLDER:
+		if (isReIndexOngoing) {
+			String pathToMergedDir = getUserInput("\nWie lautet der Pfad zur \"merged\" Ordner?\n Beispiel: /home/username/datenlieferungen/merged)?", "directoryExists", scanner);
+
+			String isValidationOk = getUserInput("\nDie XML-Dateien müssen geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
+					+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen!"
+					+ "\n J = Ja, fortfahren\n U = Überspringen\n N = Nein, abbrechen", "J, U, N", scanner);
+
+			if (isValidationOk.equals("J") || isValidationOk.equals("U")) {
+
+				if (isValidationOk.equals("J")) {
+					System.out.println("\nStarte Validierung. Bitte um etwas Geduld ...");
+
+					File fPathToMergedDir = new File(pathToMergedDir);
+					
+					List<File> fileList = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
+					Collections.sort(fileList); // Sort oldest to newest
+					
+					XmlValidator bxh = new XmlValidator();
+					
+					for (File file : fileList) {
+						hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
+						
+						if (hasValidationPassed) {
+							System.out.println(file.getName() + " is valid.");
+						} else {
+							System.out.println("Fehler in Datei " + file.getName() + ". Import-Vorgang wurde gestoppt.");
+							return;
+						}
+					}
+				}
+				
+			}
+			
+			return;
+		}
+
+
 		// NORMAL IMPORT PROCESS STARTS HERE
-		
+
 		if (!isIndexerTest) {
 			typeOfDataset = getUserInput("\nWie liegt ihr Datenbestand vor?\n 1 = eine große XML-Datei\n 2 = viele einzelne XML-Dateien)?", "1, 2", scanner);
 		}
@@ -161,7 +205,7 @@ public class Main {
 							+ " z. B.: /home/benutzer/meinedatei.xml. Beachten Sie, dass Sie am angegebenen Ort Schreibberechigungen"
 							+ " haben müssen und es NICHT der gleiche Ort sein darf, in dem die einzelnen XML-Dateien liegen.", "newFile", scanner);
 				}
-				
+
 				// Start XML merging:
 				XmlMerger xmlm = new XmlMerger();
 				isMergingSuccessful = xmlm.mergeElementNodes(pathToMultipleXmlFolder, pathToMergedFile, "collection", "record", 1);
@@ -180,9 +224,6 @@ public class Main {
 		}
 
 
-
-
-
 		if (!isIndexerTest) {
 			isValidationOk = getUserInput("\nDie XML-Datei muss geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
 					+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen! "
@@ -190,12 +231,12 @@ public class Main {
 		}
 
 		if (isValidationOk.equals("J") || isValidationOk.equals("U")) {
-			
+
 			if (isValidationOk.equals("J")) {
 				System.out.println("\nStarte Validierung. Bitte um etwas Geduld ...");
 				XmlValidator bxh = new XmlValidator();
 				hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
-	
+
 				while (hasValidationPassed == false) {
 					System.out.println("\nProblem in der XML Datei gefunden!");
 					if (!isIndexerTest) {
@@ -231,7 +272,7 @@ public class Main {
 					}
 				}
 			} else {
-				
+
 				hasValidationPassed = true;
 			}
 
@@ -243,7 +284,7 @@ public class Main {
 				if (isValidationOk.equals("U")) {
 					System.out.println("\nValidierung übersprungen!");
 				}
-				
+
 				if (!isIndexerTest) {
 					solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
 				}
