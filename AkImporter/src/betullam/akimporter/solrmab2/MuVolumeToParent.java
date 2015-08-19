@@ -21,10 +21,16 @@ public class MuVolumeToParent {
 
 	Collection<SolrInputDocument> muAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
 	Collection<SolrInputDocument> mhAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
-
 	static private int NO_OF_ROWS = 1000;
-
 	int rowCounter = 0;
+	String timeStamp = null;
+	boolean print = true;
+
+	public MuVolumeToParent() {};
+	public MuVolumeToParent(String timeStamp, boolean print) {
+		this.timeStamp = timeStamp;
+		this.print = print;
+	};
 
 	public void addMuRecords(SolrServer sServer) {
 
@@ -40,8 +46,14 @@ public class MuVolumeToParent {
 		// Sort by id (more efficient for deep paging):
 		queryMUs.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
-		queryMUs.setFilterQueries("parentAC_str:*", "id:*");
+		// Set a filter query (more efficient for deep paging).
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.
+		if (timeStamp == null) {
+			queryMUs.setFilterQueries("parentAC_str:*", "id:*");
+		} else {
+			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+		}
 
 		// Set fields that should be given back from the query
 		queryMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
@@ -58,7 +70,7 @@ public class MuVolumeToParent {
 
 			// Show how many documents were found
 			long noOfMuRecords = resultDocList.getNumFound();
-			System.out.println("\nNo. of MU records found: " + noOfMuRecords);
+			print("No. of MU records to process: " + noOfMuRecords + "\n");
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultDocList != null && noOfMuRecords > 0) {
@@ -117,7 +129,7 @@ public class MuVolumeToParent {
 		// New Solr query
 		SolrQuery fqMUs = new SolrQuery();
 
-		// Defin a query for getting all documents. We get the MU documents with a filter query because of performance (see below)
+		// Define a query for getting all documents. We get the MU documents with a filter query because of performance (see below)
 		fqMUs.setQuery("*:*");
 
 		// The no of rows over that we can iterate ( see "for(SolrDocument doc : resultDocList)" ):
@@ -126,7 +138,26 @@ public class MuVolumeToParent {
 		// Sort by id (more efficient for deep paging):
 		fqMUs.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Get all records, those "satztyp_str" fields conains the value "MU".
+		// Set a filter query (more efficient for deep paging).
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.	
+		if (isFirstPage) { // No range filter on first page
+			if (timeStamp == null) {
+				fqMUs.setFilterQueries("parentAC_str:*", "id:*");
+			} else {
+				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+			}
+		} else { // After the first query, we need to use ranges to get the appropriate results
+			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
+			fqMUs.setStart(1);
+			if (timeStamp == null) {
+				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
+			} else {
+				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "indexTimestamp_str:"+timeStamp);
+			}
+		}
+		/*
+		// CODE BEFORE TIMESTAMP:
 		if (isFirstPage) { // No range filter on first page
 			fqMUs.setFilterQueries("parentAC_str:*", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
@@ -134,6 +165,7 @@ public class MuVolumeToParent {
 			fqMUs.setStart(1);
 			fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
 		}
+		 */
 
 		// Set fields that should be given back from the query
 		fqMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
@@ -153,7 +185,7 @@ public class MuVolumeToParent {
 
 			for (SolrDocument doc : resultDocList) {
 				String docId = doc.getFieldValue("id").toString();
-				System.out.print("Adding MU record " + docId + "\r");
+				print("Linking MU record " + docId + "\r");
 
 				// Variables for atomic updates of MU record:
 				String mhSYS = "0";
@@ -168,7 +200,7 @@ public class MuVolumeToParent {
 				String muVolumeNoSort = (doc.getFieldValue("volumeNoSort_str") != null) ? doc.getFieldValue("volumeNoSort_str").toString() : "0";
 				String muEdition = (doc.getFieldValue("edition") != null) ? doc.getFieldValue("edition").toString() : "0";
 				String muPublishDate = (doc.getFieldValue("publishDate") != null) ? doc.getFieldValue("publishDate").toString().replace("[", "").replace("]", "") : "0";
-				
+
 				// First "set" data (SYS-No and title) from MH record to current MU record:
 				// "set" data means: Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
 				SolrQuery queryMH = new SolrQuery(); // Query MH record of current MU record
@@ -183,7 +215,7 @@ public class MuVolumeToParent {
 					mhTitle = (resultDocMH.getFieldValue("title") != null) ? resultDocMH.getFieldValue("title").toString() : "0";
 
 					if (!mhSYS.equals("0")) {
-						
+
 						// Prepare MU record for atomic updates:
 						SolrInputDocument muAtomicUpdateDoc = null;
 						muAtomicUpdateDoc = new SolrInputDocument();
@@ -200,10 +232,10 @@ public class MuVolumeToParent {
 
 						// Add all values of MU child record to MH parent record:
 						muAtomicUpdateDocs.add(muAtomicUpdateDoc);
-						
-						
-						
-						
+
+
+
+
 						// Prepare MH record for atomic updates:
 						SolrInputDocument mhAtomicUpdateDoc = null;
 						mhAtomicUpdateDoc = new SolrInputDocument();
@@ -256,7 +288,11 @@ public class MuVolumeToParent {
 	}
 
 
-
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
+	}
 
 
 }

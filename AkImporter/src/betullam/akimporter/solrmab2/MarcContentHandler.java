@@ -35,6 +35,7 @@ public class MarcContentHandler implements ContentHandler {
 	int counter = 0;
 	long startTime;
 	long endTime;
+	String timeStamp;
 	
 	String controlfieldTag;
 	String datafieldTag;
@@ -42,9 +43,11 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
-	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer) {
+	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.listOfMatchingObjs = listOfMatchingObjs;
 		this.sServer = solrServer;
+		this.timeStamp = timeStamp;
+		this.print = print;
 	}
 
 
@@ -150,9 +153,10 @@ public class MarcContentHandler implements ContentHandler {
 			counter = counter + 1;			
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
+			record.setIndexTimestamp(timeStamp);
 			allRecords.add(record);
 
-			System.out.print("Indexing record " + recordID + ", No. indexed: " + counter + "\r");
+			print("Indexing record " + recordID + ", No. indexed: " + counter + "\r");
 			
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
 			 * index it's values to Solr, then empty all objects (set to "null") to save memory and go on with the next n records.
@@ -174,7 +178,7 @@ public class MarcContentHandler implements ContentHandler {
 				newRecordSet = null;
 				
 				endTime = System.currentTimeMillis();
-				System.out.println("Elapsed time after " + counter + " records: " + getExecutionTime(startTime, endTime));
+				print("\nElapsed time after " + counter + " records: " + getExecutionTime(startTime, endTime));
 			}
 		}
 
@@ -231,6 +235,10 @@ public class MarcContentHandler implements ContentHandler {
 					doc.addField(fieldName, fieldValue);
 
 				}
+				
+				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process - see betullam.akimporter.main.Main):
+				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
+				
 				// Add the document to the collection of documents:
 				docs.add(doc);
 			}
@@ -283,6 +291,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
+	/*
 	public void printToConsole(List<Record> allRecords) {
 		// Print the RecordSet to the console:
 		if (print) {
@@ -294,7 +303,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 	}
-
+	*/
 	
 	private String getExecutionTime(long startTime, long endTime) {
 		String executionTime = null;
@@ -343,5 +352,10 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void startPrefixMapping(String arg0, String arg1) throws SAXException {}
 
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
+	}
 
 }

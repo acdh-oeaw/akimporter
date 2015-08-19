@@ -1,8 +1,6 @@
 package betullam.akimporter.updater;
 
 import java.io.File;
-import java.util.Date;
-
 import betullam.akimporter.main.Main;
 import betullam.akimporter.solrmab2.SolrMab;
 import betullam.xmlhelper.XmlMerger;
@@ -23,11 +21,14 @@ public class Updater {
 	boolean isIndexingSuccessful;
 	boolean print = true;
 	
+	public Updater(String timeStamp) {
+		this.timeStamp = timeStamp;
+	}
 	
 	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, String defaultSolrMab, boolean showMessages) {
 
 		print = showMessages;
-		timeStamp = String.valueOf(new Date().getTime());
+		//timeStamp = String.valueOf(new Date().getTime());
 		localPathOriginal = stripFileSeperatorFromPath(localPath) + File.separator + "original" + File.separator + timeStamp;
 		localPathExtracted = stripFileSeperatorFromPath(localPath) + File.separator + "extracted" + File.separator + timeStamp;
 		localPathMerged = stripFileSeperatorFromPath(localPath) + File.separator + "merged" + File.separator + timeStamp;
@@ -76,8 +77,8 @@ public class Updater {
 				}
 				
 				print("Start indexing ...");
-				SolrMab sm = new SolrMab(false);
-				isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties);
+				SolrMab sm = new SolrMab(timeStamp, true);
+				isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, false, false);
 	
 				if (isIndexingSuccessful == true) {
 					print("Done indexing.\nEVERYTHING WAS SUCCESSFUL!");

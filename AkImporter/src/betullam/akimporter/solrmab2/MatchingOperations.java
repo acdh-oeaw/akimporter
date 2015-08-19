@@ -19,6 +19,8 @@ public class MatchingOperations {
 	HashMap<String, List<String>> translateFields = SolrMab.translateFields;
 
 	/**
+	 * THIS EXPLANATION MAY BE OUT OF DATE!!!
+	 * 
 	 * 1. Match old Mab-Field to Solrfields. As the old Mab-Field could match two or more Solrfields, you may get several Solrfields for 1 old Mabfield
 	 *    Therefore, we need to return a List of the new Solrfields.
 	 * 2. Add the List of the new Solrfields (same Datastructure as Mabfields) to a List of Lists (List<List<Mabfield>>), but only if it's not empty (that's
@@ -84,6 +86,7 @@ public class MatchingOperations {
 
 			newRecord.setMabfields(finalDedupSolrlist);
 			newRecord.setRecordID(oldRecord.getRecordID());
+			newRecord.setIndexTimestamp(oldRecord.getIndexTimestamp());
 			newListOfRecords.add(newRecord);
 		}
 

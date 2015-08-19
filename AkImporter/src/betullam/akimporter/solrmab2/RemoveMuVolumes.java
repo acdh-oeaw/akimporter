@@ -17,11 +17,17 @@ import org.apache.solr.common.SolrInputDocument;
 public class RemoveMuVolumes {
 
 	Collection<SolrInputDocument> mhRecordAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
-
 	static private int NO_OF_ROWS = 1000;
-
 	int rowCounter = 0;
+	String timeStamp = null;
+	boolean print = true;
 
+	public RemoveMuVolumes() {};
+	public RemoveMuVolumes(String timeStamp, boolean print) {
+		this.timeStamp = timeStamp;
+		this.print = print;
+	};
+	
 	public void removeMuVolumes(SolrServer sServer) {
 
 		// New Solr query
@@ -37,8 +43,14 @@ public class RemoveMuVolumes {
 		queryMuVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
 		// Set a filter query (more efficient for deep paging).
-		queryMuVolumes.setFilterQueries("parentAC_str:*", "id:*");
-
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.
+		if (timeStamp == null) {
+			queryMuVolumes.setFilterQueries("parentAC_str:*", "id:*");
+		} else {
+			queryMuVolumes.setFilterQueries("parentAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+		}
+		
 		// Set fields that should be given back from the query
 		queryMuVolumes.setFields("id");
 
@@ -54,7 +66,7 @@ public class RemoveMuVolumes {
 
 			// Show how many documents were found
 			long noOfMuVolumes = resultMuVolumesList.getNumFound();
-			System.out.println("\nNo. of MU records found: " + noOfMuVolumes);
+			print("No. of MU records to process: " + noOfMuVolumes + "\n");
 
 			// If there are some records, go on. If not, do nothing.
 			if (resultMuVolumesList != null && noOfMuVolumes > 0) {
@@ -118,6 +130,25 @@ public class RemoveMuVolumes {
 		fqVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
 		// Set a filter query (more efficient for deep paging).
+		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
+		// If no timeStamp is set, then unlink all volumes from it's parents.	
+		if (isFirstPage) { // No range filter on first page
+			if (timeStamp == null) {
+				fqVolumes.setFilterQueries("parentAC_str:*", "id:*");
+			} else {
+				fqVolumes.setFilterQueries("parentAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+			}
+		} else { // After the first query, we need to use ranges to get the appropriate results
+			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
+			fqVolumes.setStart(1);
+			if (timeStamp == null) {
+				fqVolumes.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
+			} else {
+				fqVolumes.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "indexTimestamp_str:"+timeStamp);
+			}
+		}
+		/*
+		// CODE BEFORE TIMESTAMP
 		if (isFirstPage) { // No range filter on first page
 			fqVolumes.setFilterQueries("parentAC_str:*", "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
@@ -125,6 +156,7 @@ public class RemoveMuVolumes {
 			fqVolumes.setStart(1);
 			fqVolumes.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
 		}
+		*/
 
 		// Set fields that should be given back from the query
 		fqVolumes.setFields("id", "parentAC_str");
@@ -143,9 +175,8 @@ public class RemoveMuVolumes {
 			String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
 
 			for (SolrDocument doc : resultDocList) {
-
 				String docId = doc.getFieldValue("id").toString();
-				System.out.print("Removing MU volume " + docId + "\r");
+				print("Unlink MU volume " + docId + "\r");
 				
 				// Get parent AC-No. This is a must to get the parentSysNo (= id):
 				String mhAC = (doc.getFieldValue("parentAC_str") != null) ? doc.getFieldValue("parentAC_str").toString() : null;
@@ -204,7 +235,7 @@ public class RemoveMuVolumes {
 					mhRemoveVolumeDoc.setField("childPublishDate_str_mv", mapRemoveVolumePublishDate);
 					 
 
-					// Add all values of serial volume to parent series record:
+					// Remove all values of serial volume to parent series record:
 					mhRecordAtomicUpdateDocs.add(mhRemoveVolumeDoc);
 
 				}
@@ -222,6 +253,12 @@ public class RemoveMuVolumes {
 		}
 
 		return returnValue;
+	}
+	
+	private void print(String text) {
+		if (print) {
+			System.out.print(text);
+		}
 	}
 
 
