@@ -76,6 +76,7 @@ public class Main {
 
 		}
 
+		
 		if (isUpdate) {
 			String remotePath = args[1];
 			String localPath = args[2];
@@ -92,9 +93,8 @@ public class Main {
 			return;
 		}
 
+		
 		if (isIndexerTest) {
-
-
 			typeOfDataset = args[1]; 
 			pathToMabXmlFile = (typeOfDataset.equals("1"))? args[2] : null; // 1
 			pathToMultipleXmlFolder = (typeOfDataset.equals("2")) ? args[2] : null; // 2
@@ -107,9 +107,6 @@ public class Main {
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
 			isIndexingOk = "J";
-
-
-
 		}
 
 		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
