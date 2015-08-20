@@ -14,7 +14,7 @@ import org.apache.solr.common.SolrInputDocument;
 public class DeleteRecords {
 
 	SolrServer solrServer;
-	Collection<SolrInputDocument> deletedAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
+	Collection<SolrInputDocument> deletedAtomicUpdateDocs;
 
 	public DeleteRecords(SolrServer solrServer) {
 		this.solrServer = solrServer;
@@ -24,6 +24,8 @@ public class DeleteRecords {
 
 		if (!delRecords.isEmpty()) {
 
+			deletedAtomicUpdateDocs = new ArrayList<SolrInputDocument>();
+			
 			for (Record delRecord : delRecords) {
 
 				String recordSYS = delRecord.getRecordSYS();
@@ -43,7 +45,6 @@ public class DeleteRecords {
 					deletedAtomicUpdateDocs.add(deletedAtomicUpdateDoc);
 				}
 			}
-
 
 			if (!deletedAtomicUpdateDocs.isEmpty()) {
 				try {

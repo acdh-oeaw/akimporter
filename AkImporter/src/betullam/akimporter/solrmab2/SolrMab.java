@@ -33,7 +33,7 @@ import betullam.akimporter.main.Main;
 
 public class SolrMab {
 
-
+	HttpSolrServer solrServer = null;
 	String mabXMLfile;
 	String mabPropertiesFile;
 	String solrServerName;
@@ -52,7 +52,7 @@ public class SolrMab {
 	public SolrMab(String timeStamp) {
 		this.timeStamp = timeStamp;
 	};
-	
+
 	public SolrMab(String timeStamp, boolean print) {
 		this.timeStamp = timeStamp;
 		this.print = print;
@@ -65,8 +65,9 @@ public class SolrMab {
 			String pathToTranslationFiles,
 			boolean useDefaultMabProperties,
 			boolean isIndexingOnly,
-			boolean isLinkingOnly
-	) {
+			boolean isLinkingOnly,
+			boolean optimizeSolr
+			) {
 
 		boolean isIndexingSuccessful = false;
 		this.mabXMLfile = mabXmlFile;
@@ -78,7 +79,7 @@ public class SolrMab {
 
 		try {
 			BufferedInputStream mabPropertiesInputStream = null;
-			
+
 			if (!isLinkingOnly) {
 				// Load .properties file:
 				if (useDefaultMabProperties) {
@@ -89,53 +90,54 @@ public class SolrMab {
 			}
 
 
-			
+
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			
+
 			// Create Solr Server:
-			HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
+			//HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
+			solrServer = new HttpSolrServer(solrServerName);
 			long startTimeOverall = System.currentTimeMillis();
-			
+
 			if (!isLinkingOnly) {
-				
+
 				startTime = System.currentTimeMillis();
-	
+
 				// Get contents of mab.properties files and put them to MatchingObjects
 				listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
-	
+
 				// Create SAX parser:
 				XMLReader xmlReader = XMLReaderFactory.createXMLReader();
-	
+
 
 				print("\n###############################################################################\n\n");
 				print("Start indexing records");
 				print("\n-------------------------------------------\n");
-	
+
 				// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
 				FileReader reader = new FileReader(mabXMLfile);
 				InputSource inputSource = new InputSource(reader);
-	
+
 				// Set ContentHandler:
 				MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, solrServer, this.timeStamp, this.print);
 				xmlReader.setContentHandler(marcContentHandler);
-	
+
 				// Start parsing & indexing:
 				xmlReader.parse(inputSource);
-	
+
 				// Commit records:
 				solrServer.commit();
-	
-	
+
+
 				// Report success:
 				print("\nDone indexing! Everything worked fine.\n");
-	
+
 				isIndexingSuccessful = true;
-	
+
 				endTime = System.currentTimeMillis();
 				print("Indexing to solr took " + getExecutionTime(startTime, endTime) + "\n\n");
-	
+
 				if (isIndexingOnly) { // Stopp here and do not process child and parent volumes
 					print("Linking of child and parent volumes will not take place as the argument \"-i\" indicates that you only wanted to index your data.\n");
 					return true;
@@ -148,7 +150,7 @@ public class SolrMab {
 			startTime = System.currentTimeMillis();
 
 			print("Start re-linking child records to parent records (series and multi-volume)\n");
-			
+
 			// First remove all MU- and serial-volumes. Later on, we will index all volumes again from scratch. Until now there is no other useful solution.
 			RemoveMuVolumes rmv = new RemoveMuVolumes(this.timeStamp, this.print);
 			rmv.removeMuVolumes(solrServer);
@@ -168,7 +170,7 @@ public class SolrMab {
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++ LINKING VOLUMES TO PARENTS +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			
+
 			startTime = System.currentTimeMillis();
 			MuVolumeToParent muVolumeToParent = new MuVolumeToParent(this.timeStamp, this.print); // Linking MU and MH records
 			muVolumeToParent.addMuRecords(solrServer);
@@ -178,21 +180,29 @@ public class SolrMab {
 			print("\n");
 			endTime = System.currentTimeMillis();
 			print("Linking volumes took " + getExecutionTime(startTime, endTime) + "\n");
-			
+
 			// Commit linking changes:
 			print("Commiting changes to Solr server, please wait ...\n");
 			solrServer.commit();
 
 			print("Done linking parents and childs!\n\n");
-			
-			if (!isIndexingOnly && !isLinkingOnly) {
+
+
+
+
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++++++++++++++ FINALIZING INDEXING +++++++++++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+			if (optimizeSolr) {
 				print("Start optimizing Solr index. This could take a while. Please wait ...\n");
-				solrServer.optimize();
+				this.solrOptimize();
 				print("Done optimizing Solr index.\n\n");
-				endTime = System.currentTimeMillis();
-				print("Overall time (indexing + linking): " + getExecutionTime(startTimeOverall, endTime) + "\n");
-				print("Everything is done and worked fine.\n");
 			}
+			endTime = System.currentTimeMillis();
+			print("Overall time: " + getExecutionTime(startTimeOverall, endTime) + "\n");
+			print("Everything is done and worked fine.\n");
+
 
 		} catch (RemoteSolrException e) {
 			isIndexingSuccessful = false;
@@ -459,5 +469,19 @@ public class SolrMab {
 		BasicConfigurator.configure();
 		// Set log4j-output to "warn" (avoid very long logs in console):
 		Logger.getRootLogger().setLevel(Level.WARN);
+	}
+	
+	
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+	//++++++++++++++++++++++++++++++++++ HELPER ++++++++++++++++++++++++++++++++++//
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+	public void solrOptimize() {
+		try {
+			this.solrServer.optimize();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

@@ -78,7 +78,7 @@ public class Updater {
 				
 				print("Start indexing ...");
 				SolrMab sm = new SolrMab(timeStamp, true);
-				isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, false, false);
+				isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, false, false, true);
 	
 				if (isIndexingSuccessful == true) {
 					print("Done indexing.\nEVERYTHING WAS SUCCESSFUL!");

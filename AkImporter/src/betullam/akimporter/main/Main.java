@@ -7,9 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -131,49 +129,147 @@ public class Main {
 		if (isLinkingOnly) {
 			solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
 			SolrMab sm = new SolrMab(null, true);
-			sm.startIndexing(null, solrServerAddress, null, null, false, false, true);
+			sm.startIndexing(null, solrServerAddress, null, null, false, false, true, false);
 			return;
 		}
 
 
 		// TODO: REINDEX ALL ONGOING DATA DELIVERIES FROM "MERGED" FOLDER:
 		if (isReIndexOngoing) {
+			
+			// Ask user for path to "merged" directory:
 			String pathToMergedDir = getUserInput("\nWie lautet der Pfad zur \"merged\" Ordner?\n Beispiel: /home/username/datenlieferungen/merged)?", "directoryExists", scanner);
 
+			// Get a sorted list (oldest to newest) from all ongoing data deliveries:
+			File fPathToMergedDir = new File(pathToMergedDir);
+			List<File> fileList = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
+			Collections.sort(fileList); // Sort oldest to newest
+			
+			// Ask user if he wants to start or skip the validation of the files or if he wants to stop the import process:
 			String isValidationOk = getUserInput("\nDie XML-Dateien müssen geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
 					+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen!"
 					+ "\n J = Ja, fortfahren\n U = Überspringen\n N = Nein, abbrechen", "J, U, N", scanner);
 
+			// Start or skip validation of the files:
 			if (isValidationOk.equals("J") || isValidationOk.equals("U")) {
 
+				boolean allFilesValid = false;
+				
 				if (isValidationOk.equals("J")) {
 					System.out.println("\nStarte Validierung. Bitte um etwas Geduld ...");
-
-					File fPathToMergedDir = new File(pathToMergedDir);
-					
-					List<File> fileList = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
-					Collections.sort(fileList); // Sort oldest to newest
-					
 					XmlValidator bxh = new XmlValidator();
 					
 					for (File file : fileList) {
-						hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
+						boolean hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
 						
 						if (hasValidationPassed) {
-							System.out.println(file.getName() + " is valid.");
+							allFilesValid = true;
 						} else {
-							System.out.println("Fehler in Datei " + file.getName() + ". Import-Vorgang wurde gestoppt.");
+							allFilesValid = false;
+							System.err.println("Fehler in Datei " + file.getName() + ". Import-Vorgang wurde gestoppt.");
 							return;
 						}
 					}
+					
+					// If all files are valid, go on with the import process
+					if (allFilesValid) {
+						System.out.println("\nValidierung war erfolgreich. Die Daten sind nun bereit für die Indexierung.\n");
+					
+					// If there are errors in at lease one file, stop the import process:
+					} else {
+						System.err.println("\nFehler beim Import-Vorgang im Validierungs-Schritt!\n");
+						return;
+					}
+				} else if (isValidationOk.equals("U")) {
+					System.out.println("\nValidierung übersprungen!");
 				}
 				
+				// At this point, all files should have passed the validation process. No, ask the user for the Solr server address:
+				String solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
+				
+				// Ask user if he want's to use the default mab.properties or his own mab.properties:
+				String useDefaultMabPropertiesFile = getUserInput("\nWollen Sie die \"mab.properties\" Datei in der Standardkonfiguration verwenden? "
+						+ "Wenn Sie dies nicht wollen, können Sie anschließend einen Pfad zu einer eigenen .properties-Datei angeben."
+						+ "\n J = Ja, Standard verwenden\n N = Nein, Standard nicht verwenden", "J, N", scanner);
+				
+				// Variablen
+				String propertiesFileInfo = null;
+				boolean useDefaultMabProperties = true;
+				String pathToMabPropertiesFile = null;
+				String directoryOfTranslationFiles = null;
+				
+				if (useDefaultMabPropertiesFile.equals("J")) {
+					useDefaultMabProperties = true;
+					pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
+					directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
+					propertiesFileInfo = "Standard mab.properties Datei verwenden";
+				} else {
+					useDefaultMabProperties = false;
+					pathToMabPropertiesFile = getUserInput("\nBitte geben den Pfad zu Ihrer eigenen .properties-Datei an (z. B. /home/username/meine.properties). Beachten Sie, dass die Dateiendung wirklich \".properties\" sein muss!", "propertiesExists", scanner);
+					propertiesFileInfo = "Eigene .properties Datei verwenden: " + pathToMabPropertiesFile;
+					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
+					boolean areTranslationFilesOk = translationFilesExist(pathToMabPropertiesFile, directoryOfTranslationFiles);
+
+					// It the translation files, that are defined in the custom MAB properties file, do not exist
+					// (they have to be in the same directory), that give an appropriate message:
+					while (areTranslationFilesOk == false) {
+						scanner.nextLine();
+						areTranslationFilesOk = translationFilesExist(pathToMabPropertiesFile ,directoryOfTranslationFiles);
+					}
+				}
+				
+				String isIndexingOk = getUserInput("\nAlles ist nun bereit. Hier noch einmal Ihre Angaben:"
+					+ "\n Merged-Ordner:\t" + pathToMergedDir
+					+ "\n Solr Server:\t" + solrServerAddress
+					+ "\n .properties:\t" + propertiesFileInfo
+					+ "\n\nWollen Sie den Import-Vorgang nun beginnen?"
+					+ "\nACHTUNG: Ja nach Datenmenge und Leistung des Computers kann dieser Vorgang lange dauern!"
+					+ " \n J = Ja, Import-Vorgang beginnen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
+				
+
+				if (isIndexingOk.equals("J")) {
+					
+					boolean isIndexingSuccessful = false;
+					SolrMab sm = new SolrMab(timeStamp, true);
+					
+					for (File file : fileList) {
+						isIndexingSuccessful = sm.startIndexing(file.getAbsolutePath(), solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, false, false, false);
+						
+						// If a file could not be indexed, stop import process:
+						if (!isIndexingSuccessful) {
+							System.err.println("\nFehler beim Import-Vorgang im Indexierungs-Schritt!\n");
+							return;
+						}
+					}
+					
+					if (isIndexingSuccessful == true) {
+						sm.solrOptimize();
+						System.out.println("\nImport-Vorgang erfolgreich abgeschlossen.\n");
+					} else {
+						System.err.println("\nFehler beim Import-Vorgang!\n");
+						return;
+					}
+				} else {
+					System.out.println("\nImport-Vorgang auf Benutzerwunsch abgebrochen.\n");
+					return;
+				}
+				
+				
+				
+			// Stop inport process:
+			} else {
+				System.out.println("\nImport-Vorgang auf Benutzerwunsch abgebrochen!");
+				return;
 			}
 			
 			return;
 		}
 
 
+		
+		
+		
+		
 		// NORMAL IMPORT PROCESS STARTS HERE
 
 		if (!isIndexerTest) {
@@ -330,7 +426,7 @@ public class Main {
 
 				if (isIndexingOk.equals("J")) {
 					SolrMab sm = new SolrMab(timeStamp, true);
-					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly);
+					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly, true);
 
 					if (isIndexingSuccessful == true) {
 						System.out.println("\nImport-Vorgang erfolgreich abgeschlossen.\n");

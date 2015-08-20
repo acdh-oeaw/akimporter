@@ -168,9 +168,7 @@ public class MarcContentHandler implements ContentHandler {
 			record.setRecordID(recordID);
 			record.setRecordSYS(recordSYS);
 			record.setIndexTimestamp(timeStamp);
-			
-			System.out.println("Deleted: " + isDeleted);
-			
+						
 			if (isDeleted == true) {
 				delRecords.add(record);
 			} else {
