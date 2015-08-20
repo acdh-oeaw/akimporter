@@ -47,13 +47,13 @@ public class SerialVolumeToParent {
 		// Sort by id (more efficient for deep paging):
 		querySerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging).
+		// Set a filter query (more efficient for deep paging). Do not link again records that are marked as deleted.
 		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
 		// If no timeStamp is set, then unlink all volumes from it's parents.
 		if (timeStamp == null) {
-			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "-deleted_boolean:true");
 		} else {
-			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+			querySerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "-deleted_boolean:true", "indexTimestamp_str:"+timeStamp);
 		}
 
 
@@ -141,23 +141,23 @@ public class SerialVolumeToParent {
 		fqSerialVolumes.setSort(SolrQuery.SortClause.asc("id"));
 
 
-		// Set a filter query (more efficient for deep paging).
+		// Set a filter query (more efficient for deep paging). Do not link again records that are marked as deleted.
 		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
 		// If no timeStamp is set, then unlink all volumes from it's parents.
 		if (isFirstPage) { // No range filter on first page
 			if (timeStamp == null) {
-				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*");
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "-deleted_boolean:true");
 			} else {
-				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:*", "-deleted_boolean:true", "indexTimestamp_str:"+timeStamp);
 			}
 		} else { // After the first query, we need to use ranges to get the appropriate results
 			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
 			fqSerialVolumes.setStart(1);
 
 			if (timeStamp == null) {
-				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]");
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_boolean:true");
 			} else {
-				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]", "indexTimestamp_str:"+timeStamp);
+				fqSerialVolumes.setFilterQueries("parentSeriesAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_boolean:true", "indexTimestamp_str:"+timeStamp);
 			}
 		}
 		/*

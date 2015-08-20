@@ -39,6 +39,7 @@ public class Main {
 	static boolean isReIndexOngoing = false;
 	//static boolean isReIndexAll = false;
 	static String timeStamp = "";
+	static boolean optimize = true;
 
 	// 1
 	static Scanner scanner;
@@ -123,13 +124,14 @@ public class Main {
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
 			isIndexingOk = "J";
-			isIndexingOnly = true; // 1 + 2
+			optimize = false;
 		}
 
 		if (isLinkingOnly) {
 			solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
 			SolrMab sm = new SolrMab(null, true);
-			sm.startIndexing(null, solrServerAddress, null, null, false, false, true, false);
+			optimize = false;
+			sm.startIndexing(null, solrServerAddress, null, null, false, false, true, optimize);
 			return;
 		}
 
@@ -425,8 +427,13 @@ public class Main {
 				}
 
 				if (isIndexingOk.equals("J")) {
+					
+					if (!isIndexerTest) {
+						optimize = true;
+					}
+					
 					SolrMab sm = new SolrMab(timeStamp, true);
-					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly, true);
+					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly, optimize);
 
 					if (isIndexingSuccessful == true) {
 						System.out.println("\nImport-Vorgang erfolgreich abgeschlossen.\n");

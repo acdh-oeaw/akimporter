@@ -18,12 +18,8 @@ public class MarcContentHandler implements ContentHandler {
 
 	MatchingOperations matchingOps = new MatchingOperations();
 	DeleteRecords deleteRecords;
-	//List<Mabfield> allControlfields;
-	//List<Mabfield> allDatafields;
 	List<Mabfield> allFields;
 	List<Record> allRecords;
-	List<Record> delRecords;
-	//List<Mabfield> allSubfieldsOfDatafield;
 	private String nodeContent;
 	private Record record;
 	private Mabfield controlfield;
@@ -34,7 +30,6 @@ public class MarcContentHandler implements ContentHandler {
 	private String recordSYS;
 	private boolean is001;
 	private boolean isSYS;
-	private boolean isDeleted;
 	private boolean print = true;
 	int counter = 0;
 	long startTime;
@@ -66,7 +61,6 @@ public class MarcContentHandler implements ContentHandler {
 		
 		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
 		allRecords = new ArrayList<Record>();
-		delRecords = new ArrayList<Record>();
 	}
 
 
@@ -96,7 +90,6 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 		if(localName.equals("datafield")) {
-			//allSubfieldsOfDatafield = new ArrayList<Mabfield>();
 			datafieldTag = attribs.getValue("tag").trim();
 			datafieldInd1 = attribs.getValue("ind1").trim();
 			datafieldInd2 = attribs.getValue("ind2").trim();
@@ -108,7 +101,6 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
 
 			is001 = (datafieldTag.equals("001")) ? true : false;
-			isDeleted = (datafieldTag.equals("DEL")) ? true : false;
 		}
 
 		if(localName.equals("subfield")) {
@@ -168,13 +160,9 @@ public class MarcContentHandler implements ContentHandler {
 			record.setRecordID(recordID);
 			record.setRecordSYS(recordSYS);
 			record.setIndexTimestamp(timeStamp);
-						
-			if (isDeleted == true) {
-				delRecords.add(record);
-			} else {
-				allRecords.add(record);
-			}
-
+			
+			allRecords.add(record);
+			
 			print("Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "\r");
 
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
@@ -189,15 +177,10 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Add to Solr-Index:
 				this.solrAddRecordSet(sServer, newRecordSet);
-				
-				// Delete the deleted records:
-				this.deleteRecords.delete(delRecords);
 
 				// Set all Objects to "null" to save memory
 				allRecords = null;
 				allRecords = new ArrayList<Record>();
-				delRecords = null;
-				delRecords = new ArrayList<Record>();
 				allFields = null;
 				newRecordSet = null;
 
@@ -221,15 +204,13 @@ public class MarcContentHandler implements ContentHandler {
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 
+		System.out.println("\n----------------\nParentSYS: " + newRecordSet.get(0).getMabfields().toString() +"\n----------------\n");
+		
 		// Add to Solr-Index:
 		this.solrAddRecordSet(sServer, newRecordSet);
-
-		// Delete the deleted records:
-		this.deleteRecords.delete(delRecords);
 		
 		// Clear Objects to save memory
 		allRecords = null;
-		delRecords = null;
 		newRecordSet = null;
 		listOfMatchingObjs = null;
 
@@ -288,13 +269,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
-
-	/*
-	public List<Record> getRecordSet() {
-		return this.allRecords;
-	}
-	 */
-
+	
 	public void solrClearIndex(SolrServer sServer) {
 
 		try {
@@ -319,19 +294,6 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
-	/*
-	public void printToConsole(List<Record> allRecords) {
-		// Print the RecordSet to the console:
-		if (print) {
-			for (Record record : allRecords) {
-				System.out.println("\n----------------------------------------------------------------\n");
-				for (Mabfield mf : record.getMabfields()) {
-					System.out.println("\t" + mf.getFieldname()+ ":\t" + mf.getFieldvalue());
-				}
-			}
-		}
-	}
-	 */
 
 	private String getExecutionTime(long startTime, long endTime) {
 		String executionTime = null;
@@ -345,21 +307,6 @@ public class MarcContentHandler implements ContentHandler {
 		return executionTime;
 	}
 
-
-	/*
-	// Get time that an operation takes
-	public String getDuration(long operationStartTime) {		
-		long operationEndTime = System.nanoTime();
-		long nanoseconds = operationEndTime - operationStartTime;
-		//Double hours = Math.floor(TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) / 3600);
-		//Double minutes = Math.floor((TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) / 60) % 60);
-		Long miliseconds = TimeUnit.MILLISECONDS.convert(nanoseconds, TimeUnit.NANOSECONDS) % 60;
-		Long seconds = TimeUnit.SECONDS.convert(nanoseconds, TimeUnit.NANOSECONDS) % 60;
-
-		//System.out.println("OP took " + seconds + " seconds / " + miliseconds +" miliseconds");
-		return seconds + " s / " + miliseconds + " ms / " + nanoseconds + " ns";
-	}
-	 */
 
 
 	@Override
