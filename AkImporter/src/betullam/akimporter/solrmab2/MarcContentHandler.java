@@ -200,8 +200,6 @@ public class MarcContentHandler implements ContentHandler {
 
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
-
-		System.out.println("\n----------------\nParentSYS: " + newRecordSet.get(0).getMabfields().toString() +"\n----------------\n");
 		
 		// Add to Solr-Index:
 		this.solrAddRecordSet(sServer, newRecordSet);
