@@ -17,7 +17,6 @@ import org.xml.sax.SAXException;
 public class MarcContentHandler implements ContentHandler {
 
 	MatchingOperations matchingOps = new MatchingOperations();
-	DeleteRecords deleteRecords;
 	List<Mabfield> allFields;
 	List<Record> allRecords;
 	private String nodeContent;
@@ -56,8 +55,6 @@ public class MarcContentHandler implements ContentHandler {
 
 		// For tracking the elapsed time:
 		startTime = System.currentTimeMillis();
-
-		deleteRecords = new DeleteRecords(sServer);
 		
 		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
 		allRecords = new ArrayList<Record>();

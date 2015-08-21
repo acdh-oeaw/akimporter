@@ -12,12 +12,12 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 
-public class DeleteRecords {
+public class UnlinkDeleted {
 
 	SolrServer solrServer;
 	Collection<SolrInputDocument> deletedAtomicUpdateDocs;
 
-	public DeleteRecords(SolrServer solrServer) {
+	public UnlinkDeleted(SolrServer solrServer) {
 		this.solrServer = solrServer;
 	}
 
