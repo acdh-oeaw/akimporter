@@ -50,9 +50,9 @@ public class MuVolumeToParent {
 		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
 		// If no timeStamp is set, then unlink all volumes from it's parents.
 		if (timeStamp == null) {
-			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_boolean:true");
+			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y");
 		} else {
-			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_boolean:true", "indexTimestamp_str:"+timeStamp);
+			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y", "indexTimestamp_str:"+timeStamp);
 		}
 
 		// Set fields that should be given back from the query
@@ -143,29 +143,19 @@ public class MuVolumeToParent {
 		// If no timeStamp is set, then unlink all volumes from it's parents.	
 		if (isFirstPage) { // No range filter on first page
 			if (timeStamp == null) {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_boolean:true");
+				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y");
 			} else {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_boolean:true", "indexTimestamp_str:"+timeStamp);
+				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y", "indexTimestamp_str:"+timeStamp);
 			}
 		} else { // After the first query, we need to use ranges to get the appropriate results
-			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
+			// Set start of query to 1 so that the "lastDocId" is not the first id of the new page (we would have doubled documents then)
 			fqMUs.setStart(1);
 			if (timeStamp == null) {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_boolean:true");
+				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_str:Y");
 			} else {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_boolean:true", "indexTimestamp_str:"+timeStamp);
+				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_str:Y", "indexTimestamp_str:"+timeStamp);
 			}
 		}
-		/*
-		// CODE BEFORE TIMESTAMP:
-		if (isFirstPage) { // No range filter on first page
-			fqMUs.setFilterQueries("parentAC_str:*", "id:*");
-		} else { // After the first query, we need to use ranges to get the appropriate results
-			// Set start of query to 1 so that the "lastDocId" ist not the first id of the new page (we would have doubled documents then)
-			fqMUs.setStart(1);
-			fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
-		}
-		 */
 
 		// Set fields that should be given back from the query
 		fqMUs.setFields("id", "title", "acNo_str", "parentSYS_str", "parentAC_str", "volumeNo_str", "volumeNoSort_str", "publishDate", "edition");
@@ -221,7 +211,7 @@ public class MuVolumeToParent {
 						muAtomicUpdateDoc = new SolrInputDocument();
 						muAtomicUpdateDoc.setField("id", muSYS);
 
-						// Add values for atomic update of MU record:
+						// Add values to MU record with atomic update:
 						Map<String, String> mapMhSYS = new HashMap<String, String>();
 						mapMhSYS.put("set", mhSYS);
 						muAtomicUpdateDoc.setField("parentSYS_str", mapMhSYS);
@@ -233,9 +223,9 @@ public class MuVolumeToParent {
 						// Add all values of MU child record to MH parent record:
 						muAtomicUpdateDocs.add(muAtomicUpdateDoc);
 
-
-
-
+						
+						
+						
 						// Prepare MH record for atomic updates:
 						SolrInputDocument mhAtomicUpdateDoc = null;
 						mhAtomicUpdateDoc = new SolrInputDocument();
@@ -252,7 +242,7 @@ public class MuVolumeToParent {
 
 						Map<String, String> mapMuTitle = new HashMap<String, String>();
 						mapMuTitle.put("add", muTitle);
-						mhAtomicUpdateDoc.setField("childTitle_str_mv", mapMuTitle);
+						mhAtomicUpdateDoc.setField("childTitle_str_mv", mapMuTitle);						
 
 						Map<String, String> mapMuVolumeNo = new HashMap<String, String>();
 						mapMuVolumeNo.put("add", muVolumeNo);

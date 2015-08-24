@@ -97,7 +97,7 @@ public class SolrMab {
 
 			// Create Solr Server:
 			//HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
-			solrServer = new HttpSolrServer(solrServerName);
+			this.solrServer = new HttpSolrServer(solrServerName);
 			long startTimeOverall = System.currentTimeMillis();
 
 			if (!isLinkingOnly) {
@@ -120,76 +120,86 @@ public class SolrMab {
 				InputSource inputSource = new InputSource(reader);
 
 				// Set ContentHandler:
-				MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, solrServer, this.timeStamp, this.print);
+				MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.timeStamp, this.print);
 				xmlReader.setContentHandler(marcContentHandler);
 
 				// Start parsing & indexing:
 				xmlReader.parse(inputSource);
 
 				// Commit records:
-				solrServer.commit();
-
-
-				// Report success:
-				print("\nDone indexing! Everything worked fine.\n");
+				this.solrServer.commit();
 
 				isIndexingSuccessful = true;
 
-				endTime = System.currentTimeMillis();
-				print("Indexing to solr took " + getExecutionTime(startTime, endTime) + "\n\n");
-
+				
 				if (isIndexingOnly) { // Stopp here and do not process child and parent volumes
+					if (optimizeSolr) {
+						print("Start optimizing Solr index. This could take a while. Please wait ...\n");
+						this.solrOptimize();
+						print("Done optimizing Solr index.\n\n");
+					}
+					endTime = System.currentTimeMillis();
 					print("Linking of child and parent volumes will not take place as the argument \"-i\" indicates that you only wanted to index your data.\n");
+					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
 					return true;
+				} else {
+					endTime = System.currentTimeMillis();
+					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
 				}
 			}
 
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++ REMOVE VOLUMES FROM PARENTS +++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			
+			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++++++++++ RE-LINK VOLUMES TO PARENTS +++++++++++++++++++++++++++++++++//
+			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			
+			/*
+			// First remove all child volumes from their parents. After that, we will index all volumes again from scratch.
 			startTime = System.currentTimeMillis();
-
 			print("Start re-linking child records to parent records (series and multi-volume)\n");
 
-			// First remove all MU- and serial-volumes. Later on, we will index all volumes again from scratch. Until now there is no other useful solution.
-			RemoveMuVolumes rmv = new RemoveMuVolumes(this.timeStamp, this.print);
-			rmv.removeMuVolumes(solrServer);
+			RemoveMuVolumes rmv = new RemoveMuVolumes(this.timeStamp, this.print); // multi-volume
+			rmv.removeMuVolumes(this.solrServer);
 			print("\n");
-			RemoveSerialVolumes rsv = new RemoveSerialVolumes(this.timeStamp, this.print);
-			rsv.removeSerialVolumes(solrServer);
+			RemoveSerialVolumes rsv = new RemoveSerialVolumes(this.timeStamp, this.print); // series
+			rsv.removeSerialVolumes(this.solrServer);
 			print("\n");
 
-
-			// Commit removals of volumes:
-			solrServer.commit();
-
-			endTime = System.currentTimeMillis();
-			print("Unlinking volumes took " + getExecutionTime(startTime, endTime) + "\n");
-
-
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++ LINKING VOLUMES TO PARENTS +++++++++++++++++++++++++++++++++//
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-			startTime = System.currentTimeMillis();
-			MuVolumeToParent muVolumeToParent = new MuVolumeToParent(this.timeStamp, this.print); // Linking MU and MH records
-			muVolumeToParent.addMuRecords(solrServer);
+			// Commit unlinking of volumes:
+			this.solrServer.commit();
+			*/
+			
+			// Now link again all parent and child records
+			MuVolumeToParent muVolumeToParent = new MuVolumeToParent(this.timeStamp, this.print); // multi-volume
+			muVolumeToParent.addMuRecords(this.solrServer);
 			print("\n");
-			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent(this.timeStamp, this.print); // Linking serial volumes
-			serialVolumeToParent.addSerialVolumes(solrServer);
+			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent(this.timeStamp, this.print); // series
+			serialVolumeToParent.addSerialVolumes(this.solrServer);
 			print("\n");
-			endTime = System.currentTimeMillis();
-			print("Linking volumes took " + getExecutionTime(startTime, endTime) + "\n");
-
+			
 			// Commit linking changes:
-			print("Commiting changes to Solr server, please wait ...\n");
-			solrServer.commit();
+			this.solrServer.commit();
 
-			print("Done linking parents and childs!\n\n");
+			endTime = System.currentTimeMillis();
+			print("Done re-linking parent and child records! Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
+			
 
 
-
-
+			
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++++++ UNLINK DELETED VOLUMES FROM PARENTS +++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			startTime = System.currentTimeMillis();
+			VolumesUnlink volumesUnlink = new VolumesUnlink(this.solrServer, this.timeStamp);
+			volumesUnlink.unlink();
+			
+			// Commit unlinking of deleted records:
+			this.solrServer.commit();
+			
+			endTime = System.currentTimeMillis();
+			print("Done unlinking deleted volumes. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
+			
+			
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++ FINALIZING INDEXING +++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -200,8 +210,7 @@ public class SolrMab {
 				print("Done optimizing Solr index.\n\n");
 			}
 			endTime = System.currentTimeMillis();
-			print("Overall time: " + getExecutionTime(startTimeOverall, endTime) + "\n");
-			print("Everything is done and worked fine.\n");
+			print("Everything is done and worked fine. Overall execution time: " + getExecutionTime(startTimeOverall, endTime) + "\n");
 
 
 		} catch (RemoteSolrException e) {
@@ -470,8 +479,8 @@ public class SolrMab {
 		// Set log4j-output to "warn" (avoid very long logs in console):
 		Logger.getRootLogger().setLevel(Level.WARN);
 	}
-	
-	
+
+
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 	//++++++++++++++++++++++++++++++++++ HELPER ++++++++++++++++++++++++++++++++++//
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
