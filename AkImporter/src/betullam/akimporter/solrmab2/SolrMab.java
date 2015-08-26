@@ -149,65 +149,24 @@ public class SolrMab {
 			}
 
 			
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++ RE-LINK VOLUMES TO PARENTS +++++++++++++++++++++++++++++++++//
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			
-			/*
-			// First remove all child volumes from their parents. After that, we will index all volumes again from scratch.
-			startTime = System.currentTimeMillis();
-			print("Start re-linking child records to parent records (series and multi-volume)\n");
-
-			RemoveMuVolumes rmv = new RemoveMuVolumes(this.timeStamp, this.print); // multi-volume
-			rmv.removeMuVolumes(this.solrServer);
-			print("\n");
-			RemoveSerialVolumes rsv = new RemoveSerialVolumes(this.timeStamp, this.print); // series
-			rsv.removeSerialVolumes(this.solrServer);
-			print("\n");
-
-			// Commit unlinking of volumes:
-			this.solrServer.commit();
-			*/
-			
-			// Now link again all parent and child records
-			MuVolumeToParent muVolumeToParent = new MuVolumeToParent(this.timeStamp, this.print); // multi-volume
-			muVolumeToParent.addMuRecords(this.solrServer);
-			print("\n");
-			SerialVolumeToParent serialVolumeToParent = new SerialVolumeToParent(this.timeStamp, this.print); // series
-			serialVolumeToParent.addSerialVolumes(this.solrServer);
-			print("\n");
-			
-			// Commit linking changes:
-			this.solrServer.commit();
-
-			endTime = System.currentTimeMillis();
-			print("Done re-linking parent and child records! Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
-			
-
-
-			
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++ UNLINK DELETED VOLUMES FROM PARENTS +++++++++++++++++++++++++++++//
+			//+++++++++++++++++++++++++++++++++++ RELINK VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			startTime = System.currentTimeMillis();
-			VolumesUnlink volumesUnlink = new VolumesUnlink(this.solrServer, this.timeStamp);
-			volumesUnlink.unlink();
-			
-			// Commit unlinking of deleted records:
-			this.solrServer.commit();
-			
+			RelinkChildRecords relinkChildRecords = new RelinkChildRecords(this.solrServer, this.timeStamp);
+			relinkChildRecords.linkParentsToChilds(); // Add info about parent records to child records
+			relinkChildRecords.unlinkChildsFromParents(); // Remove all info about child records from parent records
+			relinkChildRecords.linkChildsToParents(); // Re-add all info about (non deleted) child records to parent records
 			endTime = System.currentTimeMillis();
-			print("Done unlinking deleted volumes. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
+			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
 			
 			
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++ FINALIZING INDEXING +++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
 			if (optimizeSolr) {
-				print("Start optimizing Solr index. This could take a while. Please wait ...\n");
+				print("Start optimizing Solr index. This could take a while. Please wait ...");
 				this.solrOptimize();
-				print("Done optimizing Solr index.\n\n");
 			}
 			endTime = System.currentTimeMillis();
 			print("Everything is done and worked fine. Overall execution time: " + getExecutionTime(startTimeOverall, endTime) + "\n");

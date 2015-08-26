@@ -50,9 +50,9 @@ public class MuVolumeToParent {
 		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
 		// If no timeStamp is set, then unlink all volumes from it's parents.
 		if (timeStamp == null) {
-			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y");
+			queryMUs.setFilterQueries("parentAC_str:*", "id:*");
 		} else {
-			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y", "indexTimestamp_str:"+timeStamp);
+			queryMUs.setFilterQueries("parentAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
 		}
 
 		// Set fields that should be given back from the query
@@ -138,22 +138,22 @@ public class MuVolumeToParent {
 		// Sort by id (more efficient for deep paging):
 		fqMUs.setSort(SolrQuery.SortClause.asc("id"));
 
-		// Set a filter query (more efficient for deep paging). Do not link again records that are marked as deleted.
+		// Set a filter query (more efficient for deep paging).
 		// If a timeStamp is set, then only process records with this timestamp. This is more efficient when doing an update of some records.
 		// If no timeStamp is set, then unlink all volumes from it's parents.	
 		if (isFirstPage) { // No range filter on first page
 			if (timeStamp == null) {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y");
+				fqMUs.setFilterQueries("parentAC_str:*", "id:*");
 			} else {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "-deleted_str:Y", "indexTimestamp_str:"+timeStamp);
+				fqMUs.setFilterQueries("parentAC_str:*", "id:*", "indexTimestamp_str:"+timeStamp);
 			}
 		} else { // After the first query, we need to use ranges to get the appropriate results
 			// Set start of query to 1 so that the "lastDocId" is not the first id of the new page (we would have doubled documents then)
 			fqMUs.setStart(1);
 			if (timeStamp == null) {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_str:Y");
+				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]");
 			} else {
-				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "-deleted_str:Y", "indexTimestamp_str:"+timeStamp);
+				fqMUs.setFilterQueries("parentAC_str:*", "id:[" + lastDocId + " TO *]", "indexTimestamp_str:"+timeStamp);
 			}
 		}
 
@@ -194,7 +194,7 @@ public class MuVolumeToParent {
 				// First "set" data (SYS-No and title) from MH record to current MU record:
 				// "set" data means: Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
 				SolrQuery queryMH = new SolrQuery(); // Query MH record of current MU record
-				queryMH.setQuery("acNo_str:" + muParentAC); // Query all MU-fields
+				queryMH.setQuery("acNo_str:" + muParentAC); // Query
 				queryMH.setFields("id", "title"); // Set fields that should be given back from the query
 				QueryResponse responseMH = sServer.query(queryMH); // Execute query
 				SolrDocumentList resultListMH = responseMH.getResults();
