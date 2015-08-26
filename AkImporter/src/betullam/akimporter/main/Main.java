@@ -117,14 +117,14 @@ public class Main {
 			pathToMultipleXmlFolder = (typeOfDataset.equals("2")) ? args[2] : null; // 2
 			pathToMergedFile = (typeOfDataset.equals("2")) ? args[3] : null;
 			isMergeOk = "J"; // 2
-			isValidationOk = "J"; // 1 + 2
+			isValidationOk = "U"; // 1 + 2
 			isXmlCleanOk = "J"; // 1 + 2
 			solrServerAddress = (typeOfDataset.equals("1")) ? args[3] : args[4]; // 1 + 2
 			useDefaultMabPropertiesFile = (typeOfDataset.equals("1")) ? args[4] : args[5]; // 1 + 2
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
 			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
 			isIndexingOk = "J";
-			optimize = true;
+			optimize = false;
 		}
 
 		if (isLinkingOnly) {

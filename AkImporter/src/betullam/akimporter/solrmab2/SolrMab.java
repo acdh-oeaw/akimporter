@@ -90,16 +90,15 @@ public class SolrMab {
 			}
 
 
-
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
 			// Create Solr Server:
 			//HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
 			this.solrServer = new HttpSolrServer(solrServerName);
 			long startTimeOverall = System.currentTimeMillis();
 
+			/*
+			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
+			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			if (!isLinkingOnly) {
 
 				startTime = System.currentTimeMillis();
@@ -131,7 +130,7 @@ public class SolrMab {
 
 				isIndexingSuccessful = true;
 
-				
+
 				if (isIndexingOnly) { // Stopp here and do not process child and parent volumes
 					if (optimizeSolr) {
 						print("Start optimizing Solr index. This could take a while. Please wait ...\n");
@@ -147,8 +146,9 @@ public class SolrMab {
 					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
 				}
 			}
+			*/
+			isIndexingSuccessful = true;
 
-			
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++ RELINK VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -159,8 +159,8 @@ public class SolrMab {
 			relinkChildRecords.linkChildsToParents(); // Re-add all info about (non deleted) child records to parent records
 			endTime = System.currentTimeMillis();
 			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
-			
-			
+
+
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++ FINALIZING INDEXING +++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -179,9 +179,6 @@ public class SolrMab {
 			System.out.println("\n\nSee also StackTrace:\n");
 			e.printStackTrace();
 			System.out.println("\n-----------------------------------------------------------------------\n");
-		} catch (SAXException e) {
-			isIndexingSuccessful = false;
-			e.printStackTrace();
 		} catch (FileNotFoundException e) {
 			isIndexingSuccessful = false;
 			System.out.println("\n------------------------------------------------------------------------------------------------------------\n");
@@ -191,9 +188,6 @@ public class SolrMab {
 			System.out.println("\n\nSee also StackTrace:\n");
 			e.printStackTrace();
 			System.out.println("\n-----------------------------------------------------------------------\n");
-		} catch (SolrServerException e) {
-			isIndexingSuccessful = false;
-			e.printStackTrace();
 		} catch (IOException e) {
 			isIndexingSuccessful = false;
 			e.printStackTrace();

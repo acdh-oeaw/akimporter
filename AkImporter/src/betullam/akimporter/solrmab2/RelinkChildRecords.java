@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -41,7 +42,8 @@ public class RelinkChildRecords {
 
 	public RelinkChildRecords(SolrServer sServer, String timeStamp) {
 		this.sServer = sServer;
-		this.timeStamp = timeStamp;
+		//this.timeStamp = timeStamp;
+		this.timeStamp  = "1440587737783";
 	}
 
 	/* ############################################################################################# */
@@ -56,6 +58,11 @@ public class RelinkChildRecords {
 		// New Solr query
 		SolrQuery queryChilds = new SolrQuery();
 
+		// Add sorting
+		queryChilds.addSort(new SortClause("id", SolrQuery.ORDER.asc));
+		
+		queryChilds.setRows(500000);
+		
 		// Define a query for getting all documents. We get the child records with a filter query because of performance (see below)
 		queryChilds.setQuery("*:*");
 
@@ -87,7 +94,7 @@ public class RelinkChildRecords {
 		return resultChilds;
 	}
 
-	
+
 	private Set<String> getParentAcs() {
 		Set<String> parentAcs = new HashSet<String>();
 		for (SolrDocument child : getChildsFromCurrentIndexProcess()) {
@@ -123,15 +130,19 @@ public class RelinkChildRecords {
 		}
 		return parentAc;
 	}
-	
+
 
 	private SolrDocument getParentRecord(String parentAc) {
 		SolrDocument parentRecord = null;
 		SolrQuery queryParent = new SolrQuery(); // New Solr query
 		queryParent.setQuery("acNo_str:"+parentAc); // Define a query
 		queryParent.setFields("id", "title"); // Set fields that should be given back from the query
+
 		try {
-			parentRecord = sServer.query(queryParent).getResults().get(0); // Execute query and get result
+			SolrDocumentList resultList = sServer.query(queryParent).getResults();
+			if (resultList.getNumFound() > 0 && resultList != null) {
+				parentRecord = sServer.query(queryParent).getResults().get(0);// Get parent document (there should only be one)
+			}
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
@@ -159,9 +170,9 @@ public class RelinkChildRecords {
 			fnChildPublishDate = "childPublishDate_str_mv";
 		}
 	}
-	
-	
-	
+
+
+
 
 	/* ########################################################################################################## */
 	/* ########################################## LINK PARENT TO CHILD ########################################## */
@@ -171,33 +182,39 @@ public class RelinkChildRecords {
 
 		Collection<SolrInputDocument> parentsToChilds = new ArrayList<SolrInputDocument>();
 		SolrDocumentList childsFormCurrentIndexProcess = getChildsFromCurrentIndexProcess();
-
+		
 		for (SolrDocument childRecord : childsFormCurrentIndexProcess) {
 
 			String childRecordId = (childRecord.getFieldValue("id") != null) ? childRecord.getFieldValue("id").toString() : null;
 			String parentAc = getParentAc(childRecord);
-
+			
 			SolrDocument parentRecord = getParentRecord(parentAc);
 
-			String parentRecordSys = (parentRecord.getFieldValue("id") != null) ? parentRecord.getFieldValue("id").toString() : "0";
-			String parentRecordTitle = (parentRecord.getFieldValue("title") != null) ? parentRecord.getFieldValue("title").toString() : "0";
+			if (parentRecord != null) {
+				String parentRecordSys = (parentRecord.getFieldValue("id") != null) ? parentRecord.getFieldValue("id").toString() : "0";
+				String parentRecordTitle = (parentRecord.getFieldValue("title") != null) ? parentRecord.getFieldValue("title").toString() : "0";
 
-			// Prepare MU record for atomic updates:
-			SolrInputDocument parentToChildDoc = null;
-			parentToChildDoc = new SolrInputDocument();
-			parentToChildDoc.setField("id", childRecordId);
+				// Prepare child record for atomic updates:
+				SolrInputDocument parentToChildDoc = null;
+				parentToChildDoc = new SolrInputDocument();
+				parentToChildDoc.setField("id", childRecordId);
 
-			// Add values to MU record with atomic update:
-			Map<String, String> mapMhSYS = new HashMap<String, String>();
-			mapMhSYS.put("set", parentRecordSys);
-			parentToChildDoc.setField("parentSYS_str", mapMhSYS);
+				//System.out.println("Linking parent " + parentAc + " to " + childRecordId);
+				
+				// Add values to child record with atomic update:
+				Map<String, String> mapMhSYS = new HashMap<String, String>();
+				mapMhSYS.put("set", parentRecordSys);
+				parentToChildDoc.setField("parentSYS_str", mapMhSYS);
 
-			Map<String, String> mapMhTitle = new HashMap<String, String>();
-			mapMhTitle.put("set", parentRecordTitle);
-			parentToChildDoc.setField("parentTitle_str", mapMhTitle);
+				Map<String, String> mapMhTitle = new HashMap<String, String>();
+				mapMhTitle.put("set", parentRecordTitle);
+				parentToChildDoc.setField("parentTitle_str", mapMhTitle);
 
-			// Add all values of MU child record to MH parent record:
-			parentsToChilds.add(parentToChildDoc);
+				// Add all values of MU child record to MH parent record:
+				parentsToChilds.add(parentToChildDoc);
+				
+				System.out.print("Linking parent " + parentRecordSys + " to " + childRecordId + "\r");
+			}
 		}
 
 		// Index the documents:
@@ -215,54 +232,59 @@ public class RelinkChildRecords {
 		}
 	}
 
-	
-	
+
+
 
 	/* ############################################################################################################### */
 	/* ########################################## UNLINK CHILDS FROM PARENT ########################################## */
 	/* ############################################################################################################### */
-	
+
 	private SolrInputDocument getParentRecordFromWhichToUnlink(String parentAc, String recordType) {
 
 		SolrDocument parentRecord = getParentRecord(parentAc);
-		String parentSys = (parentRecord.getFieldValue("id") != null) ? parentRecord.getFieldValue("id").toString() : "0";
-
-		// Set field names (for serial volume or multi-volume-work volume)
-		setFieldNames(recordType);
-
-		// Prepare parent record for atomic updates:
 		SolrInputDocument deleteChild = null;
-		deleteChild = new SolrInputDocument();
-		deleteChild.setField("id", parentSys);
 
-		// Unlink all child records:
-		Map<String, String> mapRemSYS = new HashMap<String, String>();
-		mapRemSYS.put("set", null);
-		deleteChild.setField(fnChildSys, mapRemSYS);
+		if (parentRecord != null) {
 
-		Map<String, String> mapRemAC = new HashMap<String, String>();
-		mapRemAC.put("set", null);
-		deleteChild.setField(fnChildAc, mapRemAC);
+			String parentSys = (parentRecord.getFieldValue("id") != null) ? parentRecord.getFieldValue("id").toString() : "0";
 
-		Map<String, String> mapRemTitle = new HashMap<String, String>();
-		mapRemTitle.put("set", null);
-		deleteChild.setField(fnChildTitle, mapRemTitle);
+			// Set field names (for serial volume or multi-volume-work volume)
+			setFieldNames(recordType);
 
-		Map<String, String> mapRemVolumeNo = new HashMap<String, String>();
-		mapRemVolumeNo.put("set", null);
-		deleteChild.setField(fnChildVolNo, mapRemVolumeNo);
+			// Prepare parent record for atomic updates:
+			deleteChild = new SolrInputDocument();
+			deleteChild.setField("id", parentSys);
 
-		Map<String, String> mapRemVolumeNoSort = new HashMap<String, String>();
-		mapRemVolumeNoSort.put("set", null);
-		deleteChild.setField(fnChildVolNoSort, mapRemVolumeNoSort);
+			// Unlink all child records:
+			Map<String, String> mapRemSYS = new HashMap<String, String>();
+			mapRemSYS.put("set", null);
+			deleteChild.setField(fnChildSys, mapRemSYS);
 
-		Map<String, String> mapRemEdition = new HashMap<String, String>();
-		mapRemEdition.put("set", null);
-		deleteChild.setField(fnChildEdition, mapRemEdition);
+			Map<String, String> mapRemAC = new HashMap<String, String>();
+			mapRemAC.put("set", null);
+			deleteChild.setField(fnChildAc, mapRemAC);
 
-		Map<String, String> mapRemPublishDate = new HashMap<String, String>();
-		mapRemPublishDate.put("set", null);
-		deleteChild.setField(fnChildPublishDate, mapRemPublishDate);
+			Map<String, String> mapRemTitle = new HashMap<String, String>();
+			mapRemTitle.put("set", null);
+			deleteChild.setField(fnChildTitle, mapRemTitle);
+
+			Map<String, String> mapRemVolumeNo = new HashMap<String, String>();
+			mapRemVolumeNo.put("set", null);
+			deleteChild.setField(fnChildVolNo, mapRemVolumeNo);
+
+			Map<String, String> mapRemVolumeNoSort = new HashMap<String, String>();
+			mapRemVolumeNoSort.put("set", null);
+			deleteChild.setField(fnChildVolNoSort, mapRemVolumeNoSort);
+
+			Map<String, String> mapRemEdition = new HashMap<String, String>();
+			mapRemEdition.put("set", null);
+			deleteChild.setField(fnChildEdition, mapRemEdition);
+
+			Map<String, String> mapRemPublishDate = new HashMap<String, String>();
+			mapRemPublishDate.put("set", null);
+			deleteChild.setField(fnChildPublishDate, mapRemPublishDate);
+
+		}
 
 		return deleteChild;
 	}
@@ -282,8 +304,12 @@ public class RelinkChildRecords {
 			// Get parent AC no.
 			String parentAc = getParentAc(childFromCurrentIndexProcess);
 
-			// Unlink all childs from the parent record			
-			unlinkParentRecords.add(getParentRecordFromWhichToUnlink(parentAc, childRecordType));
+			// Unlink all childs from the parent record
+			SolrInputDocument parentRecord = getParentRecordFromWhichToUnlink(parentAc, childRecordType);
+			if (parentRecord != null) {
+				unlinkParentRecords.add(parentRecord);
+				System.out.print("Unlink childs from parent " + parentAc + "\r");
+			}
 		}
 
 		// Index the documents:
@@ -313,7 +339,12 @@ public class RelinkChildRecords {
 
 		// New Solr query
 		SolrQuery querynonDeletedChilds = new SolrQuery();
+		
+		// Add sorting
+		querynonDeletedChilds.addSort(new SortClause("id", SolrQuery.ORDER.asc));
 
+		querynonDeletedChilds.setRows(500000);
+		
 		// Define a query for getting all documents. We get the deleted records with a filter query because of performance (see below)
 		querynonDeletedChilds.setQuery("*:*");
 
@@ -360,6 +391,8 @@ public class RelinkChildRecords {
 			// Add all non deleted childs to it's parents:
 			for (SolrDocument nonDeletedChild : nonDeletedChilds) {
 
+				//System.out.println("Childs of " + parentAc + ": " + nonDeletedChild.getFieldNames());
+				
 				// Get record type
 				String recordType = getChildRecordType(nonDeletedChild);
 
@@ -383,14 +416,18 @@ public class RelinkChildRecords {
 				String childEdition = (nonDeletedChild.getFieldValue("edition") != null) ? nonDeletedChild.getFieldValue("edition").toString() : "0";
 				String childPublishDate = (nonDeletedChild.getFieldValue("publishDate") != null) ? nonDeletedChild.getFieldValue("publishDate").toString() : "0";
 
+				
+				
 				if (parentSys != null) {
 
+					System.out.print("Linking child " + childSys + " to " + parentSys + "\r");
+					
 					// Prepare parent record for atomic updates:
 					SolrInputDocument linkedChild = null;
 					linkedChild = new SolrInputDocument();
 					linkedChild.setField("id", parentSys);
 
-					// Set values for atomic update of MH record:
+					// Set values for atomic update of parent record:
 					Map<String, String> mapChildSYS = new HashMap<String, String>();
 					mapChildSYS.put("add", childSys);
 					linkedChild.setField(fnChildSys, mapChildSYS);
@@ -443,7 +480,7 @@ public class RelinkChildRecords {
 
 
 
-	
+
 
 
 
