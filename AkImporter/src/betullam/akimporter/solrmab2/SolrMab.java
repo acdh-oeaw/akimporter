@@ -23,11 +23,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import betullam.akimporter.main.Main;
+import betullam.akimporter.solrmab2.relations.ChildsToParents;
+import betullam.akimporter.solrmab2.relations.ParentToChilds;
+import betullam.akimporter.solrmab2.relations.UnlinkChildsFromParents;
 
 
 
@@ -95,7 +97,7 @@ public class SolrMab {
 			this.solrServer = new HttpSolrServer(solrServerName);
 			long startTimeOverall = System.currentTimeMillis();
 
-			/*
+			
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -146,17 +148,33 @@ public class SolrMab {
 					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
 				}
 			}
-			*/
+			
 			isIndexingSuccessful = true;
 
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++ RELINK VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			startTime = System.currentTimeMillis();
-			RelinkChildRecords relinkChildRecords = new RelinkChildRecords(this.solrServer, this.timeStamp);
-			relinkChildRecords.linkParentsToChilds(); // Add info about parent records to child records
-			relinkChildRecords.unlinkChildsFromParents(); // Remove all info about child records from parent records
-			relinkChildRecords.linkChildsToParents(); // Re-add all info about (non deleted) child records to parent records
+			
+			// WORX:
+			ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp);
+			ptc.addParentsToChilds();
+			print("\n");
+			
+			// WORX:
+			UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp);
+			ucfp.unlinkChildsFromParents();
+			print("\n");
+			
+			// WORX:
+			ChildsToParents ctp = new ChildsToParents(this.solrServer, this.timeStamp);
+			ctp.addChildsToParents();
+			print("\n");
+			
+			//RelinkChildRecords relinkChildRecords = new RelinkChildRecords(this.solrServer, this.timeStamp);
+			//relinkChildRecords.linkParentsToChilds(); // Add info about parent records to child records
+			//relinkChildRecords.unlinkChildsFromParents(); // Remove all info about child records from parent records
+			//relinkChildRecords.linkChildsToParents(); // Re-add all info about (non deleted) child records to parent records
 			endTime = System.currentTimeMillis();
 			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
 
