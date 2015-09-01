@@ -35,8 +35,7 @@ public class Helper {
 
 	public Helper(SolrServer sServer, String timeStamp) {
 		this.sServer = sServer;
-		//this.timeStamp = timeStamp;
-		this.timeStamp  = "1440587737783";
+		this.timeStamp = timeStamp;
 	}
 
 
@@ -62,10 +61,10 @@ public class Helper {
 		// Filter all records that were indexed with the current import process and that are child volumes
 		// (because we need to get their parent records to be able to unlink these childs from there).
 		if (isFirstPage) { // No range filter on first page
-			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+timeStamp, "id:*");
+			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
 			query.setStart(1);
-			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+timeStamp, "id:[" + lastDocId + " TO *]");
+			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
 		}
 
 		// Set fields that should be given back from the query

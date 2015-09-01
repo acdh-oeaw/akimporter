@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
@@ -38,7 +37,6 @@ public class Main {
 	static boolean isLinkingOnly = false;
 	static boolean isReIndexOngoing = false;
 	//static boolean isReIndexAll = false;
-	static String timeStamp = "";
 	static boolean optimize = true;
 
 	// 1
@@ -79,7 +77,6 @@ public class Main {
 
 	public static void main(String[] args) {
 
-		timeStamp = String.valueOf(new Date().getTime());
 		scanner = new Scanner(System.in);
 		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
 		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
@@ -105,7 +102,7 @@ public class Main {
 			String defaultSolrMab = args[8];
 			boolean showMessages = Boolean.valueOf(args[9]);
 
-			Updater updater = new Updater(timeStamp);
+			Updater updater = new Updater();
 			isUpdateSuccessful = updater.update(remotePath, localPath, host, port, user, password, solrAddress, defaultSolrMab, showMessages);
 			return;
 		}
@@ -129,7 +126,7 @@ public class Main {
 
 		if (isLinkingOnly) {
 			solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
-			SolrMab sm = new SolrMab(null, true);
+			SolrMab sm = new SolrMab(true);
 			optimize = false;
 			sm.startIndexing(null, solrServerAddress, null, null, false, false, true, optimize);
 			return;
@@ -232,9 +229,10 @@ public class Main {
 				if (isIndexingOk.equals("J")) {
 					
 					boolean isIndexingSuccessful = false;
-					SolrMab sm = new SolrMab(timeStamp, true);
+					SolrMab sm = new SolrMab(true);
 					
 					for (File file : fileList) {
+						System.out.println("Indexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size());
 						isIndexingSuccessful = sm.startIndexing(file.getAbsolutePath(), solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, false, false, false);
 						
 						// If a file could not be indexed, stop import process:
@@ -432,7 +430,7 @@ public class Main {
 						optimize = true;
 					}
 					
-					SolrMab sm = new SolrMab(timeStamp, true);
+					SolrMab sm = new SolrMab(true);
 					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly, optimize);
 
 					if (isIndexingSuccessful == true) {

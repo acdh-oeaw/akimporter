@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
@@ -132,6 +133,7 @@ public class ParentToChilds {
 				docsForAtomicUpdates.add(parentToChildDoc);
 
 				System.out.print("Linking parent " + parentRecordSys + " to " + docId + ". Processing record no " + counter  + " of " + noOfDocs + "\r");
+				System.out.print(StringUtils.repeat("\b", 130) + "\r");
 			}
 
 

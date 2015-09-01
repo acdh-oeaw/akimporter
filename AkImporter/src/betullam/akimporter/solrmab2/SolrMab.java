@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -51,10 +53,10 @@ public class SolrMab {
 	long endTime;
 	String timeStamp = null;
 
-	public SolrMab(String timeStamp) {
-		this.timeStamp = timeStamp;
+	public SolrMab(boolean print) {
+		this.print = print;
 	};
-
+	
 	public SolrMab(String timeStamp, boolean print) {
 		this.timeStamp = timeStamp;
 		this.print = print;
@@ -76,6 +78,10 @@ public class SolrMab {
 		this.solrServerName = solrServerName;
 		this.mabPropertiesFile = mabPropertiesFile;
 		this.useDefaultMabProperties = useDefaultMabProperties;
+		
+		if (this.timeStamp == null) {
+			this.timeStamp = String.valueOf(new Date().getTime());
+		}
 
 		setLogger();
 
@@ -112,9 +118,9 @@ public class SolrMab {
 				XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
 
-				print("\n###############################################################################\n\n");
-				print("Start indexing records");
-				print("\n-------------------------------------------\n");
+				//print("\n###############################################################################\n\n");
+				//print("Start indexing records");
+				//print("\n-------------------------------------------\n");
 
 				// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
 				FileReader reader = new FileReader(mabXMLfile);
@@ -145,7 +151,7 @@ public class SolrMab {
 					return true;
 				} else {
 					endTime = System.currentTimeMillis();
-					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
+					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n");
 				}
 			}
 			
@@ -156,27 +162,20 @@ public class SolrMab {
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			startTime = System.currentTimeMillis();
 			
-			// WORX:
+			// 1. Linking parents to their childs:
 			ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp);
 			ptc.addParentsToChilds();
-			print("\n");
 			
-			// WORX:
+			// 2. Remove all childs from parents:
 			UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp);
 			ucfp.unlinkChildsFromParents();
-			print("\n");
 			
-			// WORX:
+			// 3. Relink childs to their parents:
 			ChildsToParents ctp = new ChildsToParents(this.solrServer, this.timeStamp);
 			ctp.addChildsToParents();
-			print("\n");
 			
-			//RelinkChildRecords relinkChildRecords = new RelinkChildRecords(this.solrServer, this.timeStamp);
-			//relinkChildRecords.linkParentsToChilds(); // Add info about parent records to child records
-			//relinkChildRecords.unlinkChildsFromParents(); // Remove all info about child records from parent records
-			//relinkChildRecords.linkChildsToParents(); // Re-add all info about (non deleted) child records to parent records
 			endTime = System.currentTimeMillis();
-			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
+			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + StringUtils.repeat(" ", 20) + "\n");
 
 
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

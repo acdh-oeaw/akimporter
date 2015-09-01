@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
@@ -199,6 +200,7 @@ public class UnlinkChildsFromParents {
 				}
 
 				System.out.print("Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "\r");
+				System.out.print(StringUtils.repeat("\b", 130) + "\r");
 			}
 		}
 

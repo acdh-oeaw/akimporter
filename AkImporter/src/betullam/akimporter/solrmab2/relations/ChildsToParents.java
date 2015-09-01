@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServer;
@@ -213,7 +214,8 @@ public class ChildsToParents {
 					docsForAtomicUpdates.add(linkedChild);
 					
 					
-					System.out.print("Linking child " + childSys + " to " + parentSys + ". Processing record no " + counter + " of " + noOfParentAcs + "\r");
+					System.out.print("Linking child " + childSys + " to " + parentSys + ". Processing record no " + counter + " of " + noOfParentAcs + StringUtils.repeat(" ", 20) + "\r");
+					System.out.print(StringUtils.repeat("\b", 130) + "\r");
 				}
 			}
 
