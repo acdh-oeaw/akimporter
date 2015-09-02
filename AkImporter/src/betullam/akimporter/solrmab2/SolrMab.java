@@ -134,7 +134,8 @@ public class SolrMab {
 
 				// Start parsing & indexing:
 				xmlReader.parse(inputSource);
-
+				print("\n");
+				
 				// Commit records:
 				this.solrServer.commit();
 
