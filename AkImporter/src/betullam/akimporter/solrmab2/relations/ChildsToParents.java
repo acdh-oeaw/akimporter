@@ -37,7 +37,6 @@ public class ChildsToParents {
 
 
 
-
 	public void addChildsToParents() {
 
 		SolrDocumentList queryResults = helper.getCurrentlyIndexedChildRecords(true, null);
@@ -62,28 +61,40 @@ public class ChildsToParents {
 				// values to avoid an overhead
 				lastDocId = setParentAcsFromWhichToUnlink(isFirstPage, lastDocId);
 				
+				// Set the documents for atomic updates to a class variable of type "Collection<SolrInputDocument>"
+				setParentAtomicUpdateDocs();
+				
 				// Add documents from the class variable which was set before to Solr 
 				helper.indexDocuments(docsForAtomicUpdates);
 				
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+				parentAcs = null;
+				parentAcs = new HashSet<String>();
 			}
 
 			// Add documents on the last page:
 			if (fractionPages != 0) {
 				boolean isFirstPage = (wholePages <= 0) ? true : false;
+				
 				// If there is no whole page but only a fraction page, the fraction page is the first page, because it's the only one
 				setParentAcsFromWhichToUnlink(isFirstPage, lastDocId);
+				
+				// Set the documents for atomic updates to a class variable of type "Collection<SolrInputDocument>"
+				setParentAtomicUpdateDocs();
+				
+				// Add documents from the class variable which was set before to Solr 
+				helper.indexDocuments(docsForAtomicUpdates);
 				
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+				parentAcs = null;
+				parentAcs = new HashSet<String>();
 			}
 
-			// Set the documents for atomic updates to a class variable of type "Collection<SolrInputDocument>"
-			setParentAtomicUpdateDocs();
-
+			
 			// Commit the changes
 			try {
 				this.sServer.commit();
@@ -93,11 +104,10 @@ public class ChildsToParents {
 				e.printStackTrace();
 			} finally {
 				docsForAtomicUpdates = null;
+				parentAcs = null;
 				queryResults = null;
-			}
-			
+			}	
 		}
-
 	}
 
 
@@ -166,7 +176,7 @@ public class ChildsToParents {
 
 				
 				if (parentSys != null) {
-
+					
 					// Set field names (for serial volume or multi-volume-work volume)
 					Map<String, String> fieldNames = helper.getFieldNames(recordType);
 					String fnChildSys = fieldNames.get("childSys");
@@ -212,7 +222,6 @@ public class ChildsToParents {
 					linkedChild.setField(fnChildPublishDate, mapChildPublishDate);
 
 					docsForAtomicUpdates.add(linkedChild);
-					
 					
 					System.out.print("Linking child " + childSys + " to " + parentSys + ". Processing record no " + counter + " of " + noOfParentAcs + StringUtils.repeat(" ", 20) + "\r");
 					System.out.print(StringUtils.repeat("\b", 130) + "\r");

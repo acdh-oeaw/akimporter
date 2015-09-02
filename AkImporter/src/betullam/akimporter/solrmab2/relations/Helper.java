@@ -178,7 +178,7 @@ public class Helper {
 		return mapOfFields;
 	}
 	
-	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {
+	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {		
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
 				this.sServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr

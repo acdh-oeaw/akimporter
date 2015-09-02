@@ -33,7 +33,9 @@ import betullam.akimporter.solrmab2.relations.ChildsToParents;
 import betullam.akimporter.solrmab2.relations.ParentToChilds;
 import betullam.akimporter.solrmab2.relations.UnlinkChildsFromParents;
 
-
+// /home/mbirkner/AkFind/MabData/akw_full/ongoing/merged_test
+// /home/mbirkner/AkFind/MabData/akw_full/ongoing/merged
+// http://localhost:8080/solr/akw
 
 public class SolrMab {
 
@@ -82,7 +84,7 @@ public class SolrMab {
 		if (this.timeStamp == null) {
 			this.timeStamp = String.valueOf(new Date().getTime());
 		}
-
+		
 		setLogger();
 
 		try {
@@ -165,14 +167,17 @@ public class SolrMab {
 			// 1. Linking parents to their childs:
 			ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp);
 			ptc.addParentsToChilds();
+			//print("\n");
 			
 			// 2. Remove all childs from parents:
 			UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp);
 			ucfp.unlinkChildsFromParents();
+			//print("\n");
 			
 			// 3. Relink childs to their parents:
 			ChildsToParents ctp = new ChildsToParents(this.solrServer, this.timeStamp);
 			ctp.addChildsToParents();
+			//print("\n");
 			
 			endTime = System.currentTimeMillis();
 			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + StringUtils.repeat(" ", 20) + "\n");
@@ -185,6 +190,8 @@ public class SolrMab {
 				print("Start optimizing Solr index. This could take a while. Please wait ...");
 				this.solrOptimize();
 			}
+			
+			this.timeStamp = null;
 			endTime = System.currentTimeMillis();
 			print("Everything is done and worked fine. Overall execution time: " + getExecutionTime(startTimeOverall, endTime) + "\n");
 
