@@ -223,7 +223,7 @@ public class ChildsToParents {
 
 					docsForAtomicUpdates.add(linkedChild);
 					
-					System.out.print("Linking child " + childSys + " to " + parentSys + ". Processing record no " + counter + " of " + noOfParentAcs + StringUtils.repeat(" ", 20) + "\r");
+					System.out.print("Linking child " + childSys + " to " + parentSys + ". Processing record no " + counter + " of " + noOfParentAcs + "           \r");
 					System.out.print(StringUtils.repeat("\b", 130) + "\r");
 				}
 			}
