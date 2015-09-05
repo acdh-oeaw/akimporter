@@ -1,10 +1,10 @@
 package betullam.akimporter.solrmab2.relations;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -20,7 +20,7 @@ public class Helper {
 	// General variables
 	SolrServer sServer;
 	String timeStamp;
-	int NO_OF_ROWS = 1000;
+	int NO_OF_ROWS = 500;
 	int rowCounter = 0;
 
 	// Field name variables
@@ -39,7 +39,7 @@ public class Helper {
 	}
 
 
-	
+
 
 	public SolrDocumentList getCurrentlyIndexedChildRecords(boolean isFirstPage, String lastDocId) {
 
@@ -61,14 +61,14 @@ public class Helper {
 		// Filter all records that were indexed with the current import process and that are child volumes
 		// (because we need to get their parent records to be able to unlink these childs from there).
 		if (isFirstPage) { // No range filter on first page
-			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
+			query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
 		} else { // After the first query, we need to use ranges to get the appropriate results
 			query.setStart(1);
-			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+			query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "sysNo_str", "parentSYS_str", "parentAC_str", "parentSeriesAC_str");
+		query.setFields("id", "sysNo_str", "parentSYS_str", "parentMultiAC_str", "parentSeriesAC_str_mv", "articleParentAC_str");
 
 
 		try {
@@ -80,27 +80,22 @@ public class Helper {
 		return queryResult;
 	}
 
-	public Set<String> getParentAcs(SolrDocumentList childDocumentList) {
-		Set<String> parentAcs = new HashSet<String>();
-		for (SolrDocument child : childDocumentList) {
-			String parentAc = getParentAc(child);
-			if (parentAc != null && !parentAc.isEmpty()) {
-				parentAcs.add(parentAc);
-			}
-		}
-		return parentAcs;
-	}
+
+
 
 
 	public String getChildRecordType(SolrDocument record) {
 		String childRecordType = null;
 
-		if (record.getFieldValue("parentAC_str") != null) {
+		if (record.getFieldValue("parentMultiAC_str") != null) {
 			childRecordType = "multivolume";
-		} else if (record.getFieldValue("parentSeriesAC_str") != null) {
+		} else if (record.getFieldValue("parentSeriesAC_str_mv") != null) {
 			childRecordType = "serialvolume";
+		} else if (record.getFieldValue("articleParentAC_str") != null) {
+			childRecordType = "article";
 		} else {
-			System.err.println("Returnd fields in solr query must include the fields \"parentAC_str\" and \"parentSeriesAC_str\".");
+			System.err.println("\nRecord: " + record.getFieldValue("id"));
+			System.err.println("Returnd fields in solr query must include the fields \"parentMultiAC_str\",  \"parentSeriesAC_str_mv\" and \"articleParentAC_str\".");
 			return null;
 		}
 
@@ -108,17 +103,39 @@ public class Helper {
 	}
 
 
-	public String getParentAc(SolrDocument childRecord) {
-		String parentAc = null;
-		String childRecordType = getChildRecordType(childRecord);
-		if (childRecordType.equals("multivolume")) {
-			parentAc = childRecord.getFieldValue("parentAC_str").toString();
-		} else if (childRecordType.equals("serialvolume")) {
-			parentAc = childRecord.getFieldValue("parentSeriesAC_str").toString();
+	public Set<String> getDedupParentAcsFromMultipleChilds(SolrDocumentList childDocumentList) {
+		Set<String> parentAcs = null;
+		if (childDocumentList != null && !childDocumentList.isEmpty()) {
+			parentAcs = new HashSet<String>();
+			for (SolrDocument child : childDocumentList) {
+				String[] arrParentAcs = getParentAcsFromSingleChild(child);
+				if (arrParentAcs.length > 0) {
+					for (String parentAc : arrParentAcs) {
+						parentAcs.add(parentAc);
+					}
+				}
+			}
 		}
-		return parentAc;
+		return parentAcs;
 	}
 
+	public String[] getParentAcsFromSingleChild(SolrDocument childRecord) {
+		String[] parentAcs = null;
+
+		if (childRecord != null) {
+			String childRecordType = getChildRecordType(childRecord);
+			if (childRecordType != null) {
+				if (childRecordType.equals("multivolume")) {
+					parentAcs = childRecord.getFieldValues("parentMultiAC_str").toArray(new String[0]);
+				} else if (childRecordType.equals("serialvolume")) {
+					parentAcs = childRecord.getFieldValues("parentSeriesAC_str_mv").toArray(new String[0]);
+				} else if (childRecordType.equals("article")) {
+					parentAcs = childRecord.getFieldValues("articleParentAC_str").toArray(new String[0]);
+				}
+			}
+		}
+		return parentAcs;
+	}
 
 	public SolrDocument getParentRecord(String parentAc) {
 		SolrDocument parentRecord = null;
@@ -138,60 +155,36 @@ public class Helper {
 		return parentRecord;
 	}
 
-	public void setFieldNames(String recordType) {
-		// Set the solr field names accordingly:
-		if (recordType.equals("serialvolume")) { // serial volume								
-			fnChildSys = "serialvolumeSYS_str_mv";
-			fnChildAc = "serialvolumeAC_str_mv";
-			fnChildTitle = "serialvolumeTitle_str_mv";
-			fnChildVolNo = "serialvolumeVolumeNo_str_mv";
-			fnChildVolNoSort = "serialvolumeVolumeNoSort_str_mv";
-			fnChildEdition = "serialvolumeEdition_str_mv";
-			fnChildPublishDate = "serialvolumePublishDate_str_mv";
-		} else if (recordType.equals("multivolume")) { // multivolume-work volume
-			fnChildSys = "childSYS_str_mv";
-			fnChildAc = "childAC_str_mv";
-			fnChildTitle = "childTitle_str_mv";
-			fnChildVolNo = "childVolumeNo_str_mv";
-			fnChildVolNoSort = "childVolumeNoSort_str_mv";
-			fnChildEdition = "childEdition_str_mv";
-			fnChildPublishDate = "childPublishDate_str_mv";
+	public List<SolrDocument> getParentRecords(String[] parentAcs) {
+		List<SolrDocument> parentRecords = null;
+
+		if (parentAcs != null) {
+			parentRecords = new ArrayList<SolrDocument>();
+			for (String parentAc : parentAcs) {
+				SolrDocument sdParentRecord = this.getParentRecord(parentAc);
+				if (sdParentRecord != null) {
+					parentRecords.add(sdParentRecord);
+				}
+			}
 		}
+
+		return parentRecords;
 	}
-	
-	public Map<String, String> getFieldNames(String recordType) {
-		
-		setFieldNames(recordType);
-		
-		Map<String, String> mapOfFields = new HashMap<String, String>();
 
-		
-		mapOfFields.put("childSys", fnChildSys);
-		mapOfFields.put("childAc", fnChildAc);
-		mapOfFields.put("childTitle", fnChildTitle);
-		mapOfFields.put("childVolNo", fnChildVolNo);
-		mapOfFields.put("childVolNoSort", fnChildVolNoSort);
-		mapOfFields.put("childEdition", fnChildEdition);
-		mapOfFields.put("childPublishDate", fnChildPublishDate);
-
-
-		return mapOfFields;
-	}
-	
 	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {		
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
 				this.sServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
-				//this.sServer.commit(); // Commit the changes
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			} finally {
+				docsForAtomicUpdates.clear(); // Clear to save memory
 				docsForAtomicUpdates = null; // Set to null to save memory
 			}
 		}
 	}
-	
-	
+
+
 }

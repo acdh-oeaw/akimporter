@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -20,7 +21,7 @@ public class ParentToChilds {
 	String timeStamp;
 	Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	Helper helper;
-	int NO_OF_ROWS = 1000;
+	int NO_OF_ROWS = 500;
 	int counter = 0;
 	long noOfDocs = 0;
 
@@ -102,42 +103,46 @@ public class ParentToChilds {
 		SolrDocumentList resultDocList = helper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
 
 		String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
-		
+
 		for (SolrDocument childRecord : resultDocList) {
-			
+
 			counter = counter + 1;
-			
+
 			String docId = (childRecord.getFieldValue("id") != null) ? childRecord.getFieldValue("id").toString() : null;
-			String parentAc = helper.getParentAc(childRecord);
-			SolrDocument parentRecord = helper.getParentRecord(parentAc);
+			String[] parentAcs = helper.getParentAcsFromSingleChild(childRecord);
+			
+			List<SolrDocument> parentRecords = helper.getParentRecords(parentAcs);
 
-			if (parentRecord != null) {
-				String parentRecordSys = (parentRecord.getFieldValue("id") != null) ? parentRecord.getFieldValue("id").toString() : "0";
-				String parentRecordTitle = (parentRecord.getFieldValue("title") != null) ? parentRecord.getFieldValue("title").toString() : "0";
+			if (parentRecords != null && !parentRecords.isEmpty()) {
+				
+				for (SolrDocument parentRecord : parentRecords) {
+					
+					String parentRecordSys = (parentRecord.getFieldValue("id") != null) ? parentRecord.getFieldValue("id").toString() : "0";
+					String parentRecordTitle = (parentRecord.getFieldValue("title") != null) ? parentRecord.getFieldValue("title").toString() : "0";
 
-				// Prepare child record for atomic updates:
-				SolrInputDocument parentToChildDoc = null;
-				parentToChildDoc = new SolrInputDocument();
-				parentToChildDoc.setField("id", docId);
+					// Prepare child record for atomic updates:
+					SolrInputDocument parentToChildDoc = null;
+					parentToChildDoc = new SolrInputDocument();
+					parentToChildDoc.setField("id", docId);
 
-				// Add values to child record with atomic update:
-				Map<String, String> mapParentRecordSys = new HashMap<String, String>();
-				mapParentRecordSys.put("set", parentRecordSys);
-				parentToChildDoc.setField("parentSYS_str", mapParentRecordSys);
+					// Add values to child record with atomic update:
+					Map<String, String> mapParentRecordSys = new HashMap<String, String>();
+					mapParentRecordSys.put("add", parentRecordSys);
+					parentToChildDoc.setField("parentSYS_str_mv", mapParentRecordSys);
 
-				Map<String, String> mapParentRecordTitle = new HashMap<String, String>();
-				mapParentRecordTitle.put("set", parentRecordTitle);
-				parentToChildDoc.setField("parentTitle_str", mapParentRecordTitle);
+					Map<String, String> mapParentRecordTitle = new HashMap<String, String>();
+					mapParentRecordTitle.put("add", parentRecordTitle);
+					parentToChildDoc.setField("parentTitle_str_mv", mapParentRecordTitle);
 
-				// Add all values of MU child record to MH parent record:
-				docsForAtomicUpdates.add(parentToChildDoc);
-
-				System.out.print("Linking parent " + parentRecordSys + " to " + docId + ". Processing record no " + counter  + " of " + noOfDocs + "\r");
-				System.out.print(StringUtils.repeat("\b", 130) + "\r");
+					// Add all values of MU child record to MH parent record:
+					docsForAtomicUpdates.add(parentToChildDoc);
+				}
 			}
+			
+			System.out.print("Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "\r");
+			System.out.print(StringUtils.repeat("\b", 130) + "\r");
 
-
-			//System.out.print("Processing record no " + counter  + "\r");
+			
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {
@@ -146,66 +151,4 @@ public class ParentToChilds {
 		}
 		return returnValue;
 	}
-
-
-
-	/*
-	private SolrDocumentList getQueryResults(boolean isFirstPage, String lastDocId) {
-
-		// Set up variable
-		SolrDocumentList queryResult = null;
-
-		// New Solr query
-		SolrQuery query = new SolrQuery();
-
-		// Set no of rows
-		query.setRows(NO_OF_ROWS);
-
-		// Add sorting (more efficient for deep paging)
-		query.addSort(SolrQuery.SortClause.asc("id"));
-
-		// Define a query for getting all documents. We will do a filter query further down because of performance
-		query.setQuery("*:*");
-
-		// Filter all records that were indexed with the current import process and that are child volumes
-		// (because we need to get their parent records to be able to unlink these childs from there).
-		if (isFirstPage) { // No range filter on first page
-			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+timeStamp, "id:*");
-		} else { // After the first query, we need to use ranges to get the appropriate results
-			query.setStart(1);
-			query.setFilterQueries("parentAC_str:* || parentSeriesAC_str:*", "indexTimestamp_str:"+timeStamp, "id:[" + lastDocId + " TO *]");
-		}
-
-		// Set fields that should be given back from the query
-		query.setFields("id", "sysNo_str", "parentSYS_str", "parentAC_str", "parentSeriesAC_str");
-
-
-		try {
-			// Execute query and get results
-			queryResult = sServer.query(query).getResults();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		}
-		return queryResult;
-	}
-	 */
-
-	/*
-	private void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {
-		if (!docsForAtomicUpdates.isEmpty()) {
-			try {
-				this.sServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
-				this.sServer.commit(); // Commit the changes
-			} catch (SolrServerException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				docsForAtomicUpdates = null; // Set to null to save memory
-			}
-		}
-	}
-	 */
-
-
 }

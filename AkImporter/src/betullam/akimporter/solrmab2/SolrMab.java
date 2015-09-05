@@ -17,7 +17,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -101,7 +100,6 @@ public class SolrMab {
 
 
 			// Create Solr Server:
-			//HttpSolrServer solrServer = new HttpSolrServer(solrServerName);
 			this.solrServer = new HttpSolrServer(solrServerName);
 			long startTimeOverall = System.currentTimeMillis();
 
@@ -118,11 +116,6 @@ public class SolrMab {
 
 				// Create SAX parser:
 				XMLReader xmlReader = XMLReaderFactory.createXMLReader();
-
-
-				//print("\n###############################################################################\n\n");
-				//print("Start indexing records");
-				//print("\n-------------------------------------------\n");
 
 				// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
 				FileReader reader = new FileReader(mabXMLfile);
@@ -158,30 +151,36 @@ public class SolrMab {
 				}
 			}
 			
+			
 			isIndexingSuccessful = true;
 
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++ RELINK VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			startTime = System.currentTimeMillis();
 			
+			startTime = System.currentTimeMillis();
+	
 			// 1. Linking parents to their childs:
 			ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp);
+			//ParentToChilds ptc = new ParentToChilds(this.solrServer, "1441408588597");
 			ptc.addParentsToChilds();
-			//print("\n");
+			print("\n");
 			
 			// 2. Remove all childs from parents:
 			UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp);
+			//UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, "1441408588597");
 			ucfp.unlinkChildsFromParents();
-			//print("\n");
+			print("\n");
 			
 			// 3. Relink childs to their parents:
 			ChildsToParents ctp = new ChildsToParents(this.solrServer, this.timeStamp);
+			//ChildsToParents ctp = new ChildsToParents(this.solrServer, "1441408588597");
 			ctp.addChildsToParents();
-			//print("\n");
+			print("\n");
 			
-			endTime = System.currentTimeMillis();
-			print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + StringUtils.repeat(" ", 20) + "\n");
+			
+			//endTime = System.currentTimeMillis();
+			//print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + StringUtils.repeat(" ", 20) + "\n");
 
 
 			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

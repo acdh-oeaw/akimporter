@@ -35,6 +35,7 @@ public class MarcContentHandler implements ContentHandler {
 	long startTime;
 	long endTime;
 	String timeStamp;
+	int NO_OF_DOCS = 500;
 
 	String controlfieldTag;
 	String datafieldTag;
@@ -169,7 +170,7 @@ public class MarcContentHandler implements ContentHandler {
 			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but now
 			 * only 700 are indexed! The 33 remaining records will be indexed in endDocument()-Method;
 			 */
-			if (counter % 1000 == 0) {
+			if (counter % NO_OF_DOCS == 0) {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
@@ -178,10 +179,13 @@ public class MarcContentHandler implements ContentHandler {
 				this.solrAddRecordSet(sServer, newRecordSet);
 
 				// Set all Objects to "null" to save memory
+				allRecords.clear();
 				allRecords = null;
 				allRecords = new ArrayList<Record>();
+				allFields.clear();
 				allFields = null;
 				newRecordSet = null;
+
 
 				//endTime = System.currentTimeMillis();
 				//print("\nElapsed time after " + counter + " records: " + getExecutionTime(startTime, endTime));
@@ -207,8 +211,11 @@ public class MarcContentHandler implements ContentHandler {
 		this.solrAddRecordSet(sServer, newRecordSet);
 		
 		// Clear Objects to save memory
+		allRecords.clear();
 		allRecords = null;
+		newRecordSet.clear();
 		newRecordSet = null;
+		listOfMatchingObjs.clear();
 		listOfMatchingObjs = null;
 
 	}
