@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
-import betullam.akimporter.solrmab2.SolrMab;
+import betullam.akimporter.solrmab.SolrMab;
 import betullam.akimporter.updater.Updater;
 import betullam.xmlhelper.XmlCleaner;
 import betullam.xmlhelper.XmlMerger;

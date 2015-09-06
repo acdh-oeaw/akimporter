@@ -30,4 +30,12 @@ public class Mabfield {
 		this.fieldvalue = fieldvalue;
 	}
 
+	@Override
+	public String toString() {
+		return "Mabfield [fieldname=" + fieldname + ", fieldvalue="
+				+ fieldvalue + "]";
+	}
+	
+	
+
 }

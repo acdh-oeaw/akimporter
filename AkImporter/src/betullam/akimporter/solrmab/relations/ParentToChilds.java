@@ -1,4 +1,4 @@
-package betullam.akimporter.solrmab2.relations;
+package betullam.akimporter.solrmab.relations;
 
 import java.io.IOException;
 import java.util.ArrayList;

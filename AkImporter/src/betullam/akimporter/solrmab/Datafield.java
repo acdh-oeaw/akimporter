@@ -7,7 +7,7 @@ public class Datafield {
 	private String tag;
 	private String ind1;
 	private String ind2;
-	private List<Subfield> subfields;
+	private List<Mabfield> mabfields;
 
 	public Datafield() {}
 
@@ -36,12 +36,12 @@ public class Datafield {
 		this.ind2 = ind2;
 	}
 
-	public List<Subfield> getSubfields() {
-		return this.subfields;
+	public List<Mabfield> getSubfields() {
+		return this.mabfields;
 	}
 
-	public void setSubfields(List<Subfield> subfields) {
-		this.subfields = subfields;
+	public void setSubfields(List<Mabfield> mabfields) {
+		this.mabfields = mabfields;
 	}
 	
 }
