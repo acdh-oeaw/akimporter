@@ -7,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
@@ -17,11 +16,11 @@ import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -29,15 +28,12 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
-import betullam.akimporter.solrmab.SolrMab;
+import betullam.akimporter.solrmab.Relate;
 import betullam.akimporter.updater.Updater;
-import betullam.xmlhelper.XmlCleaner;
-import betullam.xmlhelper.XmlMerger;
-import betullam.xmlhelper.XmlValidator;
 
 public class Main {
 
-	static boolean isIndexerTest = false;
+	//static boolean isIndexerTest = false;
 	static boolean isUpdate = false;
 	static boolean isUpdateSuccessful = false;
 	static boolean isIndexingOnly = false;
@@ -45,6 +41,8 @@ public class Main {
 	static boolean isReIndexOngoing = false;
 	//static boolean isReIndexAll = false;
 	static boolean optimize = true;
+	static boolean print = false;
+	static boolean isWithCliArgs = false;
 
 	// 1
 	static Scanner scanner;
@@ -69,38 +67,34 @@ public class Main {
 	static String pathToMergedFile;
 	static boolean isMergingSuccessful;
 
-
-
-	/**
-	 * TESTANGABEN:
-	 * /home/mbirkner/AkFind/a.xml
-	 * /home/mbirkner/AkFind/a_clean.xml
-	 * http://localhost:8080/solr/akw
-	 * /home/mbirkner/AkFind/mab.properties
-	 * 
-	 * /home/mbirkner/AkFind/MabData/lbo_merged.xml
-	 * 
-	 */
-
 	public static void main(String[] args) {
 
-		// Options object
+		// Log4J
+		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
+		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
+		CommandLineParser clParser = new DefaultParser();
+
+
+		/**
+		 * Main options
+		 */
 		Options options = new Options();
-		OptionGroup og = new OptionGroup();
-		CommandLineParser parser = new DefaultParser();
+		OptionGroup ogMain = new OptionGroup();
 
 		// i (import) option
 		Option oImport = Option
 				.builder("i")
-				.required(false)
+				.required(true)
 				.longOpt("import")
-				.desc("Import metadata from a MarcXML file")
+				.desc("Import metadata from one or multiple MarcXML file(s)")
 				.build();
-		
+
 		// u (update) option
 		Option oUpdate = Option
 				.builder("u")
-				.required(false)
+				.numberOfArgs(7)
+				.argName("remotePath localPath host port user password solrAddress defaultSolrMab")
+				.required(true)
 				.longOpt("update")
 				.desc("Update from ongoing data delivery in MarcXML")
 				.build();
@@ -112,56 +106,215 @@ public class Main {
 				.longOpt("reindex")
 				.desc("Re-index all data from MarcXML")
 				.build();
-		
-		og.addOption(oImport);
-		og.addOption(oUpdate);
-		og.addOption(oReIndex);
-		og.setRequired(true);
-		options.addOptionGroup(og);
+
+		// l (link) option
+		Option oLink = Option
+				.builder("l")
+				.required(true)
+				.longOpt("link")
+				.desc("Link parents and child volumes")
+				.build();
+
+		// h (help) option
+		Option oHelp = Option
+				.builder("h")
+				.required(true)
+				.longOpt("help")
+				.desc("Print help")
+				.build();
+
+		// v (verbose) option
+		Option oVerbose = Option
+				.builder("v")
+				.required(false)
+				.longOpt("verbose")
+				.desc("Print detailed process messages")
+				.build();
+
+
+		ogMain.addOption(oImport);
+		ogMain.addOption(oUpdate);
+		ogMain.addOption(oReIndex);
+		ogMain.addOption(oLink);
+		ogMain.addOption(oHelp);
+		ogMain.setRequired(true);
+		options.addOptionGroup(ogMain);
+		options.addOption(oVerbose);
+
+
+		/**
+		 * Import with arguments
+		 */
+		// Single metadata file
+		Option oPathToMabXmlFile = Option
+				.builder("px")
+				.required(false)
+				.hasArg()
+				.longOpt("pathxml")
+				.desc("Full path to single xml file containing metadata, e. g. /home/username/filename.xml")
+				.build();
+
+		// Multiple metadata files which has to be merged
+		Option oPathToMabXmlFolder = Option
+				.builder("pf")
+				.required(false)
+				.hasArg()
+				.longOpt("pathfolder")
+				.desc("Full path to folder with multiple xml files containing metadata, e. g. /home/username/xmlfiles")
+				.build();
+
+		Option oValidateXml = Option
+				.builder("vx")
+				.required(false)
+				.longOpt("validate")
+				.desc("Validate XML file")
+				.build();
+
+		Option oSolrUrl = Option
+				.builder("su")
+				.required(false)
+				.hasArg()
+				.longOpt("solrurl")
+				.desc("Url to the Solr Server including core name, e. g. http://localhost:8080/solr/corename")
+				.build();
+
+		Option oOwnMabProps = Option
+				.builder("om")
+				.required(false)
+				.hasArg()
+				.longOpt("ownmabprops")
+				.desc("Use own .properties file and indicate the full path to it, e. g. /home/username/myownmab.properties")
+				.build();
+
+		Option oOptimize = Option
+				.builder("os")
+				.required(false)
+				.longOpt("optimizesolr")
+				.desc("Optimize Solr")
+				.build();
+
+		// Add options for import from single file
+		options.addOption(oPathToMabXmlFile);
+		options.addOption(oPathToMabXmlFolder);
+		options.addOption(oValidateXml);
+		options.addOption(oSolrUrl);
+		options.addOption(oOwnMabProps);
+		options.addOption(oOptimize);
 
 
 
 		try {
-			CommandLine cmd = parser.parse(options, args);
-			
-			/*
-			switch (key) {
+
+
+			CommandLine cmd = clParser.parse(options, args, true);
+			String selectedMainOption = ogMain.getSelected();
+
+			// Verbose?
+			if (cmd.hasOption("v")) {
+				print = true;
+			}
+
+
+			// Switch between main options
+			switch (selectedMainOption) {
 			case "i":
-				return;
+
+				if (cmd.hasOption("px")) { // Import from single file
+					new Import(
+							"1",
+							cmd.getOptionValue("px"),
+							null,
+							cmd.hasOption("vx"),
+							cmd.getOptionValue("su"),
+							cmd.hasOption("om"),
+							cmd.getOptionValue("om"),
+							cmd.hasOption("os"),
+							cmd.hasOption("v")
+							);
+				} else if (cmd.hasOption("pf")) { // Import multiple files from folder
+
+					new Import(
+							"2",
+							null,
+							cmd.getOptionValue("pf"),
+							cmd.hasOption("vx"),
+							cmd.getOptionValue("su"),
+							cmd.hasOption("om"),
+							cmd.getOptionValue("om"),
+							cmd.hasOption("os"),
+							cmd.hasOption("v")
+							);
+				} else {
+					print = true;
+					new Import(optimize, print);
+				}
 				break;
+				
+				
 			case "u":
-				return;
+				String[] updateArgs = cmd.getOptionValues("u");				
+
+				String remotePath = updateArgs[0];
+				String localPath = updateArgs[1];
+				String host = updateArgs[2];
+				int port = Integer.valueOf(updateArgs[3]);
+				String user = updateArgs[4];
+				String password = updateArgs[5];
+				String solrAddress = updateArgs[6];
+				
+				Updater updater = new Updater();																			
+				isUpdateSuccessful = updater.update(remotePath, localPath, host, port, user, password, solrAddress, cmd.hasOption("om"), cmd.getOptionValue("om"), cmd.hasOption("os"), cmd.hasOption("v"));
+				
 				break;
+				
+				
 			case "r":
-				return;
+				System.out.println("This function is not working at the moment. Work in progress ...");
 				break;
+				
+				
+			case "l":
+				// Connect child and parent volumes:
+				if (cmd.hasOption("su")) {
+					String solrUrl = cmd.getOptionValue("su");
+					HttpSolrServer solrServer = new HttpSolrServer(solrUrl);
+					Relate relate = new Relate(solrServer, null, false, cmd.hasOption("v"));
+					boolean isRelateSuccessful = relate.isRelateSuccessful();
+					if (cmd.hasOption("v")) {
+						if (isRelateSuccessful) {
+							System.out.println("Done linking parent and child records. Everything was successful.");
+						}
+					}
+				} else {
+					System.out.println("Missing option -su (--solrurl). Please specify also a Solr Server URL incl. core name, e. g. -su http://localhost:8080/solr/corename");
+				}
+				break;
+				
+				
+			case "h":
+				HelpFormatter helpFormatter = new HelpFormatter();
+				helpFormatter.printHelp("AkImporter", "", options, "", true);
+				
+				
 			default:
 				break;
 			}
-			*/
-			
-			if (cmd.hasOption("i") || cmd.hasOption("u") || cmd.hasOption("r")) {
-				for (Option opt : cmd.getOptions()) {
-					System.out.print(opt.getLongOpt());
 
-				}
-				return;
-			}
 
 		} catch (ParseException e) {
 			e.printStackTrace();
 			return;
 		}
 
-		
 
+
+		/*
 		scanner = new Scanner(System.in);
 		BasicConfigurator.configure(); // Log-Output (avoid error message "log4j - No appenders could be found for logger")
 		Logger.getRootLogger().setLevel(Level.WARN); // Set log4j-output to "warn" (avoid very long logs in console)
 
 
 		if (args.length > 0) {
-			isIndexerTest = (args[0].equals("-t")) ? true : false; // ONLY FOR TESTING PURPOSES
 			isUpdate = (args[0].equals("-u")) ? true : false; // Running update
 			isIndexingOnly = (args[0].equals("-i")) ? true : false; // Index only without linking parent and child volumes
 			isLinkingOnly = (args[0].equals("-l")) ? true : false; // Link only parent and child volumes
@@ -186,25 +339,9 @@ public class Main {
 		}
 
 
-		if (isIndexerTest) {
-			typeOfDataset = args[1]; 
-			pathToMabXmlFile = (typeOfDataset.equals("1"))? args[2] : null; // 1
-			pathToMultipleXmlFolder = (typeOfDataset.equals("2")) ? args[2] : null; // 2
-			pathToMergedFile = (typeOfDataset.equals("2")) ? args[3] : null;
-			isMergeOk = "J"; // 2
-			isValidationOk = "U"; // 1 + 2
-			isXmlCleanOk = "J"; // 1 + 2
-			solrServerAddress = (typeOfDataset.equals("1")) ? args[3] : args[4]; // 1 + 2
-			useDefaultMabPropertiesFile = (typeOfDataset.equals("1")) ? args[4] : args[5]; // 1 + 2
-			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("1")) ? args[5] : null; // 1 + 2
-			pathToMabPropertiesFile = (useDefaultMabPropertiesFile.equals("N") && typeOfDataset.equals("2")) ? args[6] : null; // 1 + 2
-			isIndexingOk = "J";
-			optimize = false;
-		}
-
 		if (isLinkingOnly) {
 			solrServerAddress = getUserInput("Geben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
-			SolrMab sm = new SolrMab(true);
+			Index sm = new Index(true);
 			optimize = false;
 			sm.startIndexing(null, solrServerAddress, null, null, false, false, true, optimize);
 			return;
@@ -307,7 +444,7 @@ public class Main {
 				if (isIndexingOk.equals("J")) {
 
 					boolean isIndexingSuccessful = false;
-					SolrMab sm = new SolrMab(true);
+					Index sm = new Index(true);
 
 					for (File file : fileList) {
 						System.out.println("Indexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size());
@@ -508,7 +645,7 @@ public class Main {
 						optimize = true;
 					}
 
-					SolrMab sm = new SolrMab(true);
+					Index sm = new Index(true);
 					isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrServerAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, isIndexingOnly, isLinkingOnly, optimize);
 
 					if (isIndexingSuccessful == true) {
@@ -529,6 +666,7 @@ public class Main {
 		}
 
 		scanner.close();
+		 */
 	}
 
 

@@ -8,35 +8,38 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
+import betullam.akimporter.solrmab.SolrMabHelper;
+
 public class ParentToChilds {
 
 	// General variables
-	SolrServer sServer;
-	String timeStamp;
-	Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
-	Helper helper;
+	private HttpSolrServer solrServer;
+	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+	private RelationHelper relationHelper;
+	private SolrMabHelper smHelper = new SolrMabHelper();
 	int NO_OF_ROWS = 500;
 	int counter = 0;
 	long noOfDocs = 0;
+	boolean print = false;
 
 
-	public ParentToChilds(SolrServer sServer, String timeStamp) {
-		this.sServer = sServer;
-		this.timeStamp = timeStamp;
-		helper = new Helper(sServer, timeStamp);
+	public ParentToChilds(HttpSolrServer solrServer, String timeStamp, boolean print) {
+		this.solrServer = solrServer;
+		this.print = print;
+		this.relationHelper = new RelationHelper(solrServer, timeStamp);
 	}
 
 
 
 	public void addParentsToChilds() {
 
-		SolrDocumentList queryResults = helper.getCurrentlyIndexedChildRecords(true, null);
+		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedChildRecords(true, null);
 
 		// Show how many documents were found
 		noOfDocs = queryResults.getNumFound();
@@ -57,7 +60,7 @@ public class ParentToChilds {
 				lastDocId = linkParentsToChilds(isFirstPage, lastDocId);
 
 				// Add documents to Solr
-				helper.indexDocuments(docsForAtomicUpdates);
+				relationHelper.indexDocuments(docsForAtomicUpdates);
 
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
 				docsForAtomicUpdates = null;
@@ -71,7 +74,7 @@ public class ParentToChilds {
 				linkParentsToChilds(isFirstPage, lastDocId);
 
 				// Add documents to Solr
-				helper.indexDocuments(docsForAtomicUpdates);
+				relationHelper.indexDocuments(docsForAtomicUpdates);
 
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
 				docsForAtomicUpdates = null;
@@ -80,7 +83,7 @@ public class ParentToChilds {
 
 			// Commit the changes
 			try {
-				this.sServer.commit();
+				this.solrServer.commit();
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -100,7 +103,7 @@ public class ParentToChilds {
 		// Variable for return value:
 		String returnValue = null;
 
-		SolrDocumentList resultDocList = helper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
+		SolrDocumentList resultDocList = relationHelper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
 
 		String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
 
@@ -109,9 +112,9 @@ public class ParentToChilds {
 			counter = counter + 1;
 
 			String docId = (childRecord.getFieldValue("id") != null) ? childRecord.getFieldValue("id").toString() : null;
-			String[] parentAcs = helper.getParentAcsFromSingleChild(childRecord);
+			String[] parentAcs = relationHelper.getParentAcsFromSingleChild(childRecord);
 			
-			List<SolrDocument> parentRecords = helper.getParentRecords(parentAcs);
+			List<SolrDocument> parentRecords = relationHelper.getParentRecords(parentAcs);
 
 			if (parentRecords != null && !parentRecords.isEmpty()) {
 				
@@ -139,8 +142,8 @@ public class ParentToChilds {
 				}
 			}
 			
-			System.out.print("Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "\r");
-			System.out.print(StringUtils.repeat("\b", 130) + "\r");
+			this.smHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "\r");
+			this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 
 			
 

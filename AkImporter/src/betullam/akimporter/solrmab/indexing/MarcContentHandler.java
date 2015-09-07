@@ -1,4 +1,4 @@
-package betullam.akimporter.solrmab;
+package betullam.akimporter.solrmab.indexing;
 
 import java.io.IOException;
 import java.util.ArrayList;

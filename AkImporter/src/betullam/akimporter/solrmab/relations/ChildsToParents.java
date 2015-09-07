@@ -12,35 +12,38 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
+import betullam.akimporter.solrmab.SolrMabHelper;
+
 public class ChildsToParents {
 
 	// General variables
-	SolrServer sServer;
-	String timeStamp;
+	HttpSolrServer solrServer;
 	Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
-	Helper helper;
+	RelationHelper relationHelper;
+	private SolrMabHelper smHelper = new SolrMabHelper();
 	int NO_OF_ROWS = 500;
 	int CHILD_INDEX_RATE = 250;
 	Set<String> parentAcs = new HashSet<String>();
+	boolean print = false;
+	
 
-
-	public ChildsToParents(SolrServer sServer, String timeStamp) {
-		this.sServer = sServer;
-		this.timeStamp = timeStamp;
-		helper = new Helper(sServer, timeStamp);
+	public ChildsToParents(HttpSolrServer solrServer, String timeStamp, boolean print) {
+		this.solrServer = solrServer;
+		this.print = print;
+		this.relationHelper = new RelationHelper(solrServer, timeStamp);
 	}
 
 
 
 	public void addChildsToParents() {
 
-		SolrDocumentList queryResults = helper.getCurrentlyIndexedChildRecords(true, null);
+		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedChildRecords(true, null);
 
 		// Get the number of documents that were found
 		long noOfDocs = queryResults.getNumFound();
@@ -80,7 +83,7 @@ public class ChildsToParents {
 
 			// Commit the changes
 			try {
-				this.sServer.commit();
+				this.solrServer.commit();
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -102,13 +105,13 @@ public class ChildsToParents {
 		// Variable for return value:
 		String returnValue = null;
 
-		SolrDocumentList childRecords = helper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
+		SolrDocumentList childRecords = relationHelper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
 		String newLastDocId = childRecords.get(childRecords.size()-1).getFieldValue("id").toString();
 
 		String docId = null;
 
 		for (SolrDocument childRecord : childRecords) {
-			String[] parentAcsFromChild = helper.getParentAcsFromSingleChild(childRecord);
+			String[] parentAcsFromChild = relationHelper.getParentAcsFromSingleChild(childRecord);
 			if (parentAcsFromChild != null && parentAcsFromChild.length > 0) {
 				for (String parentAc : parentAcsFromChild) {
 					parentAcs.add(parentAc);
@@ -154,7 +157,7 @@ public class ChildsToParents {
 				for (SolrDocument nonDeletedChild : nonDeletedChilds) {
 
 					// Get type of child record (multivolume, serialvolume, etc.)
-					String childType = helper.getChildRecordType(nonDeletedChild);
+					String childType = relationHelper.getChildRecordType(nonDeletedChild);
 
 					// Get info from child records
 					String[] arrParentSYSs = (nonDeletedChild.getFieldValues("parentSYS_str_mv") != null) ? nonDeletedChild.getFieldValues("parentSYS_str_mv").toArray(new String[0]) : null;
@@ -244,20 +247,20 @@ public class ChildsToParents {
 
 				// Add documents from the class variable which was set before to Solr
 				if (counter % CHILD_INDEX_RATE == 0) { // Every n-th record, add documents to solr
-					helper.indexDocuments(docsForAtomicUpdates);
+					relationHelper.indexDocuments(docsForAtomicUpdates);
 					docsForAtomicUpdates.clear(); // Clear to save memory
 					docsForAtomicUpdates = null; // Set to null to save memory
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				} else if (counter >= noOfParents) { // The remainding documents (if division with NO_OF_ROWS 
-					helper.indexDocuments(docsForAtomicUpdates);
+					relationHelper.indexDocuments(docsForAtomicUpdates);
 					docsForAtomicUpdates.clear(); // Clear to save memory
 					docsForAtomicUpdates = null; // Set to null to save memory
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
 
-				System.out.print("Linking childs to parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "            \r");
-				System.out.print(StringUtils.repeat("\b", 130) + "\r");
+				this.smHelper.print(this.print, "Linking childs to parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "            \r");
+				this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 			}
 		}
 	}
@@ -306,7 +309,7 @@ public class ChildsToParents {
 
 
 		try {
-			nonDeletedChildRecords = sServer.query(querynonDeletedChilds).getResults();			
+			nonDeletedChildRecords = solrServer.query(querynonDeletedChilds).getResults();			
 		} catch (SolrServerException e) {
 			nonDeletedChildRecords = null;
 			e.printStackTrace();

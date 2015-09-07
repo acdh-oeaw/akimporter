@@ -1,4 +1,4 @@
-package betullam.akimporter.solrmab;
+package betullam.akimporter.solrmab.indexing;
 
 import java.util.HashMap;
 import java.util.List;

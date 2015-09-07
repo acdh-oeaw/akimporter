@@ -8,27 +8,30 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
+import betullam.akimporter.solrmab.SolrMabHelper;
+
 public class UnlinkChildsFromParents {
 
 	// General variables
-	SolrServer sServer;
-	String timeStamp;
+	HttpSolrServer solrServer;
 	Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
-	Helper helper;
+	RelationHelper relationHelper;
+	private SolrMabHelper smHelper = new SolrMabHelper();
 	int NO_OF_ROWS = 500;
 	List<String> parentAcs = new ArrayList<String>();
+	boolean print = false;
 
 
-	public UnlinkChildsFromParents(SolrServer sServer, String timeStamp) {
-		this.sServer = sServer;
-		this.timeStamp = timeStamp;
-		helper = new Helper(sServer, timeStamp);
+	public UnlinkChildsFromParents(HttpSolrServer solrServer, String timeStamp, boolean print) {
+		this.solrServer = solrServer;
+		this.print = print;
+		this.relationHelper = new RelationHelper(solrServer, timeStamp);
 	}
 
 
@@ -36,7 +39,7 @@ public class UnlinkChildsFromParents {
 
 	public void unlinkChildsFromParents() {
 
-		SolrDocumentList queryResults = helper.getCurrentlyIndexedChildRecords(true, null);
+		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedChildRecords(true, null);
 
 		// Show how many documents were found
 		long noOfDocs = queryResults.getNumFound();
@@ -74,7 +77,7 @@ public class UnlinkChildsFromParents {
 			setParentAtomicUpdateDocs();
 
 			try {
-				this.sServer.commit(); // Commit the changes
+				this.solrServer.commit(); // Commit the changes
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -98,7 +101,7 @@ public class UnlinkChildsFromParents {
 		// Variable for return value:
 		String returnValue = null;
 
-		SolrDocumentList childRecords = helper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
+		SolrDocumentList childRecords = relationHelper.getCurrentlyIndexedChildRecords(isFirstPage, lastDocId);
 
 		if (childRecords.size() > 0) {
 			String newLastDocId = childRecords.get(childRecords.size()-1).getFieldValue("id").toString();
@@ -106,8 +109,8 @@ public class UnlinkChildsFromParents {
 			String docId = null;
 
 			for (SolrDocument childRecord : childRecords) {
-				String[] arrParentAcsSingleChild = helper.getParentAcsFromSingleChild(childRecord);
-				//String recordType = helper.getChildRecordType(childRecord);
+				String[] arrParentAcsSingleChild = relationHelper.getParentAcsFromSingleChild(childRecord);
+				//String recordType = relationHelper.getChildRecordType(childRecord);
 				if (arrParentAcsSingleChild != null && arrParentAcsSingleChild.length > 0) {
 					for (String parentAc : arrParentAcsSingleChild) {
 						parentAcs.add(parentAc);
@@ -136,7 +139,7 @@ public class UnlinkChildsFromParents {
 
 			for (String parentAc : parentAcs) {
 				
-				SolrDocument parentRecord = helper.getParentRecord(parentAc);
+				SolrDocument parentRecord = relationHelper.getParentRecord(parentAc);
 				
 				if (parentRecord != null) {
 
@@ -187,19 +190,19 @@ public class UnlinkChildsFromParents {
 				
 				// Add documents from the class variable which was set before to Solr
 				if (counter % NO_OF_ROWS == 0) { // Every n-th record, add documents to solr
-					helper.indexDocuments(docsForAtomicUpdates);
+					relationHelper.indexDocuments(docsForAtomicUpdates);
 					docsForAtomicUpdates.clear(); // Clear to save memory
 					docsForAtomicUpdates = null; // Set to null to save memory
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				} else if (counter >= noOfParents) { // The remainding documents
-					helper.indexDocuments(docsForAtomicUpdates);
+					relationHelper.indexDocuments(docsForAtomicUpdates);
 					docsForAtomicUpdates.clear(); // Clear to save memory
 					docsForAtomicUpdates = null; // Set to null to save memory
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-				System.out.print("Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "        \r");
-				System.out.print(StringUtils.repeat("\b", 130) + "\r");
+				this.smHelper.print(this.print, "Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "        \r");
+				this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 			}
 
 		}

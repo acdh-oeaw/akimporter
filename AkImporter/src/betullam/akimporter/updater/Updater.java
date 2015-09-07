@@ -3,13 +3,18 @@ package betullam.akimporter.updater;
 import java.io.File;
 import java.util.Date;
 
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 import betullam.akimporter.main.Main;
-import betullam.akimporter.solrmab.SolrMab;
+import betullam.akimporter.solrmab.Index;
+import betullam.akimporter.solrmab.Relate;
+import betullam.akimporter.solrmab.SolrMabHelper;
 import betullam.xmlhelper.XmlMerger;
 import betullam.xmlhelper.XmlValidator;
 
 public class Updater {
 	
+	private HttpSolrServer solrServer;
 	boolean isUpdateSuccessful = false;
 	String timeStamp;
 	String localPathOriginal;
@@ -21,14 +26,21 @@ public class Updater {
 	String directoryOfTranslationFiles;
 	boolean hasValidationPassed;
 	boolean isIndexingSuccessful;
-	boolean print = true;
+	boolean print = false;
+	boolean optimize = false;
+	private SolrMabHelper smHelper;
 
 	
-	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, String defaultSolrMab, boolean showMessages) {
+	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
 
+		this.solrServer = new HttpSolrServer(solrAddress);
 		this.timeStamp = String.valueOf(new Date().getTime());
-		print = showMessages;
-		//timeStamp = String.valueOf(new Date().getTime());
+		this.optimize = optimize;
+		this.print = print;
+		this.useDefaultMabProperties = (ownMabProps) ? false : true;
+		this.pathToMabPropertiesFile = (ownMabProps) ? pathToOwnMabProps : null;
+		this.smHelper = new SolrMabHelper(solrServer);
+		
 		localPathOriginal = stripFileSeperatorFromPath(localPath) + File.separator + "original" + File.separator + timeStamp;
 		localPathExtracted = stripFileSeperatorFromPath(localPath) + File.separator + "extracted" + File.separator + timeStamp;
 		localPathMerged = stripFileSeperatorFromPath(localPath) + File.separator + "merged" + File.separator + timeStamp;
@@ -38,7 +50,7 @@ public class Updater {
 		
 		
 		FtpDownload ftpDownload = new FtpDownload();
-		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, showMessages);
+		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, this.print);
 		
 		if (isDownloadSuccessful) {
 			
@@ -63,24 +75,33 @@ public class Updater {
 			
 			// Index XML file:
 			if (hasValidationPassed) {
-				
-				if (defaultSolrMab.equals("default")) {
-					useDefaultMabProperties = true;
+				if (this.useDefaultMabProperties) {
 					pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
 					directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
 					print("Use default mab.properties file for indexing.");
 				} else {
-					useDefaultMabProperties = false;
-					pathToMabPropertiesFile = defaultSolrMab;
-					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
+					directoryOfTranslationFiles = new File(this.pathToMabPropertiesFile).getParent();
 					print("Use custom mab.properties file for indexing: " + pathToMabPropertiesFile);
 				}
 				
-				print("Start indexing ...");
-				SolrMab sm = new SolrMab(this.timeStamp, true);
-				isIndexingSuccessful = sm.startIndexing(pathToMabXmlFile, solrAddress, pathToMabPropertiesFile, directoryOfTranslationFiles, useDefaultMabProperties, false, false, true);
-	
-				if (isIndexingSuccessful == true) {
+				print("Start importing ...");
+				
+				// Index metadata so Solr
+				Index index = new Index(pathToMabXmlFile, this.solrServer, this.useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
+				boolean isIndexingSuccessful = index.isIndexingSuccessful();
+
+				// Connect child and parent volumes:
+				Relate relate = new Relate(this.solrServer, this.timeStamp, false, this.print);
+				boolean isRelateSuccessful = relate.isRelateSuccessful();
+				
+				if (this.optimize) {
+					this.smHelper.print(this.print, "\nOptimiere Solr Server. Dies kann eine Weile dauern ...\n");
+					this.smHelper.solrOptimize();
+				}
+
+				
+				
+				if (isIndexingSuccessful && isRelateSuccessful) {
 					print("Done indexing.\nEVERYTHING WAS SUCCESSFUL!");
 					isUpdateSuccessful = true;
 				} else {

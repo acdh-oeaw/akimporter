@@ -1,10 +1,12 @@
-package betullam.akimporter.solrmab;
+package betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
+
+import betullam.akimporter.solrmab.Index;
 
 public class MatchingOperations {
 
@@ -14,9 +16,9 @@ public class MatchingOperations {
 	private List<List<Mabfield>> listOfNewSolrfieldLists;
 	private List<Mabfield> listOfNewFieldsForNewRecord;
 	private Record newRecord;
-	List<String> multiValuedFields = SolrMab.multiValuedFields;
-	List<Mabfield> customTextFields = SolrMab.customTextFields;
-	HashMap<String, List<String>> translateFields = SolrMab.translateFields;
+	List<String> multiValuedFields = Index.multiValuedFields;
+	List<Mabfield> customTextFields = Index.customTextFields;
+	HashMap<String, List<String>> translateFields = Index.translateFields;
 
 	/**
 	 * THIS EXPLANATION MAY BE OUT OF DATE!!!

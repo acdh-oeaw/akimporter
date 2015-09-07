@@ -8,7 +8,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.regex.Pattern;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.xml.sax.InputSource;
@@ -28,173 +26,103 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import betullam.akimporter.main.Main;
-import betullam.akimporter.solrmab.relations.ChildsToParents;
-import betullam.akimporter.solrmab.relations.ParentToChilds;
-import betullam.akimporter.solrmab.relations.UnlinkChildsFromParents;
+import betullam.akimporter.solrmab.indexing.Mabfield;
+import betullam.akimporter.solrmab.indexing.MarcContentHandler;
+import betullam.akimporter.solrmab.indexing.MatchingObject;
 
-// /home/mbirkner/AkFind/MabData/akw_full/ongoing/merged_test
-// /home/mbirkner/AkFind/MabData/akw_full/ongoing/merged
-// http://localhost:8080/solr/akw
 
-public class SolrMab {
+public class Index {
 
-	HttpSolrServer solrServer = null;
-	String mabXMLfile;
-	String mabPropertiesFile;
-	String solrServerName;
-	String validateXmlOnly;
-	String validateAllFilesInFolder;
+	private HttpSolrServer solrServer;
+	private String mabXMLfile;
+	private String mabPropertiesFile;
 	private List<MatchingObject> listOfMatchingObjs; // Contents from mab.properties file
+	private boolean useDefaultMabProperties = true;
+	public String pathToTranslationFiles;
+	private boolean print = true;
+	private long startTime;
+	private long endTime;
+	boolean optimizeSolr = true;
+	private String timeStamp = null;
+	private SolrMabHelper smHelper;
+	private boolean isIndexingSuccessful = false;
+
 	public static List<String> multiValuedFields = new ArrayList<String>();
 	public static List<Mabfield> customTextFields = new ArrayList<Mabfield>();
 	public static HashMap<String, List<String>> translateFields = new HashMap<String, List<String>>();
-	private boolean useDefaultMabProperties;
-	boolean print = true;
-	long startTime;
-	long endTime;
-	String timeStamp = null;
 
-	public SolrMab(boolean print) {
-		this.print = print;
-	};
-	
-	public SolrMab(String timeStamp, boolean print) {
-		this.timeStamp = timeStamp;
-		this.print = print;
-	};
 
-	public boolean startIndexing(
-			String mabXmlFile,
-			String solrServerName,
-			String mabPropertiesFile,
-			String pathToTranslationFiles,
-			boolean useDefaultMabProperties,
-			boolean isIndexingOnly,
-			boolean isLinkingOnly,
-			boolean optimizeSolr
-			) {
 
-		boolean isIndexingSuccessful = false;
+	public Index(String mabXmlFile, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
 		this.mabXMLfile = mabXmlFile;
-		this.solrServerName = solrServerName;
-		this.mabPropertiesFile = mabPropertiesFile;
+		this.solrServer = solrServer;
 		this.useDefaultMabProperties = useDefaultMabProperties;
-		
-		if (this.timeStamp == null) {
-			this.timeStamp = String.valueOf(new Date().getTime());
-		}
-		
-		setLogger();
+		this.mabPropertiesFile = mabPropertiesFile;
+		this.pathToTranslationFiles = pathToTranslationFiles;
+		this.timeStamp = timeStamp;
+		this.optimizeSolr = optimizeSolr;
+		this.print = print;
+		this.smHelper = new SolrMabHelper(solrServer);
 
+		this.startIndexing();
+	};
+
+
+
+	//private boolean startIndexing(String mabXmlFile, HttpSolrServer solrServer, String mabPropertiesFile, String pathToTranslationFiles, boolean useDefaultMabProperties, boolean isIndexingOnly, boolean isLinkingOnly, boolean optimizeSolr) {
+	private void startIndexing() {
+
+		setLogger();
+		
 		try {
 			BufferedInputStream mabPropertiesInputStream = null;
 
-			if (!isLinkingOnly) {
-				// Load .properties file:
-				if (useDefaultMabProperties) {
-					mabPropertiesInputStream = new BufferedInputStream(Main.class.getResourceAsStream("/betullam/akimporter/resources/mab.properties"));
-				} else {
-					mabPropertiesInputStream = new BufferedInputStream(new FileInputStream(this.mabPropertiesFile));
-				}
+			// Load .properties file:
+			if (useDefaultMabProperties) {
+				mabPropertiesInputStream = new BufferedInputStream(Main.class.getResourceAsStream("/betullam/akimporter/resources/mab.properties"));
+			} else {
+				mabPropertiesInputStream = new BufferedInputStream(new FileInputStream(this.mabPropertiesFile));
 			}
 
 
-			// Create Solr Server:
-			this.solrServer = new HttpSolrServer(solrServerName);
-			long startTimeOverall = System.currentTimeMillis();
-
-			
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			//++++++++++++++++++++++++++++++++++ PARSING & INDEXING +++++++++++++++++++++++++++++++++//
 			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			if (!isLinkingOnly) {
 
-				startTime = System.currentTimeMillis();
+			startTime = System.currentTimeMillis();
 
-				// Get contents of mab.properties files and put them to MatchingObjects
-				listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
+			// Get contents of mab.properties files and put them to MatchingObjects
+			listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
 
-				// Create SAX parser:
-				XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+			// Create SAX parser:
+			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
-				// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
-				FileReader reader = new FileReader(mabXMLfile);
-				InputSource inputSource = new InputSource(reader);
+			// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
+			FileReader reader = new FileReader(mabXMLfile);
+			InputSource inputSource = new InputSource(reader);
 
-				// Set ContentHandler:
-				MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.timeStamp, this.print);
-				xmlReader.setContentHandler(marcContentHandler);
+			// Set ContentHandler:
+			MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.timeStamp, this.print);
+			xmlReader.setContentHandler(marcContentHandler);
 
-				// Start parsing & indexing:
-				xmlReader.parse(inputSource);
-				print("\n");
-				
-				// Commit records:
-				this.solrServer.commit();
+			// Start parsing & indexing:
+			xmlReader.parse(inputSource);
+			smHelper.print(print, "\n");
 
-				isIndexingSuccessful = true;
+			// Commit records:
+			this.solrServer.commit();
 
-
-				if (isIndexingOnly) { // Stopp here and do not process child and parent volumes
-					if (optimizeSolr) {
-						print("Start optimizing Solr index. This could take a while. Please wait ...\n");
-						this.solrOptimize();
-						print("Done optimizing Solr index.\n\n");
-					}
-					endTime = System.currentTimeMillis();
-					print("Linking of child and parent volumes will not take place as the argument \"-i\" indicates that you only wanted to index your data.\n");
-					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n\n");
-					return true;
-				} else {
-					endTime = System.currentTimeMillis();
-					print("Done indexing to solr. Execution time: " + getExecutionTime(startTime, endTime) + "\n");
-				}
-			}
-			
-			
 			isIndexingSuccessful = true;
 
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//+++++++++++++++++++++++++++++++++++ RELINK VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			
-			startTime = System.currentTimeMillis();
-	
-			// 1. Linking parents to their childs:
-			ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp);
-			//ParentToChilds ptc = new ParentToChilds(this.solrServer, "1441408588597");
-			ptc.addParentsToChilds();
-			print("\n");
-			
-			// 2. Remove all childs from parents:
-			UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp);
-			//UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, "1441408588597");
-			ucfp.unlinkChildsFromParents();
-			print("\n");
-			
-			// 3. Relink childs to their parents:
-			ChildsToParents ctp = new ChildsToParents(this.solrServer, this.timeStamp);
-			//ChildsToParents ctp = new ChildsToParents(this.solrServer, "1441408588597");
-			ctp.addChildsToParents();
-			print("\n");
-			
-			
-			//endTime = System.currentTimeMillis();
-			//print("Done relinking child volumes to their parents. Execution time: " + getExecutionTime(startTime, endTime) + StringUtils.repeat(" ", 20) + "\n");
-
-
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++++++ FINALIZING INDEXING +++++++++++++++++++++++++++++++++++++//
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 			if (optimizeSolr) {
-				print("Start optimizing Solr index. This could take a while. Please wait ...");
-				this.solrOptimize();
+				smHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
+				this.smHelper.solrOptimize();
+				smHelper.print(print, "Done optimizing Solr index.\n\n");
 			}
-			
-			this.timeStamp = null;
 			endTime = System.currentTimeMillis();
-			print("Everything is done and worked fine. Overall execution time: " + getExecutionTime(startTimeOverall, endTime) + "\n");
+			smHelper.print(print, "Done indexing to solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n");
 
+			isIndexingSuccessful = true;
 
 		} catch (RemoteSolrException e) {
 			isIndexingSuccessful = false;
@@ -219,21 +147,10 @@ public class SolrMab {
 			isIndexingSuccessful = false;
 			e.printStackTrace();
 		}
-
-		return isIndexingSuccessful;
 	}
 
-
-	private String getExecutionTime(long startTime, long endTime) {
-		String executionTime = null;
-
-		long timeElapsedMilli =  endTime - startTime;
-		int seconds = (int) (timeElapsedMilli / 1000) % 60 ;
-		int minutes = (int) ((timeElapsedMilli / (1000*60)) % 60);
-		int hours   = (int) ((timeElapsedMilli / (1000*60*60)) % 24);
-
-		executionTime = hours + ":" + minutes + ":" + seconds;
-		return executionTime;
+	public boolean isIndexingSuccessful() {
+		return isIndexingSuccessful;
 	}
 
 
@@ -426,9 +343,6 @@ public class SolrMab {
 			e.printStackTrace();
 		}
 
-		// Get values from general.properties and assign them to the appropriate variables:
-		validateXmlOnly = properties.getProperty("validateXML");
-
 		for (Map.Entry<?, ?> property : properties.entrySet()) {
 			String key = (String)property.getKey();
 			String value = (String)property.getValue();
@@ -438,12 +352,6 @@ public class SolrMab {
 		return translateProperties;
 	}
 
-
-	private void print(String text) {
-		if (print) {
-			System.out.print(text);
-		}
-	}
 
 
 
@@ -457,17 +365,4 @@ public class SolrMab {
 		Logger.getRootLogger().setLevel(Level.WARN);
 	}
 
-
-	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	//++++++++++++++++++++++++++++++++++ HELPER ++++++++++++++++++++++++++++++++++//
-	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	public void solrOptimize() {
-		try {
-			this.solrServer.optimize();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 }

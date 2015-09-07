@@ -8,18 +8,18 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-public class Helper {
+public class RelationHelper {
 
 
 	// General variables
-	SolrServer sServer;
-	String timeStamp;
+	HttpSolrServer solrServer;
+	String timeStamp = null;
 	int NO_OF_ROWS = 500;
 	int rowCounter = 0;
 
@@ -33,8 +33,8 @@ public class Helper {
 	String fnChildPublishDate = null;
 
 
-	public Helper(SolrServer sServer, String timeStamp) {
-		this.sServer = sServer;
+	public RelationHelper(HttpSolrServer solrServer, String timeStamp) {
+		this.solrServer = solrServer;
 		this.timeStamp = timeStamp;
 	}
 
@@ -60,11 +60,21 @@ public class Helper {
 
 		// Filter all records that were indexed with the current import process and that are child volumes
 		// (because we need to get their parent records to be able to unlink these childs from there).
-		if (isFirstPage) { // No range filter on first page
-			query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
-		} else { // After the first query, we need to use ranges to get the appropriate results
-			query.setStart(1);
-			query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+		if (this.timeStamp != null) {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+			}
+		} else {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("parentMultiAC_str:* || parentSeriesAC_str_mv:* || articleParentAC_str:*", "id:[" + lastDocId + " TO *]");
+			}
+
 		}
 
 		// Set fields that should be given back from the query
@@ -73,7 +83,7 @@ public class Helper {
 
 		try {
 			// Execute query and get results
-			queryResult = sServer.query(query).getResults();
+			queryResult = this.solrServer.query(query).getResults();
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
@@ -144,9 +154,9 @@ public class Helper {
 		queryParent.setFields("id", "title"); // Set fields that should be given back from the query
 
 		try {
-			SolrDocumentList resultList = sServer.query(queryParent).getResults();
+			SolrDocumentList resultList = this.solrServer.query(queryParent).getResults();
 			if (resultList.getNumFound() > 0 && resultList != null) {
-				parentRecord = sServer.query(queryParent).getResults().get(0);// Get parent document (there should only be one)
+				parentRecord = this.solrServer.query(queryParent).getResults().get(0);// Get parent document (there should only be one)
 			}
 		} catch (SolrServerException e) {
 			e.printStackTrace();
@@ -174,7 +184,7 @@ public class Helper {
 	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {		
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
-				this.sServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
+				this.solrServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {

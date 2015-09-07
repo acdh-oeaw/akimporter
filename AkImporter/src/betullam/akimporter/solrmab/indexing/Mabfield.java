@@ -1,4 +1,4 @@
-package betullam.akimporter.solrmab;
+package betullam.akimporter.solrmab.indexing;
 
 
 public class Mabfield {
