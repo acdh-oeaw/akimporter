@@ -31,6 +31,16 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import betullam.akimporter.solrmab.Relate;
 import betullam.akimporter.updater.Updater;
 
+/** TODO:
+ * 
+ * 1. Tidy up code
+ * 2. Better command line options
+ * 3. Better error messages in try-catch blocks.
+ * 4. Better logging.
+ * 5. Translation console output to german?
+ *
+ */
+
 public class Main {
 
 	//static boolean isIndexerTest = false;
@@ -103,8 +113,16 @@ public class Main {
 		Option oReIndex = Option
 				.builder("r")
 				.required(true)
-				.longOpt("reindex")
-				.desc("Re-index all data from MarcXML")
+				.longOpt("reimport")
+				.desc("Re-import all data from MarcXML")
+				.build();
+
+		// ro (reindexongoing) option
+		Option oReIndexOngoing = Option
+				.builder("ro")
+				.required(true)
+				.longOpt("reimportongoing")
+				.desc("Re-import all ongoing data deliveries")
 				.build();
 
 		// l (link) option
@@ -135,6 +153,7 @@ public class Main {
 		ogMain.addOption(oImport);
 		ogMain.addOption(oUpdate);
 		ogMain.addOption(oReIndex);
+		ogMain.addOption(oReIndexOngoing);
 		ogMain.addOption(oLink);
 		ogMain.addOption(oHelp);
 		ogMain.setRequired(true);
@@ -249,8 +268,8 @@ public class Main {
 					new Import(optimize, print);
 				}
 				break;
-				
-				
+
+
 			case "u":
 				String[] updateArgs = cmd.getOptionValues("u");				
 
@@ -261,18 +280,25 @@ public class Main {
 				String user = updateArgs[4];
 				String password = updateArgs[5];
 				String solrAddress = updateArgs[6];
-				
+
 				Updater updater = new Updater();																			
 				isUpdateSuccessful = updater.update(remotePath, localPath, host, port, user, password, solrAddress, cmd.hasOption("om"), cmd.getOptionValue("om"), cmd.hasOption("os"), cmd.hasOption("v"));
-				
+
 				break;
-				
-				
+
+
 			case "r":
-				System.out.println("This function is not working at the moment. Work in progress ...");
+				System.out.println("This function \"Reimoprt all\" is not working at the moment. Work in progress ...");
 				break;
-				
-				
+
+			case "ro":
+				ReImport reImport = new ReImport(cmd.hasOption("v"));
+				boolean isReImportingSuccessful = reImport.isReImportingSuccessful();
+				if (isReImportingSuccessful) {
+					System.out.println("Re-importing successful");
+				}
+				break;
+
 			case "l":
 				// Connect child and parent volumes:
 				if (cmd.hasOption("su")) {
@@ -289,13 +315,13 @@ public class Main {
 					System.out.println("Missing option -su (--solrurl). Please specify also a Solr Server URL incl. core name, e. g. -su http://localhost:8080/solr/corename");
 				}
 				break;
-				
-				
+
+
 			case "h":
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
-				
-				
+
+
 			default:
 				break;
 			}

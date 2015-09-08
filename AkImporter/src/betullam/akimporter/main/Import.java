@@ -15,33 +15,35 @@ import betullam.xmlhelper.XmlValidator;
 
 public class Import {
 
-	HttpSolrServer solrServer = null;
-	Scanner scanner = null;
-	String timeStamp = null;
-	boolean optimize = false;
-	boolean print = true;
-	String typeOfDataset = null;
-	String pathToMabXmlFile = null;
-	String pathToMultipleXmlFolder = null;
-	String isMergeOk = null;
-	String pathToMergedFile = null;
-	String isValidationOk = null;
-	String isXmlCleanOk = null;
-	String solrServerAddress = null;
-	String useDefaultMabPropertiesFile = null;
-	String pathToMabPropertiesFile = null;
-	String isIndexingOk = null;
-	String directoryOfTranslationFiles = null;
-	String propertiesFileInfo = null;
+	private HttpSolrServer solrServer = null;
+	private Scanner scanner = null;
+	private String timeStamp = null;
+	private boolean optimize = false;
+	private boolean print = true;
+	private String typeOfDataset = null;
+	private String pathToMabXmlFile = null;
+	private String pathToMultipleXmlFolder = null;
+	private String isMergeOk = null;
+	private String pathToMergedFile = null;
+	private String isValidationOk = null;
+	private String isXmlCleanOk = null;
+	private String solrServerAddress = null;
+	private String useDefaultMabPropertiesFile = null;
+	private String pathToMabPropertiesFile = null;
+	private String isIndexingOk = null;
+	private String directoryOfTranslationFiles = null;
+	private String propertiesFileInfo = null;
+	private long startTime;
+	private long endTime;
 	private SolrMabHelper smHelper = new SolrMabHelper();
 
-	boolean isMergingSuccessful = false;
-	boolean hasValidationPassed = false;
-	boolean useDefaultMabProperties = true;
-	boolean areTranslationFilesOk = false;
-	boolean isIndexingSuccessful = false;
-	boolean isRelateSuccessful = false;
-	boolean isWithCliArgs = false;
+	private boolean isMergingSuccessful = false;
+	private boolean hasValidationPassed = false;
+	private boolean useDefaultMabProperties = true;
+	private boolean areTranslationFilesOk = false;
+	private boolean isIndexingSuccessful = false;
+	private boolean isRelateSuccessful = false;
+	private boolean isWithCliArgs = false;
 
 
 	// With interactive user input
@@ -54,17 +56,17 @@ public class Import {
 
 	// With CLI Args
 	public Import(String typeOfDataset, String pathToMabXmlFile, String pathToMultipleXmlFolder, boolean validate, String solrUrl, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
-		isMergeOk = "J";
-		isXmlCleanOk = "J";
-		isIndexingOk = "J";
+		isMergeOk = "Y";
+		isXmlCleanOk = "Y";
+		isIndexingOk = "Y";
 
 		this.isWithCliArgs = true;
 		this.typeOfDataset = typeOfDataset;
 		this.pathToMabXmlFile = pathToMabXmlFile;
 		this.pathToMultipleXmlFolder = pathToMultipleXmlFolder;
-		this.isValidationOk = (validate) ? "J" : "U";
+		this.isValidationOk = (validate) ? "V" : "S";
 		this.solrServerAddress = solrUrl;	
-		this.useDefaultMabPropertiesFile = (ownMabProps) ? "N" : "J";
+		this.useDefaultMabPropertiesFile = (ownMabProps) ? "N" : "Y";
 		this.pathToMabPropertiesFile = (ownMabProps) ? pathToOwnMabProps : null;
 		this.optimize = optimize;
 		this.print = print;
@@ -81,17 +83,17 @@ public class Import {
 
 
 		if (!isWithCliArgs) {
-			typeOfDataset = Main.getUserInput("\nWie liegt ihr Datenbestand vor?\n 1 = eine große XML-Datei\n 2 = viele einzelne XML-Dateien)?", "1, 2", scanner);
+			typeOfDataset = Main.getUserInput("\nKind of dataset?\n 1 = one big xml file\n 2 = multiple xml files)?", "1, 2", scanner);
 		}
 
 		if (typeOfDataset.equals("1")) { // We have one big XML file
 			if (!isWithCliArgs) {
-				pathToMabXmlFile = Main.getUserInput("\nWie lautet der Pfad zur XML-Datei?\n Beispiel: /home/username/dateiname.xml)?", "fileExists", scanner);
+				pathToMabXmlFile = Main.getUserInput("\nWhat is the path to the xml file?\n Example: /home/username/filename.xml)?", "fileExists", scanner);
 			}
 
 		} else if (typeOfDataset.equals("2")) { // We have multiple smaller XML files - we need to merge them!
 			if (!isWithCliArgs) {
-				pathToMultipleXmlFolder = Main.getUserInput("\nWie lautet der Pfad zum Ordner mit den einzelnen XML-Dateien?\n Beispiel: /home/username/xmldateien)?", "directoryExists", scanner);
+				pathToMultipleXmlFolder = Main.getUserInput("\nWhat is the path to the folder with the xml files?\n Example: /home/username/folder/of/xmlfiles)?", "directoryExists", scanner);
 			}
 			
 			String tempDir = System.getProperty("java.io.tmpdir");
@@ -99,64 +101,53 @@ public class Import {
 			pathToMergedFile = tempDir + "ImporterMergedFile.xml";
 
 			if (!isWithCliArgs) {
-				isMergeOk = Main.getUserInput("\nDie XML-Dateien müssen nun in eine einzige XML-Datei zusammengeführt werden."
-						+ " Sie wird im temporären Verzeichnis des Systems unter " + pathToMergedFile + " gespeichert. Die Original-Daten"
-						+ " werden nicht geändert. Wollen Sie fortfahren? Falls nicht, wird der gesamte Import-Vorgang abgebrochen!"
-						+ "\n J = Ja, fortfahren\n N = Nein, abbrechen", "J, N", scanner);
+				isMergeOk = Main.getUserInput("\nThe xml files will be merged into one xml file now."
+						+ " It will be saved in the temporary folder of the system under " + pathToMergedFile + ". The original data"
+						+ " won't be changed. Do you want to continue? If not, the whole import process will be cancelled!"
+						+ "\n J = Yes, merge\n N = No, cancel", "Y, N", scanner);
 			}
 
-			if (isMergeOk.equals("J")) {
-
-				/*
-				if (!isWithCliArgs) {
-					pathToMergedFile = Main.getUserInput("\nGeben Sie an, wo die Datei mit den zusammengeführten Daten gespeichert werden"
-							+ " sollen. Geben Sie dazu einen Pfad inkl. Dateiname und der Endung \".xml\" an,"
-							+ " z. B.: /home/benutzer/meinedatei.xml. Beachten Sie, dass Sie am angegebenen Ort Schreibberechigungen"
-							+ " haben müssen und es NICHT der gleiche Ort sein darf, in dem die einzelnen XML-Dateien liegen.", "newFile", scanner);
-				}
-				 */
-
-				// Start XML merging:
-				XmlMerger xmlm = new XmlMerger();
+			if (isMergeOk.equals("Y")) {
+				XmlMerger xmlm = new XmlMerger(); // Start merging
 				isMergingSuccessful = xmlm.mergeElementNodes(pathToMultipleXmlFolder, pathToMergedFile, "collection", "record", 1);
 
 				if (isMergingSuccessful) {
 					pathToMabXmlFile = pathToMergedFile;
-					this.smHelper.print(this.print, "\nDatenzusammenführung in Datei " + pathToMergedFile + " erfolgreich abgeschlossen.\n");
+					this.smHelper.print(this.print, "\nMerging into file " + pathToMergedFile + " was successful.\n");
 				} else {
-					System.err.println("\nFehler bei der Datenzusammenführung! Vorgang abgebrochen.\n");
+					System.err.println("\nError while merging! Cancelled import process.\n");
 					return;
 				}
 			} else {
-				this.smHelper.print(this.print, "\nImport-Vorgang auf Benutzerwunsch abgebrochen.\n");
+				this.smHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
 				return;
 			}
 		}
 
 
 		if (!isWithCliArgs) {
-			isValidationOk = Main.getUserInput("\nDie XML-Datei muss geprüft werden. Dies kann eine Weile dauern. Die Original-Daten werden nicht geändert. "
-					+ "Wollen Sie fortfahren? Falls nicht, wird der gesamte Vorgang abgebrochen! "
-					+ "\n J = Ja, fortfahren\n U = Überspringen\n N = Nein, abbrechen", "J, U, N", scanner);
+			isValidationOk = Main.getUserInput("\nThe xml file must be validated. This can take a while. The original data won't be changed."
+					+ " To continue, you may validate or skip the validation. Be aware that skipping the validation may cause problems if there"
+					+ " are errors in the xml file. If you cancel, the whole import process will be cancelled! "
+					+ "\n V = Validate \n S = Skip \n C = Cancel", "V, S, C", scanner);
 		}
 
-		if (isValidationOk.equals("J") || isValidationOk.equals("U")) {
+		if (isValidationOk.equals("V") || isValidationOk.equals("S")) {
 
-			if (isValidationOk.equals("J")) {
-				this.smHelper.print(this.print, "\nStarte Validierung. Bitte um etwas Geduld ...");
+			if (isValidationOk.equals("V")) {
+				this.smHelper.print(this.print, "\nStarted validation, please be patient ...");
 				XmlValidator bxh = new XmlValidator();
 				hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
 
 				while (hasValidationPassed == false) {
-					this.smHelper.print(this.print, "\nProblem in der XML Datei gefunden!");
+					this.smHelper.print(this.print, "\nFound a problem in xml file!");
 					if (!isWithCliArgs) {
-						isXmlCleanOk = Main.getUserInput("\nWollen Sie eine Datenbereinigung durchführen? "
-								+ "Die Originaldaten werden nicht verändert. "
-								+ "Dieser Vorgang kann je nach Datenmenge länger dauern. "
-								+ "Wenn Sie keine Datenbereinigung durchführen, wird der Vorgang abgebrochen."
-								+ "\n J = Ja, Datenbereinigung durchführen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
+						isXmlCleanOk = Main.getUserInput("\nDo you want to continue with cleaning the data?"
+								+ " The original data won't be changed. This process can take some time."
+								+ " If you cancel the cleaning of the data, the whole import process will be cancelled."
+								+ "\n Y = Yes, continue with cleaning of data\n N = No, cancel import process", "Y, N", scanner);
 					}
-					if (isXmlCleanOk.equals("J")) {
+					if (isXmlCleanOk.equals("Y")) {
 						// Start cleaning XML
 						XmlCleaner xmlc = new XmlCleaner();
 						boolean cleaningProcessDone = xmlc.cleanXml(pathToMabXmlFile);
@@ -165,19 +156,19 @@ public class Import {
 							pathToMabXmlFile = xmlc.getCleanedFile();
 							isNewXmlFileClean = bxh.validateXML(xmlc.getCleanedFile());
 							if (isNewXmlFileClean == false) {
-								this.smHelper.print(this.print, "\nDaten konnten nicht bereinigt werden! Import-Vorgang wurde abgebrochen.");
+								this.smHelper.print(this.print, "\nData could not be cleaned! Cancelled import process.");
 								return;
 							} else {
 								hasValidationPassed = true;
 							}
 						} else {
-							this.smHelper.print(this.print, "\nProblem bei der Datenbereinigung! Möglicherweise haben Sie keine"
-									+ " Schreibberechtigung für den Ordner, in den die bereinigte Datei geschrieben wird"
-									+ " (der gleiche wie die Ausgangsdatei \"" + pathToMabXmlFile + "\").");
+							this.smHelper.print(this.print, "\nProblem with cleaning the data! Maybe you do not have write permissions"
+									+ " to the folder, to which the cleaned data will be written. This is the same as the one of the original file: "
+									+ pathToMabXmlFile);
 							return;
 						}
 					} else {
-						this.smHelper.print(this.print, "\nImport-Vorgang auf Benutzerwunsch abgebrochen!");
+						this.smHelper.print(this.print, "\nImport process cancelled as requested by user.");
 						return;
 					}
 				}
@@ -188,32 +179,33 @@ public class Import {
 
 
 			if (hasValidationPassed) {
-				if (isValidationOk.equals("J")) {
-					this.smHelper.print(this.print, "\nValidierung war erfolgreich. Die Daten sind nun bereit für die Indexierung.\n");
+				if (isValidationOk.equals("V")) {
+					this.smHelper.print(this.print, "\nValidation was successful.");
 				}
-				if (isValidationOk.equals("U")) {
-					this.smHelper.print(this.print, "\nValidierung übersprungen!");
+				if (isValidationOk.equals("S")) {
+					this.smHelper.print(this.print, "\nSkiped validation.");
 				}
 
 				if (!isWithCliArgs) {
-					solrServerAddress = Main.getUserInput("\nGeben Sie die Solr-Serveradresse (URL) inkl. Core-Name ein (z. B. http://localhost:8080/solr/corename)", "solrPing", scanner);
+					solrServerAddress = Main.getUserInput("\nSpecify the Solr Server address (URL) incl. core name (e. g. http://localhost:8080/solr/corename)", "solrPing", scanner);
 				}
 				if (!isWithCliArgs) {
-					useDefaultMabPropertiesFile = Main.getUserInput("\nWollen Sie die \"mab.properties\" Datei in der Standardkonfiguration verwenden? "
-							+ "Wenn Sie dies nicht wollen, können Sie anschließend einen Pfad zu einer eigenen .properties-Datei angeben."
-							+ "\n J = Ja, Standard verwenden\n N = Nein, Standard nicht verwenden", "J, N", scanner);
+					useDefaultMabPropertiesFile = Main.getUserInput("\nDo you want to use the default \"mab.properties\" file? "
+							+ "If not, you can specify your own custom .properties file."
+							+ "\n D = Yes, default\n N = No, custom file", "D, N", scanner);
 				}
-				if (useDefaultMabPropertiesFile.equals("J")) {
+				if (useDefaultMabPropertiesFile.equals("D")) {
 					useDefaultMabProperties = true;
 					pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
 					directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
-					propertiesFileInfo = "Standard mab.properties Datei verwenden";
+					propertiesFileInfo = "Use default mab.properties file";
 				} else {
 					useDefaultMabProperties = false;
 					if (!isWithCliArgs) {
-						pathToMabPropertiesFile = Main.getUserInput("\nBitte geben den Pfad zu Ihrer eigenen .properties-Datei an (z. B. /home/username/meine.properties). Beachten Sie, dass die Dateiendung wirklich \".properties\" sein muss!", "propertiesExists", scanner);
+						pathToMabPropertiesFile = Main.getUserInput("\nSpecify a path to your own custom .properties file (e. g. /home/username/my.properties)."
+								+ " Please be aware that the file suffix must be \".properties\".", "propertiesExists", scanner);
 					}
-					propertiesFileInfo = "Eigene .properties Datei verwenden: " + pathToMabPropertiesFile;
+					propertiesFileInfo = "Use custom .properties file: " + pathToMabPropertiesFile;
 
 					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
 					areTranslationFilesOk = Main.translationFilesExist(pathToMabPropertiesFile, directoryOfTranslationFiles);
@@ -229,16 +221,17 @@ public class Import {
 				}
 
 				if (!isWithCliArgs) {
-					isIndexingOk = Main.getUserInput("\nAlles ist nun bereit. Hier noch einmal Ihre Angaben:"
-							+ "\n Daten-Datei:\t" + pathToMabXmlFile
+					isIndexingOk = Main.getUserInput("\nEverything is ready now. Please review your choices:"
+							+ "\n Data file:\t" + pathToMabXmlFile
 							+ "\n Solr Server:\t" + solrServerAddress
 							+ "\n .properties:\t" + propertiesFileInfo
-							+ "\n\nWollen Sie den Import-Vorgang nun beginnen?"
-							+ "\nACHTUNG: Ja nach Datenmenge und Leistung des Computers kann dieser Vorgang lange dauern!"
-							+ " \n J = Ja, Import-Vorgang beginnen\n N = Nein, Import-Vorgang abbrechen", "J, N", scanner);
+							+ "\n\nDo you want to begin the import process?"
+							+ "\nATTENTION: Depending on the amount of data and the performance of the computer, the import process could take quite some time."
+							+ " So time to grab a coffee or a beer :-) "
+							+ " \n Y = Yes, start import process\n N = No, cancel import process", "Y, N", scanner);
 				}
 
-				if (isIndexingOk.equals("J")) {
+				if (isIndexingOk.equals("Y")) {
 
 					if (!isWithCliArgs) {
 						this.optimize = true;
@@ -247,6 +240,8 @@ public class Import {
 					// Create SolrSever:
 					solrServer = new HttpSolrServer(solrServerAddress);
 
+					startTime = System.currentTimeMillis();
+					
 					// Index metadata so Solr
 					Index index = new Index(pathToMabXmlFile, this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
 					isIndexingSuccessful = index.isIndexingSuccessful();
@@ -257,24 +252,25 @@ public class Import {
 					
 					if (this.optimize) {
 						this.smHelper = new SolrMabHelper(solrServer);
-						this.smHelper.print(this.print, "\nOptimiere Solr Server. Dies kann eine Weile dauern ...\n");
+						this.smHelper.print(this.print, "\nOptimizing Solr Server. That can take a while ...\n");
 						this.smHelper.solrOptimize();
 					}
 
 					if (isIndexingSuccessful && isRelateSuccessful) {
-						this.smHelper.print(this.print, "\nImport-Vorgang erfolgreich abgeschlossen.\n");
+						endTime = System.currentTimeMillis();
+						this.smHelper.print(this.print, "\nDone importing. Everything successful. Execution time: " + this.smHelper.getExecutionTime(startTime, endTime) + "\n");
 					} else {
-						System.err.println("\nFehler beim Import-Vorgang!\n");
+						System.err.println("\nError while importing data.\n");
 						return;
 					}
 				} else {
-					this.smHelper.print(this.print, "\nImport-Vorgang auf Benutzerwunsch abgebrochen.\n");
+					this.smHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
 					return;
 				}
 
 			}
 		} else {
-			this.smHelper.print(this.print, "\nImport-Vorgang auf Benutzerwunsch abgebrochen!");
+			this.smHelper.print(this.print, "\nImport process cancelled as requested by user.");
 			return;
 		}
 

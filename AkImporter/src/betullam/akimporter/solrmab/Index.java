@@ -107,7 +107,7 @@ public class Index {
 
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
-			smHelper.print(print, "\n");
+			this.smHelper.print(print, "\n");
 
 			// Commit records:
 			this.solrServer.commit();
@@ -115,9 +115,9 @@ public class Index {
 			isIndexingSuccessful = true;
 
 			if (optimizeSolr) {
-				smHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
+				this.smHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
 				this.smHelper.solrOptimize();
-				smHelper.print(print, "Done optimizing Solr index.\n\n");
+				this.smHelper.print(print, "Done optimizing Solr index.\n\n");
 			}
 			endTime = System.currentTimeMillis();
 			smHelper.print(print, "Done indexing to solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n");

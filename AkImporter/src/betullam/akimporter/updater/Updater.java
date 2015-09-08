@@ -55,36 +55,36 @@ public class Updater {
 		if (isDownloadSuccessful) {
 			
 			// Extract downloaded .tar.gz file(s):
-			print("Extracting downloaded files ...");
+			this.smHelper.print(this.print, "Extracting downloaded files ...\r");
 			ExtractTarGz etg = new ExtractTarGz();
 			etg.extractTarGz(localPathOriginal, timeStamp, localPathExtracted);
-			print("Done extracting.");
+			this.smHelper.print(this.print, "Extracting downloaded files ... Done");
 			
 			// Merge extracted files from downloaded .tar.gz file(se):
-			print("Merging extracted files ...");
+			this.smHelper.print(this.print, "\nMerging extracted files ...\r");
 			pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
 			xmlm.mergeElementNodes(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
-			print("Done merging.");
+			this.smHelper.print(this.print, "Merging extracted files ... Done");
 			
 			// Validate merged XML file:
-			print("Validate merged file ...");
+			this.smHelper.print(this.print, "\nValidate merged file ...\r");
 			XmlValidator bxh = new XmlValidator();
 			hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
-			print("Done validating");
+			this.smHelper.print(this.print, "Validate merged file ... Done");
 			
 			// Index XML file:
 			if (hasValidationPassed) {
 				if (this.useDefaultMabProperties) {
 					pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
 					directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
-					print("Use default mab.properties file for indexing.");
+					this.smHelper.print(this.print, "\nUse default mab.properties file for indexing.");
 				} else {
 					directoryOfTranslationFiles = new File(this.pathToMabPropertiesFile).getParent();
-					print("Use custom mab.properties file for indexing: " + pathToMabPropertiesFile);
+					this.smHelper.print(this.print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
 				}
 				
-				print("Start importing ...");
+				this.smHelper.print(this.print, "\nStart importing ...");
 				
 				// Index metadata so Solr
 				Index index = new Index(pathToMabXmlFile, this.solrServer, this.useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
@@ -95,17 +95,16 @@ public class Updater {
 				boolean isRelateSuccessful = relate.isRelateSuccessful();
 				
 				if (this.optimize) {
-					this.smHelper.print(this.print, "\nOptimiere Solr Server. Dies kann eine Weile dauern ...\n");
+					this.smHelper.print(this.print, "\nOptimizing Solr Server ...\n");
 					this.smHelper.solrOptimize();
 				}
 
 				
-				
 				if (isIndexingSuccessful && isRelateSuccessful) {
-					print("Done indexing.\nEVERYTHING WAS SUCCESSFUL!");
+					this.smHelper.print(this.print, "\nDone importing.\nEVERYTHING WAS SUCCESSFUL!");
 					isUpdateSuccessful = true;
 				} else {
-					System.out.println("\nFehler beim Import-Vorgang!\n");
+					this.smHelper.print(this.print, "\nError while importing!\n");
 					isUpdateSuccessful = false;
 				}
 				 
@@ -133,12 +132,6 @@ public class Updater {
 		File dir = new File(path);
 		if (!dir.exists()) {
 			dir.mkdirs();
-		}
-	}
-	
-	private void print(String text) {
-		if (print) {
-			System.out.println(text);
 		}
 	}
 
