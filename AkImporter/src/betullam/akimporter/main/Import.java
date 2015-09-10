@@ -66,7 +66,7 @@ public class Import {
 		this.pathToMultipleXmlFolder = pathToMultipleXmlFolder;
 		this.isValidationOk = (validate) ? "V" : "S";
 		this.solrServerAddress = solrUrl;	
-		this.useDefaultMabPropertiesFile = (ownMabProps) ? "N" : "Y";
+		this.useDefaultMabPropertiesFile = (ownMabProps) ? "N" : "D";
 		this.pathToMabPropertiesFile = (ownMabProps) ? pathToOwnMabProps : null;
 		this.optimize = optimize;
 		this.print = print;

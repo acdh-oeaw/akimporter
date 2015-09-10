@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -23,10 +24,10 @@ public class ParentToChilds {
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private RelationHelper relationHelper;
 	private SolrMabHelper smHelper = new SolrMabHelper();
-	int NO_OF_ROWS = 500;
-	int counter = 0;
-	long noOfDocs = 0;
-	boolean print = false;
+	private int NO_OF_ROWS = 500;
+	private int counter = 0;
+	private long noOfDocs = 0;
+	private boolean print = false;
 
 
 	public ParentToChilds(HttpSolrServer solrServer, String timeStamp, boolean print) {
@@ -47,6 +48,10 @@ public class ParentToChilds {
 		// If there are some records, go on. If not, do nothing.
 		if (queryResults != null && noOfDocs > 0) {
 
+			// Clear query results to save memory. We don't need it anymore.
+			queryResults.clear();
+			queryResults = null;
+
 			// Calculate the number of solr result pages we need to iterate over
 			long wholePages = (noOfDocs/NO_OF_ROWS);
 			long fractionPages = (noOfDocs%NO_OF_ROWS);
@@ -63,6 +68,7 @@ public class ParentToChilds {
 				relationHelper.indexDocuments(docsForAtomicUpdates);
 
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
+				docsForAtomicUpdates.clear(); // Clear to save memory
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			}
@@ -77,6 +83,7 @@ public class ParentToChilds {
 				relationHelper.indexDocuments(docsForAtomicUpdates);
 
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
+				docsForAtomicUpdates.clear(); // Clear to save memory
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			}
@@ -89,6 +96,7 @@ public class ParentToChilds {
 			} catch (IOException e) {
 				e.printStackTrace();
 			} finally {
+				docsForAtomicUpdates.clear(); // Clear to save memory
 				docsForAtomicUpdates = null;
 				queryResults = null;
 			}
@@ -112,7 +120,7 @@ public class ParentToChilds {
 			counter = counter + 1;
 
 			String docId = (childRecord.getFieldValue("id") != null) ? childRecord.getFieldValue("id").toString() : null;
-			String[] parentAcs = relationHelper.getParentAcsFromSingleChild(childRecord);
+			Set<String> parentAcs = relationHelper.getDedupParentAcsFromSingleChild(childRecord);
 			
 			List<SolrDocument> parentRecords = relationHelper.getParentRecords(parentAcs);
 

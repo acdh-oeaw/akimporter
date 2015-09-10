@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -109,9 +110,9 @@ public class UnlinkChildsFromParents {
 			String docId = null;
 
 			for (SolrDocument childRecord : childRecords) {
-				String[] arrParentAcsSingleChild = relationHelper.getParentAcsFromSingleChild(childRecord);
+				Set<String> arrParentAcsSingleChild = relationHelper.getDedupParentAcsFromSingleChild(childRecord);
 				//String recordType = relationHelper.getChildRecordType(childRecord);
-				if (arrParentAcsSingleChild != null && arrParentAcsSingleChild.length > 0) {
+				if (arrParentAcsSingleChild != null && arrParentAcsSingleChild.size() > 0) {
 					for (String parentAc : arrParentAcsSingleChild) {
 						parentAcs.add(parentAc);
 					}

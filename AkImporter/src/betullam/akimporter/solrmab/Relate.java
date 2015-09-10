@@ -2,7 +2,8 @@ package betullam.akimporter.solrmab;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
-import betullam.akimporter.solrmab.relations.ChildsToParents;
+import betullam.akimporter.solrmab.relations.ChildsToParentsFromChilds;
+import betullam.akimporter.solrmab.relations.ChildsToParentsFromParents;
 import betullam.akimporter.solrmab.relations.ParentToChilds;
 import betullam.akimporter.solrmab.relations.UnlinkChildsFromParents;
 
@@ -41,11 +42,19 @@ public class Relate {
 		ucfp.unlinkChildsFromParents();
 		this.smHelper.print(this.print, "\n");
 		
-		// 3. Relink childs to their parents:
-		ChildsToParents ctp = new ChildsToParents(this.solrServer, this.timeStamp, this.print);
-		//ChildsToParents ctp = new ChildsToParents(this.solrServer, "1441408588597", this.print);
-		ctp.addChildsToParents();
+		
+		// 3. Relink childs to parents from all currently indexed child records:
+		ChildsToParentsFromChilds ctpfc = new ChildsToParentsFromChilds(this.solrServer, this.timeStamp, this.print);
+		//ChildsToParentsFromChilds ctp = new ChildsToParentsFromChilds(this.solrServer, "1441408588597", this.print);
+		ctpfc.addChildsToParentsFromChilds();
 		this.smHelper.print(this.print, "\n");
+		
+		// 4. Relink childs to parents from all currently indexed parent records:
+		ChildsToParentsFromParents ctpfp = new ChildsToParentsFromParents(this.solrServer, this.timeStamp, this.print);
+		ctpfp.addChildsToParentsFromParents();
+		this.smHelper.print(this.print, "\n");
+
+		
 		
 		if (optimize) {
 			this.smHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");

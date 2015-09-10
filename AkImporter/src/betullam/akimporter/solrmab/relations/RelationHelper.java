@@ -16,22 +16,10 @@ import org.apache.solr.common.SolrInputDocument;
 
 public class RelationHelper {
 
-
 	// General variables
-	HttpSolrServer solrServer;
-	String timeStamp = null;
-	int NO_OF_ROWS = 500;
-	int rowCounter = 0;
-
-	// Field name variables
-	String fnChildSys = null;
-	String fnChildAc = null;
-	String fnChildTitle = null;
-	String fnChildVolNo = null;
-	String fnChildVolNoSort = null;
-	String fnChildEdition = null;
-	String fnChildPublishDate = null;
-
+	private HttpSolrServer solrServer;
+	private String timeStamp = null;
+	private int NO_OF_ROWS = 500;
 
 	public RelationHelper(HttpSolrServer solrServer, String timeStamp) {
 		this.solrServer = solrServer;
@@ -78,7 +66,7 @@ public class RelationHelper {
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "sysNo_str", "parentSYS_str", "parentMultiAC_str", "parentSeriesAC_str_mv", "articleParentAC_str");
+		query.setFields("id", "sysNo_txt", "parentSYS_str_mv", "parentMultiAC_str", "parentSeriesAC_str_mv", "articleParentAC_str");
 
 
 		try {
@@ -91,6 +79,54 @@ public class RelationHelper {
 	}
 
 
+	
+	public SolrDocumentList getCurrentlyIndexedRecordsWithNoChilds(boolean isFirstPage, String lastDocId) {
+
+		// Set up variable
+		SolrDocumentList queryResult = null;
+
+		// New Solr query
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting (more efficient for deep paging)
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance
+		query.setQuery("*:*");
+
+		// Filter all records that were indexed with the current import process and that do not have child volumes
+		if (this.timeStamp != null) {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("indexTimestamp_str:"+this.timeStamp, "-childSYS_str_mv:*", "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("indexTimestamp_str:"+this.timeStamp, "-childSYS_str_mv:*", "id:[" + lastDocId + " TO *]");
+			}
+		} else {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("id:[" + lastDocId + " TO *]");
+			}
+		}
+
+		// Set fields that should be given back from the query
+		query.setFields("id", "sysNo_txt", "parentSYS_str_mv", "parentMultiAC_str", "parentSeriesAC_str_mv", "articleParentAC_str");
+
+
+		try {
+			// Execute query and get results
+			queryResult = this.solrServer.query(query).getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		return queryResult;
+	}
 
 
 
@@ -118,9 +154,9 @@ public class RelationHelper {
 		if (childDocumentList != null && !childDocumentList.isEmpty()) {
 			parentAcs = new HashSet<String>();
 			for (SolrDocument child : childDocumentList) {
-				String[] arrParentAcs = getParentAcsFromSingleChild(child);
-				if (arrParentAcs.length > 0) {
-					for (String parentAc : arrParentAcs) {
+				Set<String> lstParentAcs = getDedupParentAcsFromSingleChild(child);
+				if (lstParentAcs.size() > 0) {
+					for (String parentAc : lstParentAcs) {
 						parentAcs.add(parentAc);
 					}
 				}
@@ -129,28 +165,68 @@ public class RelationHelper {
 		return parentAcs;
 	}
 
-	public String[] getParentAcsFromSingleChild(SolrDocument childRecord) {
-		String[] parentAcs = null;
+	public Set<String> getDedupParentAcsFromSingleChild(SolrDocument childRecord) {
+		Set<String> parentAcs = new HashSet<String>();
+
 
 		if (childRecord != null) {
 			String childRecordType = getChildRecordType(childRecord);
 			if (childRecordType != null) {
-				if (childRecordType.equals("multivolume")) {
-					parentAcs = childRecord.getFieldValues("parentMultiAC_str").toArray(new String[0]);
-				} else if (childRecordType.equals("serialvolume")) {
-					parentAcs = childRecord.getFieldValues("parentSeriesAC_str_mv").toArray(new String[0]);
-				} else if (childRecordType.equals("article")) {
-					parentAcs = childRecord.getFieldValues("articleParentAC_str").toArray(new String[0]);
+
+				String[] parentMultiACs = (childRecord.getFieldValues("parentMultiAC_str") != null) ? childRecord.getFieldValues("parentMultiAC_str").toArray(new String[0]) : null;
+				String[] parentSeriesACs = (childRecord.getFieldValues("parentSeriesAC_str_mv") != null) ? childRecord.getFieldValues("parentSeriesAC_str_mv").toArray(new String[0]) : null;
+				String[] parentArticleACs = (childRecord.getFieldValues("articleParentAC_str") != null) ? childRecord.getFieldValues("articleParentAC_str").toArray(new String[0]) : null;
+
+				if (parentMultiACs != null) {
+					for (String parentMultiAc : parentMultiACs) {
+						parentAcs.add(parentMultiAc);
+					}
+				}
+
+				if (parentSeriesACs != null) {
+					for (String parentSeriesAc : parentSeriesACs) {
+						parentAcs.add(parentSeriesAc);
+					}
+				}
+
+				if (parentArticleACs != null) {
+					for (String parentArticleAc : parentArticleACs) {
+						parentAcs.add(parentArticleAc);
+					}
 				}
 			}
 		}
+
 		return parentAcs;
 	}
+
+
+
+	public Set<String> getDedupParentSYSsFromSingleChild(SolrDocument childRecord) {
+		Set<String> parentSYSs = new HashSet<String>();
+		if (childRecord != null) {
+			String childRecordType = getChildRecordType(childRecord);
+			if (childRecordType != null) {
+				String[] parentSYSsOfChild = (childRecord.getFieldValues("parentSYS_str_mv") != null) ? childRecord.getFieldValues("parentSYS_str_mv").toArray(new String[0]) : null;
+
+
+
+				if (parentSYSsOfChild != null) {
+					for (String parentSYSOfChild : parentSYSsOfChild) {
+						parentSYSs.add(parentSYSOfChild);
+					}
+				}
+			}
+		}
+		return parentSYSs;
+	}
+
+
 
 	public SolrDocument getParentRecord(String parentAc) {
 		SolrDocument parentRecord = null;
 		SolrQuery queryParent = new SolrQuery(); // New Solr query
-		queryParent.setQuery("acNo_str:"+parentAc); // Define a query
+		queryParent.setQuery("acNo_txt:"+parentAc); // Define a query
 		queryParent.setFields("id", "title"); // Set fields that should be given back from the query
 
 		try {
@@ -165,7 +241,7 @@ public class RelationHelper {
 		return parentRecord;
 	}
 
-	public List<SolrDocument> getParentRecords(String[] parentAcs) {
+	public List<SolrDocument> getParentRecords(Set<String> parentAcs) {
 		List<SolrDocument> parentRecords = null;
 
 		if (parentAcs != null) {
