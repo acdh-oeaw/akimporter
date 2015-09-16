@@ -195,10 +195,6 @@ public class ChildsToParentsFromParents {
 						childEditions.add(childEdition);
 						childPublishDates.add(childPublishDate);
 						
-						counter = counter + 1;
-						this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfParents + "                 \r");
-						//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
-
 					}
 
 					// Prepare parent record for atomic updates:
@@ -243,6 +239,11 @@ public class ChildsToParentsFromParents {
 				}
 			}
 
+			counter = counter + 1;
+			this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfParents + "                 \r");
+			//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
+
+			
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
