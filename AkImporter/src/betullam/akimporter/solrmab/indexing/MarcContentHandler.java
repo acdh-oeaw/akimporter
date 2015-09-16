@@ -162,8 +162,8 @@ public class MarcContentHandler implements ContentHandler {
 			
 			allRecords.add(record);
 			
-			print("Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "\r");
-			System.out.print(StringUtils.repeat("\b", 100) + "\r");
+			print("Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
+			//System.out.print(StringUtils.repeat("\b", 100) + "\r");
 
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
 			 * index it's values to Solr, then empty all objects (set to "null") to save memory and go on with the next n records.

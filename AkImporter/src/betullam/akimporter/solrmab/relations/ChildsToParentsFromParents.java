@@ -147,9 +147,9 @@ public class ChildsToParentsFromParents {
 
 				// Get all non deleted childs of this records
 				SolrDocumentList nonDeletedChilds = getNonDeletedChildsByParentSYS(parentSYS);
-
+				long noOfNonDeletedChilds = nonDeletedChilds.getNumFound();
 				// If childs are existing, link them to it's parent
-				if (nonDeletedChilds != null && nonDeletedChilds.getNumFound() > 0) {
+				if (nonDeletedChilds != null && noOfNonDeletedChilds > 0) {
 
 					// Some Lists to add infos from multiple child records
 					List<String> childTypes = new ArrayList<String>();
@@ -195,6 +195,11 @@ public class ChildsToParentsFromParents {
 						childVolumeNosSort.add(childVolumeNoSort);
 						childEditions.add(childEdition);
 						childPublishDates.add(childPublishDate);
+						
+						counter = counter + 1;
+						this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfParents + "                 \r");
+						//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
+
 					}
 
 					// Prepare parent record for atomic updates:
@@ -238,11 +243,6 @@ public class ChildsToParentsFromParents {
 					docsForAtomicUpdates.add(linkedChild);
 				}
 			}
-
-			
-			counter = counter + 1;
-			this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfParents + "            \r");
-			this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 

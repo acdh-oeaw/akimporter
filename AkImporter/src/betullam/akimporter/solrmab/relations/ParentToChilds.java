@@ -150,8 +150,8 @@ public class ParentToChilds {
 				}
 			}
 			
-			this.smHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "\r");
-			this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
+			this.smHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "                 \r");
+			//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 
 			
 

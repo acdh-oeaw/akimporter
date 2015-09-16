@@ -253,8 +253,8 @@ public class ChildsToParentsFromChilds {
 				}
 
 
-				this.smHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "            \r");
-				this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
+				this.smHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
+				//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 			}
 		}
 	}
