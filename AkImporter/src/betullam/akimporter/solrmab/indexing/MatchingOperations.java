@@ -1,3 +1,30 @@
+/**
+ * Matching MAB fields to respective Solr fields.
+ * 
+ * This is where some of the data processing is done to
+ * get the values in shape before indexing them to Solr.
+ * 
+ * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * 
+ * This file is part of AkImporter.
+ * 
+ * AkImporter is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * AkImporter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with AkImporter.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @author   Michael Birkner <michael.birkner@akwien.at>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.html
+ * @link     http://wien.arbeiterkammer.at/service/bibliothek/
+ */
 package betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
@@ -19,18 +46,6 @@ public class MatchingOperations {
 	List<String> multiValuedFields = Index.multiValuedFields;
 	List<Mabfield> customTextFields = Index.customTextFields;
 	HashMap<String, List<String>> translateFields = Index.translateFields;
-
-	/**
-	 * THIS EXPLANATION MAY BE OUT OF DATE!!!
-	 * 
-	 * 1. Match old Mab-Field to Solrfields. As the old Mab-Field could match two or more Solrfields, you may get several Solrfields for 1 old Mabfield
-	 *    Therefore, we need to return a List of the new Solrfields.
-	 * 2. Add the List of the new Solrfields (same Datastructure as Mabfields) to a List of Lists (List<List<Mabfield>>), but only if it's not empty (that's
-	 *    how we get rid of none-matching Mabfields).
-	 * 3. For each List in the List of Mabfields (which are now Solrfields), add each Solrfield to a new List<Mabfield> and add that List to a Record.
-	 * 4. Add the Record to a List<Record>.
-	 * 5. Return the List<Record>
-	 */
 
 
 	public List<Record> matching(List<Record> oldRecordSet, List<MatchingObject> listOfMatchingObjs) {
