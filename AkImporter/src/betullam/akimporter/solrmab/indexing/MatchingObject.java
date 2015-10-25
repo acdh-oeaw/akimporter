@@ -31,7 +31,6 @@ public class MatchingObject {
 
 	
 	private String solrFieldname; // Solr fieldname (e. g. "autor", "title", "id", etc.)
-	//private List<String> mabFieldnames; // MAB-Fieldnames (e. g. "100$a$p", "all100") which corresponds to the solrFieldname (e. g. "autor")
 	private HashMap<String, List<String>> mabFieldnames;
 	private boolean multiValued;
 	private boolean customText;

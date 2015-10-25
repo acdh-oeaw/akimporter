@@ -51,8 +51,6 @@ public class RelationHelper {
 	}
 
 
-
-
 	public SolrDocumentList getCurrentlyIndexedChildRecords(boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
@@ -290,8 +288,8 @@ public class RelationHelper {
 			} catch (IOException e) {
 				e.printStackTrace();
 			} finally {
-				docsForAtomicUpdates.clear(); // Clear to save memory
-				docsForAtomicUpdates = null; // Set to null to save memory
+				docsForAtomicUpdates.clear();
+				docsForAtomicUpdates = null;
 			}
 		}
 	}

@@ -71,7 +71,7 @@ public class ParentToChilds {
 		// If there are some records, go on. If not, do nothing.
 		if (queryResults != null && noOfDocs > 0) {
 
-			// Clear query results to save memory. We don't need it anymore.
+			// Clear query results. We don't need them anymore.
 			queryResults.clear();
 			queryResults = null;
 
@@ -90,8 +90,8 @@ public class ParentToChilds {
 				// Add documents to Solr
 				relationHelper.indexDocuments(docsForAtomicUpdates);
 
-				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
-				docsForAtomicUpdates.clear(); // Clear to save memory
+				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
+				docsForAtomicUpdates.clear();
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			}
@@ -105,8 +105,8 @@ public class ParentToChilds {
 				// Add documents to Solr
 				relationHelper.indexDocuments(docsForAtomicUpdates);
 
-				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
-				docsForAtomicUpdates.clear(); // Clear to save memory
+				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
+				docsForAtomicUpdates.clear();
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			}
@@ -119,7 +119,7 @@ public class ParentToChilds {
 			} catch (IOException e) {
 				e.printStackTrace();
 			} finally {
-				docsForAtomicUpdates.clear(); // Clear to save memory
+				docsForAtomicUpdates.clear();
 				docsForAtomicUpdates = null;
 				queryResults = null;
 			}
@@ -174,9 +174,6 @@ public class ParentToChilds {
 			}
 			
 			this.smHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "                 \r");
-			//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
-
-			
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

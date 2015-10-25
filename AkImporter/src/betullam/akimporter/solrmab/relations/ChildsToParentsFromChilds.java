@@ -75,7 +75,7 @@ public class ChildsToParentsFromChilds {
 		// If there are some records, go on. If not, do nothing.
 		if (queryResults != null && noOfDocs > 0) {
 
-			// Clear query results to save memory. We don't need it anymore.
+			// Clear query results. We don't need them anymore.
 			queryResults.clear();
 			queryResults = null;
 
@@ -266,19 +266,18 @@ public class ChildsToParentsFromChilds {
 				// Add documents from the class variable which was set before to Solr
 				if (counter % CHILD_INDEX_RATE == 0) { // Every n-th record, add documents to solr
 					relationHelper.indexDocuments(docsForAtomicUpdates);
-					docsForAtomicUpdates.clear(); // Clear to save memory
-					docsForAtomicUpdates = null; // Set to null to save memory
+					docsForAtomicUpdates.clear();
+					docsForAtomicUpdates = null;
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				} else if (counter >= noOfParents) { // The remainding documents (if division with NO_OF_ROWS 
 					relationHelper.indexDocuments(docsForAtomicUpdates);
-					docsForAtomicUpdates.clear(); // Clear to save memory
-					docsForAtomicUpdates = null; // Set to null to save memory
+					docsForAtomicUpdates.clear();
+					docsForAtomicUpdates = null;
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
 
 				this.smHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
-				//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
 			}
 		}
 	}

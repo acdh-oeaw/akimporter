@@ -63,9 +63,7 @@ public class ChildsToParentsFromParents {
 	private Set<String> parentSYSs = new HashSet<String>();
 	private boolean print = false;
 
-
-
-
+	
 	public ChildsToParentsFromParents(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
@@ -83,7 +81,7 @@ public class ChildsToParentsFromParents {
 		// If there are some records, go on. If not, do nothing.
 		if (recordsWithNoChilds != null && noOfDocs > 0) {
 
-			// Clear query results to save memory. We don't need it anymore.
+			// Clear query results. We don't need them anymore.
 			recordsWithNoChilds.clear();
 			recordsWithNoChilds = null;
 
@@ -105,7 +103,7 @@ public class ChildsToParentsFromParents {
 				// Add documents to Solr
 				relationHelper.indexDocuments(docsForAtomicUpdates);
 
-				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
+				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
 				docsForAtomicUpdates.clear();
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
@@ -122,7 +120,7 @@ public class ChildsToParentsFromParents {
 				// Add documents to Solr
 				relationHelper.indexDocuments(docsForAtomicUpdates);
 
-				// Set Collection<SolrInputDocument> to null and then to a fresh Collection to save memory
+				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
 				docsForAtomicUpdates.clear();
 				docsForAtomicUpdates = null;
 				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
@@ -266,8 +264,6 @@ public class ChildsToParentsFromParents {
 
 			counter = counter + 1;
 			this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfParents + "                 \r");
-			//this.smHelper.print(this.print, StringUtils.repeat("\b", 130) + "\r");
-
 			
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 

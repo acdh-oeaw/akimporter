@@ -37,7 +37,6 @@ public class SolrMabHelper {
 	
 	public SolrMabHelper(HttpSolrServer solrServer) {
 		this.solrServer = solrServer;
-		
 	}
 	
 	public String getExecutionTime(long startTime, long endTime) {

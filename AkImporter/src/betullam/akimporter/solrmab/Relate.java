@@ -57,20 +57,17 @@ public class Relate {
 		
 		// 1. Linking parents to their childs:
 		ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp, this.print);
-		//ParentToChilds ptc = new ParentToChilds(this.solrServer, "1441408588597", this.print);
 		ptc.addParentsToChilds();
 		this.smHelper.print(this.print, "\n");
 		
 		// 2. Remove all childs from parents:
 		UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp, this.print);
-		//UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, "1441408588597", this.print);
 		ucfp.unlinkChildsFromParents();
 		this.smHelper.print(this.print, "\n");
 		
 		
 		// 3. Relink childs to parents from all currently indexed child records:
 		ChildsToParentsFromChilds ctpfc = new ChildsToParentsFromChilds(this.solrServer, this.timeStamp, this.print);
-		//ChildsToParentsFromChilds ctp = new ChildsToParentsFromChilds(this.solrServer, "1441408588597", this.print);
 		ctpfc.addChildsToParentsFromChilds();
 		this.smHelper.print(this.print, "\n");
 		
@@ -79,7 +76,6 @@ public class Relate {
 		ctpfp.addChildsToParentsFromParents();
 		this.smHelper.print(this.print, "\n");
 
-		
 		
 		if (optimize) {
 			this.smHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");

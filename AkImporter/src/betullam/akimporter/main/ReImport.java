@@ -114,7 +114,7 @@ public class ReImport {
 					+ "If not, you can specify your own custom .properties file."
 					+ "\n D = Yes, default\n N = No, custom file", "D, N", scanner);
 
-			// Variablen
+			// Variables
 			String propertiesFileInfo = null;
 			boolean useDefaultMabProperties = true;
 			String pathToMabPropertiesFile = null;
@@ -195,9 +195,7 @@ public class ReImport {
 			}
 
 
-
-			// Stop inport process:
-		} else {
+		} else { // Stop inport process
 			System.out.println("\nImport process cancelled as requested by user.");
 			return;
 		}

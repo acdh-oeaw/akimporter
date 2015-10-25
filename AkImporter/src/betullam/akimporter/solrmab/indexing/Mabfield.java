@@ -27,8 +27,8 @@ package betullam.akimporter.solrmab.indexing;
 
 public class Mabfield {
 	
-	private String fieldname; // trim(datafield-tag + datafield-ind1 + datafield-ind2) + trim(subfield-code)
-	private String fieldvalue; // trim(subfield-value)
+	private String fieldname;
+	private String fieldvalue;
 	
 	public Mabfield() {}
 

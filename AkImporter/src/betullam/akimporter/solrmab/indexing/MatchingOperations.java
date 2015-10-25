@@ -38,7 +38,6 @@ import betullam.akimporter.solrmab.Index;
 public class MatchingOperations {
 
 	private List<Mabfield> listOfMatchedFields;
-	//private RecordSet newRecordSet;
 	private List<Record> newListOfRecords;
 	private List<List<Mabfield>> listOfNewSolrfieldLists;
 	private List<Mabfield> listOfNewFieldsForNewRecord;
@@ -136,8 +135,6 @@ public class MatchingOperations {
 
 			if (matchingObject.isTranslateValue()) {
 
-				//System.out.println("mabFieldname: " + matchingObject.getTranslateProperties());
-				//System.out.println("Translate Properties: " + matchingObject.getTranslateProperties());
 				HashMap<String, String> translateProperties = matchingObject.getTranslateProperties();
 
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
@@ -153,24 +150,6 @@ public class MatchingOperations {
 							if (translatedValue != null) {
 								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
 							}
-							
-							// WORX:
-							/*
-							String fieldValueXml = mabField.getFieldvalue();
-
-							if (fieldValueXml.length() >= toCharacterCount) { // Avoid "Index out of range" exceptions
-								String matchedValueXml = fieldValueXml.substring(fromCharacterCount, toCharacterCount);
-								String valueToUse = null;
-								for (Entry<String, String> translateProperty : translateProperties.entrySet()) {
-									if (matchedValueXml.equals(translateProperty.getKey())) {
-										valueToUse = translateProperty.getValue();
-									}
-								}
-								if (valueToUse != null) {
-									listOfMatchedFields.add(new Mabfield(solrFieldname, valueToUse));
-								}
-							}
-							*/
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 						if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
@@ -237,59 +216,38 @@ public class MatchingOperations {
 							listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
 						}
 					} else if (mabFieldnameProps.length() == 8) {
-						//System.out.println("valueToMatchWith: " + valueToMatchWith);
-						//System.out.println("valueToMatchWith: " + valueToMatchWith + "; substring: " + valueToMatchWith.substring(7, 8));
-						//System.out.println("valueToMatchWith: " + valueToMatchWith + "; valueToMatchWith.substring(3, 8): " + valueToMatchWith.substring(3, 8));
-						//System.out.println("valueToMatchWith: " + valueToMatchWith + "; valueToMatchWith.substring(4, 8): " + valueToMatchWith.substring(3, 8));
 
 						if (mabFieldnameProps.substring(3).equals("$**$*")) { // Match against all indicators and subfields. E. g. 100$**$* matches 100$a1$b, 100$b3$z, 100$z*$-, etc.
 							if (allFields(mabFieldnameXml, mabFieldnameProps) == true) {	
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								// System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 							if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 							if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 							if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 							if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 							if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
-							// System.out.println("valueToMatchWith: " + valueToMatchWith + "; valueToMatchWith.substring(3, 6): " + valueToMatchWith.substring(3, 6));
 							if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						} else { 
 							if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
-								// Create new Mabfield-Object, which has the same data-structure as a Solrfield (Sting fieldname, String fieldvalue), and add it to the list of matched fields:
 								listOfMatchedFields.add(new Mabfield(solrFieldname, mabField.getFieldvalue()));
-								//System.out.println(solrFieldname + ": " + mabField.getFieldvalue());
 							}
 						}
 					}
@@ -311,7 +269,6 @@ public class MatchingOperations {
 		// in = Values from XML-File
 		// matchValue = Values from mab.properties file
 		// match = Only first 3 characters from matchValue (e. g. "311" from "311$a1$p")
-		//System.out.println("in: " + in + ", matchValue: " + matchValue + "; match: " + match);
 
 		// Match 4 or 5 characters (exports from ALEPH Publisher could have 2 indicators, so the input Value could e. g. be 331$a1$b. So "$a1$b" has 5 characters. In contrary,
 		// the "normal" ALEPH export (with service print_03) does not have a second indicator. There we only have e. g. 331$a$b, so "$a$b" are 4 characters to match against.

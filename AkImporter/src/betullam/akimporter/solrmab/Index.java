@@ -93,8 +93,6 @@ public class Index {
 	};
 
 
-
-	//private boolean startIndexing(String mabXmlFile, HttpSolrServer solrServer, String mabPropertiesFile, String pathToTranslationFiles, boolean useDefaultMabProperties, boolean isIndexingOnly, boolean isLinkingOnly, boolean optimizeSolr) {
 	private void startIndexing() {
 
 		setLogger();
@@ -320,11 +318,8 @@ public class Index {
 				String solrFieldName = matchingObject.getSolrFieldname();
 				HashMap<String, List<String>> customTexts = matchingObject.getMabFieldnames();
 
-				//System.out.println("Solr Fieldname: " + solrFieldName + " - " + customTexts + " - (Multivalued: " + matchingObject.isMultiValued() + " - Custom text: " + matchingObject.isCustomText() + ")");
-
 				// Make new Mabfield for each custom text and add it to a List of Mabfields, so we can process it later on:
 				for (Entry<String, List<String>> customText : customTexts.entrySet()) {
-					//System.out.println("1. Solr Fieldname: " + solrFieldName + ": " + customText);
 					customTextFields.add(new Mabfield(solrFieldName, customText.getKey()));
 				}
 			}
@@ -384,9 +379,7 @@ public class Index {
 	//++++++++++++++++++++++++++++++++++ LOG4J ++++++++++++++++++++++++++++++++++//
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 	private void setLogger() {
-		// Log-Output (avoid error message "log4j - No appenders could be found for logger"):
 		BasicConfigurator.configure();
-		// Set log4j-output to "warn" (avoid very long logs in console):
 		Logger.getRootLogger().setLevel(Level.WARN);
 	}
 

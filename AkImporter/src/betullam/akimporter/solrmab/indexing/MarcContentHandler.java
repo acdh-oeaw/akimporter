@@ -89,7 +89,7 @@ public class MarcContentHandler implements ContentHandler {
 
 
 	// Read and process parameters of XML-Tags and create objects here.
-	// Content (text) is processed in endElement()!
+	// Content (text) is processed in endElement()
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attribs) throws SAXException {
 
@@ -190,10 +190,10 @@ public class MarcContentHandler implements ContentHandler {
 			print("Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
 			//System.out.print(StringUtils.repeat("\b", 100) + "\r");
 
-			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and
-			 * index it's values to Solr, then empty all objects (set to "null") to save memory and go on with the next n records.
-			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but now
-			 * only 700 are indexed! The 33 remaining records will be indexed in endDocument()-Method;
+			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
+			 * it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
+			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but at this point,
+			 * only 700 are indexed. The 33 remaining records will be indexed in endDocument() function.
 			 */
 			if (counter % NO_OF_DOCS == 0) {
 
@@ -210,10 +210,6 @@ public class MarcContentHandler implements ContentHandler {
 				allFields.clear();
 				allFields = null;
 				newRecordSet = null;
-
-
-				//endTime = System.currentTimeMillis();
-				//print("\nElapsed time after " + counter + " records: " + getExecutionTime(startTime, endTime));
 			}
 		}
 
@@ -300,7 +296,6 @@ public class MarcContentHandler implements ContentHandler {
 
 	
 	public void solrClearIndex(SolrServer sServer) {
-
 		try {
 			// Delete the whole Solr-index by query!
 			sServer.deleteByQuery( "*:*" );
@@ -312,7 +307,6 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 	public void solrCommit(SolrServer sServer) {		
-
 		try {
 			// Do a Solr commit 
 			sServer.commit();
@@ -322,20 +316,6 @@ public class MarcContentHandler implements ContentHandler {
 			e.printStackTrace();
 		}
 	}
-
-	/*
-	private String getExecutionTime(long startTime, long endTime) {
-		String executionTime = null;
-
-		long timeElapsedMilli =  endTime - startTime;
-		int seconds = (int) (timeElapsedMilli / 1000) % 60 ;
-		int minutes = (int) ((timeElapsedMilli / (1000*60)) % 60);
-		int hours   = (int) ((timeElapsedMilli / (1000*60*60)) % 24);
-
-		executionTime = hours + ":" + minutes + ":" + seconds;
-		return executionTime;
-	}
-	*/
 
 
 	@Override
