@@ -101,6 +101,13 @@ public class Main {
 	static String pathToMergedFile;
 	static boolean isMergingSuccessful;
 
+	
+	/**
+	 * Main method of AkImporter.
+	 * This is the starting point for all following actions.
+	 * 
+	 * @param	args	Command line arguments
+	 */
 	public static void main(String[] args) {
 
 		// Log4J
@@ -368,10 +375,10 @@ public class Main {
 	 * possible Answers. You can also ask for a Solr server URL and ping it (check if it is running) by using "solrPing" for possibleAnswers.
 	 * If you don't need to validate an answer, use null.
 	 * 
-	 * @param question			A question you want the user to answer as a String.
-	 * @param possibleAnswers	A comma-separated String with possible answers: "fileExists", "directoryExists", "propertiesExists", "newFile", "solrPing" or null (see above explanation).
-	 * @param scanner			A Scanner(System.in) object.
-	 * @return String
+	 * @param	question			A question you want the user to answer as a String.
+	 * @param	possibleAnswers		A comma-separated String with possible answers: "fileExists", "directoryExists", "propertiesExists", "newFile", "solrPing" or null (see above explanation).
+	 * @param	scanner				A Scanner(System.in) object.
+	 * @return	String:				The value the user specified
 	 */
 	public static String getUserInput(String question, String possibleAnswers, Scanner scanner) {
 		boolean isValidAnswer = false;
@@ -462,37 +469,68 @@ public class Main {
 	}
 
 
-	public static List<String> getPossibleAnswers(String commaSeparatedString) {
-		List<String> possibleAnswers = new ArrayList<String>();
+	/**
+	 * Gets a List<String> of all answers that are possible.
+	 * Usefull to show possible input values if user inputs a wrong value.
+	 * 
+	 * @param 	possibleAnswers	Comma separated String of possible answers
+	 * @return	List<String>	All possible answers as List<String>
+	 */
+	public static List<String> getPossibleAnswers(String possibleAnswers) {
+		List<String> lstAnswers = new ArrayList<String>();
 
-		String[] arrPossibleAnswers = commaSeparatedString.split(",");
+		String[] arrPossibleAnswers = possibleAnswers.split(",");
 
 		for (String possibleAnswer : arrPossibleAnswers) {
-			possibleAnswers.add(possibleAnswer.trim());
+			lstAnswers.add(possibleAnswer.trim());
 		}
 
-		return possibleAnswers;
+		return lstAnswers;
 	}
 
 
+	/**
+	 * Check if a file (not directory) exists
+	 * 
+	 * @param	f		A File object
+	 * @return	boolean	true if the file exists
+	 */
 	public static boolean fileExists(File f) {
 		boolean fileExists = false;
 		fileExists = (f.exists() && f.isFile()) ? true : false;
 		return fileExists;
 	}
 
+	/**
+	 * Check if a directory (not file) exists
+	 * 
+	 * @param	f		A File object
+	 * @return	boolean	true if the directory exists
+	 */
 	public static boolean directoryExists(File f) {
 		boolean directoryExists = false;
 		directoryExists = (f.exists() && f.isDirectory()) ? true : false;
 		return directoryExists;
 	}
 
+	/**
+	 * Check if a file is readable
+	 * 
+	 * @param	f		A File object
+	 * @return	boolean	true if the file is readable
+	 */
 	public static boolean canReadFile(File f) {
 		boolean canRead = false;
 		canRead = (f.canRead()) ? true : false;
 		return canRead;
 	}
 
+	/**
+	 * Check if a directory is writeable
+	 * 
+	 * @param	f		A File object
+	 * @return	boolean	true if the directory is writeable
+	 */
 	public static boolean canWriteToDirectory(File f) {
 		boolean canWrite = false;
 		f = new File(f.getParent());
@@ -500,6 +538,12 @@ public class Main {
 		return canWrite;
 	}
 
+	/**
+	 * Check if a Solr instance is running at a given URL
+	 * 
+	 * @param	solrServerUrl	String of a Solr server URL incl. core name, e. g. http://my.solr:8080/corename
+	 * @return	boolean			true if Solr is running
+	 */
 	public static boolean isSolrserverRunning(String solrServerUrl) {
 		boolean isSolrserverRunning = false;
 		HttpSolrServer solrServer = new HttpSolrServer(solrServerUrl);
@@ -525,6 +569,13 @@ public class Main {
 	}
 
 
+	/**
+	 * Check if a translation properties file exists that is defined in mab.properties
+	 * 
+	 * @param	pathToMabPropertiesFile		Path to used mab.properties file
+	 * @param	directoryOfTranslationFiles	Directory where translation files are stored
+	 * @return	boolean:						true if translation file exists
+	 */
 	public static boolean translationFilesExist(String pathToMabPropertiesFile, String directoryOfTranslationFiles) {
 
 		// Set some variables:

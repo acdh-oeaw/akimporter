@@ -52,7 +52,13 @@ public class ParentToChilds {
 	private long noOfDocs = 0;
 	private boolean print = false;
 
-
+	/**
+	 * Constructor for indexing infos from parent records to child records
+	 * 
+	 * @param solrServer	Solr server we want to index to
+	 * @param timeStamp		Timestamp of moment the import process started
+	 * @param print			True if status messages should be printed to console
+	 */
 	public ParentToChilds(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
@@ -60,7 +66,9 @@ public class ParentToChilds {
 	}
 
 
-
+	/**
+	 * This actually adds the information of the parent records to its child records.
+	 */
 	public void addParentsToChilds() {
 
 		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedChildRecords(true, null);
@@ -128,7 +136,13 @@ public class ParentToChilds {
 	}
 
 
-
+	/**
+	 * Setting the documents for atomic Solr updates and returning the ID of the last processed Solr document
+	 * 
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the previous last processed Solr document
+	 * @return				Doc Id of the new last processed Solr document
+	 */
 	public String linkParentsToChilds(boolean isFirstPage, String lastDocId) {
 
 		// Variable for return value:

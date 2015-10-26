@@ -68,6 +68,15 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
+	/**
+	 * Constructor of MarcContentHandler.
+	 * This is the starting point of reading and processing the XML file(s) containing MARC records.
+	 * 
+	 * @param listOfMatchingObjs	List<MatchingObject>. A MatchingObject contains information about matching MAB fields to Solr fields.
+	 * @param solrServer			SolrServer object that represents the Solr server to which the data should be indexed 
+	 * @param timeStamp				String that specifies the starting time of the importing process
+	 * @param print					boolean. True if status messages should be printed to the console.
+	 */
 	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, SolrServer solrServer, String timeStamp, boolean print) {
 		this.listOfMatchingObjs = listOfMatchingObjs;
 		this.sServer = solrServer;
@@ -75,8 +84,11 @@ public class MarcContentHandler implements ContentHandler {
 		this.print = print;
 	}
 
-
-
+	
+	
+	/*
+	 * Executed when encountering the start element of the XML file.
+	 */
 	@Override
 	public void startDocument() throws SAXException {
 
@@ -87,9 +99,14 @@ public class MarcContentHandler implements ContentHandler {
 		allRecords = new ArrayList<Record>();
 	}
 
-
-	// Read and process parameters of XML-Tags and create objects here.
-	// Content (text) is processed in endElement()
+	
+	
+	/*
+	 * Executed when encountering the start element of an XML tag.
+	 * 
+	 * Reading and processing XML attributes is done here.
+	 * Reading of element content (text) is processed in endElement().
+	 */
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attribs) throws SAXException {
 
@@ -144,7 +161,13 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-	// Process content (text) of current XML-node (not working in startElement()) - see also characters():
+	
+	/*
+	 * Executed when encountering the end element of an XML tag.
+	 * 
+	 * Reading and processing XML attributes is done here.
+	 * Reading of element content (text) is done here (see also characters() method).
+	 */
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 
@@ -187,7 +210,7 @@ public class MarcContentHandler implements ContentHandler {
 			
 			allRecords.add(record);
 			
-			print("Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
+			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
 			//System.out.print(StringUtils.repeat("\b", 100) + "\r");
 
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
@@ -217,7 +240,9 @@ public class MarcContentHandler implements ContentHandler {
 
 	}
 
-
+	/*
+	 * Executed when encountering the end element of the XML file.
+	 */
 	@Override
 	public void endDocument() throws SAXException {
 
@@ -242,13 +267,19 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
+	/*
+	 * Reads the content of the current XML element:
+	 */
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
-		// Reads the content of the current XML-node:
 		nodeContent += new String(ch, start, length);
 	}
 
 
+	/*
+	 * This method contains the code that actually adds a set of Record objects
+	 * (see Record class) to the specified Solr server.
+	 */
 	public void solrAddRecordSet(SolrServer sServer, List<Record> recordSet) {
 		try {
 
@@ -295,29 +326,10 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 	
-	public void solrClearIndex(SolrServer sServer) {
-		try {
-			// Delete the whole Solr-index by query!
-			sServer.deleteByQuery( "*:*" );
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void solrCommit(SolrServer sServer) {		
-		try {
-			// Do a Solr commit 
-			sServer.commit();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-
+	/*
+	 * Unused methods of ContentHandler class.
+	 * We just define them without any content.
+	 */
 	@Override
 	public void endPrefixMapping(String arg0) throws SAXException {}
 
@@ -336,7 +348,14 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void startPrefixMapping(String arg0, String arg1) throws SAXException {}
 
-	private void print(String text) {
+	
+	/**
+	 * Prints the specified text to the console if "print" is true.
+	 * 
+	 * @param print	boolean: true if the text should be print
+	 * @param text	String: a text message to print.
+	 */
+	private void print(boolean print, String text) {
 		if (print) {
 			System.out.print(text);
 		}

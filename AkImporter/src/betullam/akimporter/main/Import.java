@@ -70,7 +70,12 @@ public class Import {
 	private boolean isWithCliArgs = false;
 
 
-	// With interactive user input
+	/**
+	 * Constructor for starting the import process with interactive user inputs.
+	 * 
+	 * @param	optimize	boolean: Optimize Solr core after indexing? Is recommended, but could take quite some time. You could say false for quick testing. 
+	 * @param	print		boolean: Print status messages to console?
+	 */
 	public Import(boolean optimize, boolean print) {	
 		this.optimize = optimize;
 		this.print = print;
@@ -78,7 +83,19 @@ public class Import {
 		this.startImporting();
 	}
 
-	// With CLI Args
+	/**
+	 * Constructor for starting the importing process with command line parameters instead of an interactive user inputs.
+	 * 
+	 * @param	typeOfDataset				String. Type of dataset: 1 for one big XML file, 2 for many small files
+	 * @param	pathToMabXmlFile			String or null. If type of dataset is 1: full path to the XML file. If type of dataset is 2: null
+	 * @param	pathToMultipleXmlFolder		String or null.If type of dataset is 2: full path to the directory with XML files. If type of dataset is 1: null
+	 * @param	validate					boolean: Should the XML file(s) be validated (searching for errors in XML)?
+	 * @param	solrUrl						String: URL to Solr incl. core name where the data should be indexed, e. g.: http://my.solr:8080/corename
+	 * @param	ownMabProps					boolean: Use the default or your own custom mab.properties file? true for default.
+	 * @param	pathToOwnMabProps			String: If using custom mab.properties file: full path to that file. If using default file: null
+	 * @param	optimize					boolean: Optimize Solr core after indexing? Is recommended, but could take quite some time. You could say false for quick testing. 
+	 * @param	print						boolean: Print status messages to console?
+	 */
 	public Import(String typeOfDataset, String pathToMabXmlFile, String pathToMultipleXmlFolder, boolean validate, String solrUrl, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
 		isMergeOk = "Y";
 		isXmlCleanOk = "Y";
@@ -98,13 +115,17 @@ public class Import {
 
 	}
 
+	/**
+	 * Actually starts the importing process.
+	 * 
+	 * @param	none
+	 * @return	void
+	 */
 	private void startImporting() {
 
 		if (this.timeStamp == null) {
 			this.timeStamp = String.valueOf(new Date().getTime());
 		}
-
-
 
 		if (!isWithCliArgs) {
 			typeOfDataset = Main.getUserInput("\nKind of dataset?\n 1 = one big xml file\n 2 = multiple xml files)?", "1, 2", scanner);

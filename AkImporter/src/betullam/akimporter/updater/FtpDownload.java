@@ -37,7 +37,17 @@ import org.apache.commons.net.ftp.FTPFile;
 
 public class FtpDownload {
 
-
+	/**
+	 * Downloads a files from an FTP-Server.
+	 * @param remotePath		Path to a directory in which the file for downloading are stored.
+	 * @param localPathTarGz	Local path where the downloaded files should be stored.
+	 * @param host				FTP host name.
+	 * @param port				FTP port.
+	 * @param user				FTP username.
+	 * @param password			FTP password.
+	 * @param showMessages		True if status messages should be printed to console.
+	 * @return					True if download process was successful.
+	 */
 	public boolean downloadFiles(String remotePath, String localPathTarGz, String host, int port, String user, String password, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();

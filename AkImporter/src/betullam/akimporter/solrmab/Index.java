@@ -92,7 +92,9 @@ public class Index {
 		this.startIndexing();
 	};
 
-
+	/**
+	 * Starting the index process.
+	 */
 	private void startIndexing() {
 
 		setLogger();
@@ -172,6 +174,10 @@ public class Index {
 		}
 	}
 
+	/**
+	 * Checks if the index process was successful.
+	 * @return	true if the index process was successful.
+	 */
 	public boolean isIndexingSuccessful() {
 		return isIndexingSuccessful;
 	}
@@ -181,6 +187,13 @@ public class Index {
 	//++++++++++++++++++++++++++++++++++++ MAB PROPERTIES ++++++++++++++++++++++++++++++++++++//
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+	/**
+	 * Getting the rules defined in mab.properties file.
+	 * 
+	 * @param propertiesStream			Input stream of the mab.properties file.
+	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
+	 * @return							The rules of defined in mab.properties file represented as a list of MatchingObjects
+	 */
 	private List<MatchingObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
 
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
@@ -339,6 +352,13 @@ public class Index {
 	//++++++++++++++++++++++++++++++++++++ TRANSLATE PROPERTIES ++++++++++++++++++++++++++++++++++++//
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+	/**
+	 * Getting the rules defined in a translation file.
+	 * 
+	 * @param filename					File name of the translation file.
+	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
+	 * @return							A HashMap<String, String> representing the rules defined in a translation file.
+	 */
 	private HashMap<String, String> getTranslateProperties(String filename, String pathToTranslationFiles) {
 
 		HashMap<String, String> translateProperties = new HashMap<String, String>();
@@ -378,6 +398,9 @@ public class Index {
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 	//++++++++++++++++++++++++++++++++++ LOG4J ++++++++++++++++++++++++++++++++++//
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+	/**
+	 * Setting the Log4J logger.
+	 */
 	private void setLogger() {
 		BasicConfigurator.configure();
 		Logger.getRootLogger().setLevel(Level.WARN);

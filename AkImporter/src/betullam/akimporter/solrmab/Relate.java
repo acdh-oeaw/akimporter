@@ -41,6 +41,14 @@ public class Relate {
 	boolean print = true;
 	boolean isRelateSuccessful = false;
 	
+	/**
+	 * Constructor for starting the relate process between parent records and child records.
+	 * 
+	 * @param solrServer	The Solr server where the records are stored.
+	 * @param timeStamp		Timestamp of moment the import process started.
+	 * @param optimize		True if the Solr server core should be optimized after the process finished.
+	 * @param print			True if status messages should be printed to console.
+	 */
 	public Relate(HttpSolrServer solrServer, String timeStamp, boolean optimize, boolean print) {
 		this.solrServer = solrServer;
 		this.timeStamp = timeStamp;
@@ -50,6 +58,9 @@ public class Relate {
 		this.relate();
 	}
 
+	/**
+	 * Handling the relation process between parent records and child records.
+	 */
 	private void relate() {
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++ RELINK VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
@@ -85,6 +96,11 @@ public class Relate {
 		isRelateSuccessful = true;
 	}
 	
+	/**
+	 * Check if the relating process between parent records and child records was successful.
+	 * 
+	 * @return	True if the relating process was successful.
+	 */
 	public boolean isRelateSuccessful() {
 		return isRelateSuccessful;
 	}

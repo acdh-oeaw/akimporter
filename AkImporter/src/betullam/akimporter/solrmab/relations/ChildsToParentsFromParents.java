@@ -45,12 +45,13 @@ import org.apache.solr.common.SolrInputDocument;
 import betullam.akimporter.solrmab.SolrMabHelper;
 
 /**
- * A parent record may be update. Then, the existing parent record in solr will be overwritten because it will be indexed from scratch.
- * Then, the info for child records will be deleted too. If a child record of that parent is indexed too, then everything is OK because
- * this one and all other childs will be added to the parent. If no child record is indexed, the parent will remain without children. Thats
- * why we need to look if the record has children, and if not, we need to see if there are children at all. If yes, we need to link them to
- * the parent. If not, then there are no children and we can leave the parent record as it is.
+ * Class to link child records to parent records based on the information of the parent record.
  * 
+ * A parent record may be updated. Then, the existing parent record in solr will be overwritten because it will be indexed from scratch.
+ * So the info for its child records will be deleted too. If a child record of that parent is indexed too with the update, then everything
+ * is OK because this one and all other childs will be added to the parent. If no child record is indexed along with the update, the parent
+ * will remain without children. Thats why we need to look if the record has children, and if not, we need to see if there are children at
+ * all. If yes, we need to link them to the parent again. If not, then there are no children and we can leave the parent record as it is.
  */
 public class ChildsToParentsFromParents {
 
@@ -71,6 +72,9 @@ public class ChildsToParentsFromParents {
 	}
 
 
+	/**
+	 * This handles the linking of child records to parent records based on the information of the parent record.
+	 */
 	public void addChildsToParentsFromParents() {
 
 		SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(true, null);
@@ -145,7 +149,13 @@ public class ChildsToParentsFromParents {
 	}
 
 
-	// Add child records too all parents which have unlinked childs in solr
+	/**
+	 * Adding child records to all parents having unlinked child records
+	 * 
+	 * @param isFirstPage	true if first page of Solr result
+	 * @param lastDocId		Doc Id of the last processed Solr document
+	 * @return
+	 */
 	public String setParentAtomicUpdateDocs(boolean isFirstPage, String lastDocId) {
 		
 		// Variable for return value:
@@ -277,7 +287,13 @@ public class ChildsToParentsFromParents {
 		return returnValue;
 	}
 
-
+	
+	/**
+	 * Getting all child records that are not deleted, based on the Aleph SYS no. of the parent record.
+	 * 
+	 * @param	parentSYS	The Aleph SYS no. of the parent record
+	 * @return				A SolrDocumentList object
+	 */
 	private SolrDocumentList getNonDeletedChildsByParentSYS(String parentSYS) {
 
 		SolrDocumentList nonDeletedChildRecords = null;

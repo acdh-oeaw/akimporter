@@ -50,13 +50,23 @@ public class ReImport {
 	private SolrMabHelper smHelper = new SolrMabHelper();
 	boolean isReImportingSuccessful = false;
 	
-	
+	/**
+	 * Constructor for starting a re-import of already imported data.
+	 *  
+	 * @param	print	boolean: Print status messages to console?
+	 */
 	public ReImport(boolean print) {
 		this.print = print;
 		this.scanner = new Scanner(System.in);
 		this.reImport();
 	}
 
+	/**
+	 * Actually starts the re-import process:
+	 * 
+	 * @param	none
+	 * @return	void
+	 */
 	private void reImport() {
 		// Ask user for path to "merged" directory:
 		String pathToMergedDir = Main.getUserInput("\nSpecify the path to the \"merged\" folder?\n Example: /home/username/datenlieferungen/merged)?", "directoryExists", scanner);
@@ -204,6 +214,11 @@ public class ReImport {
 	}
 	
 	
+	/**
+	 * Check if the re-import process was successful.
+	 * 
+	 * @return	boolean: true if the process was successful
+	 */
 	public boolean isReImportingSuccessful() {
 		return this.isReImportingSuccessful;
 	}

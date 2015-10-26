@@ -45,12 +45,24 @@ public class RelationHelper {
 	private String timeStamp = null;
 	private int NO_OF_ROWS = 500;
 
+	/**
+	 * Constructor for helper class for relating parent records and child records
+	 * 
+	 * @param solrServer	Solr Server we want to index to
+	 * @param timeStamp		Timestamp of moment the import process started
+	 */
 	public RelationHelper(HttpSolrServer solrServer, String timeStamp) {
 		this.solrServer = solrServer;
 		this.timeStamp = timeStamp;
 	}
 
-
+	/**
+	 * Getting all child records of the current index process.
+	 *  
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the previous last processed Solr document
+	 * @return				SolrDocumentList object
+	 */
 	public SolrDocumentList getCurrentlyIndexedChildRecords(boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
@@ -101,7 +113,13 @@ public class RelationHelper {
 	}
 
 
-	
+	/**
+	 * Getting all currently indexed records that don't have child records.
+	 * 
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the previous last processed Solr document
+	 * @return				SolrDocumentList object
+	 */
 	public SolrDocumentList getCurrentlyIndexedRecordsWithNoChilds(boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
@@ -151,7 +169,12 @@ public class RelationHelper {
 	}
 
 
-
+	/**
+	 * Getting type of child record (e. g.: multivolume, article) 
+	 * 
+	 * @param record	SolrDocument object
+	 * @return			String describing the type of the child record
+	 */
 	public String getChildRecordType(SolrDocument record) {
 		String childRecordType = null;
 
@@ -171,6 +194,14 @@ public class RelationHelper {
 	}
 
 
+	/**
+	 * Deduplication of a list of AC numbers of parent records.
+	 * Explanation:	If one parent record has multiple child records, each child record has the same AC no. of the parent record (e. g. in MAB field 010).
+	 * 				If we get all 010 fields of these child records, we will have duplicate values of the 010 fields. Here, we will deduplicate them.
+	 *  
+	 * @param childDocumentList		A SolrDocumentList containing the child records as Solr documents
+	 * @return						A deduplicated Set<String> of AC nos.
+	 */
 	public Set<String> getDedupParentAcsFromMultipleChilds(SolrDocumentList childDocumentList) {
 		Set<String> parentAcs = null;
 		if (childDocumentList != null && !childDocumentList.isEmpty()) {
@@ -187,6 +218,12 @@ public class RelationHelper {
 		return parentAcs;
 	}
 
+	/**
+	 * Helper method for getDedupParentAcsFromMultipleChilds.
+	 * 
+	 * @param childRecord	A SolrDocument representing a child record
+	 * @return				A deduplicated Set<String> of AC nos.
+	 */
 	public Set<String> getDedupParentAcsFromSingleChild(SolrDocument childRecord) {
 		Set<String> parentAcs = new HashSet<String>();
 
@@ -223,16 +260,18 @@ public class RelationHelper {
 	}
 
 
-
+	/**
+	 * Deduplication of parent SYS nos. of a child record.
+	 *  
+	 * @param childRecord	A Solr document representing a child record.
+	 * @return				A deduplicated Set<String> of SYS nos.
+	 */
 	public Set<String> getDedupParentSYSsFromSingleChild(SolrDocument childRecord) {
 		Set<String> parentSYSs = new HashSet<String>();
 		if (childRecord != null) {
 			String childRecordType = getChildRecordType(childRecord);
 			if (childRecordType != null) {
 				String[] parentSYSsOfChild = (childRecord.getFieldValues("parentSYS_str_mv") != null) ? childRecord.getFieldValues("parentSYS_str_mv").toArray(new String[0]) : null;
-
-
-
 				if (parentSYSsOfChild != null) {
 					for (String parentSYSOfChild : parentSYSsOfChild) {
 						parentSYSs.add(parentSYSOfChild);
@@ -244,7 +283,12 @@ public class RelationHelper {
 	}
 
 
-
+	/**
+	 * Getting a parent record by its AC no.
+	 * 
+	 * @param parentAc	AC no. of record
+	 * @return			SolrDocument representing the parent record
+	 */
 	public SolrDocument getParentRecord(String parentAc) {
 		SolrDocument parentRecord = null;
 		SolrQuery queryParent = new SolrQuery(); // New Solr query
@@ -263,6 +307,11 @@ public class RelationHelper {
 		return parentRecord;
 	}
 
+	/**
+	 * Getting multiple parent records by their AC nos.
+	 * @param parentAcs		A Set<String> containing AC nos. of the parent records
+	 * @return				A list of SolrDocuments representing the parent records
+	 */
 	public List<SolrDocument> getParentRecords(Set<String> parentAcs) {
 		List<SolrDocument> parentRecords = null;
 
@@ -279,6 +328,11 @@ public class RelationHelper {
 		return parentRecords;
 	}
 
+	/**
+	 * Helper method for indexing documents to a Solr server.
+	 * 
+	 * @param docsForAtomicUpdates	A collection of SolrImputDocument objects.
+	 */
 	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {		
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {

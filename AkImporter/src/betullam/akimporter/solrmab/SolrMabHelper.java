@@ -39,6 +39,12 @@ public class SolrMabHelper {
 		this.solrServer = solrServer;
 	}
 	
+	/**
+	 * Get human readable execution time between two moments in time expressed in milliseconds.
+	 * @param startTime		Moment of start in milliseconds
+	 * @param endTime		Moment of end in milliseconds
+	 * @return				String of human readable execution time.
+	 */
 	public String getExecutionTime(long startTime, long endTime) {
 		String executionTime = null;
 
@@ -51,6 +57,9 @@ public class SolrMabHelper {
 		return executionTime;
 	}
 	
+	/**
+	 * Starts an optimize action for a Solr core.
+	 */
 	public void solrOptimize() {
 		try {
 			this.solrServer.optimize();
@@ -61,8 +70,13 @@ public class SolrMabHelper {
 		}
 	}
 	
-	public void print(boolean doPrint, String text) {
-		if (doPrint) {
+	/**
+	 * Prints a text message to the console if "print" is true.
+	 * @param print		True if the message should be printed.
+	 * @param text		The text to print to the console.
+	 */
+	public void print(boolean print, String text) {
+		if (print) {
 			System.out.print(text);
 		}
 	}

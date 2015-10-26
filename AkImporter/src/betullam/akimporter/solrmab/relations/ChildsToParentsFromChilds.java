@@ -64,7 +64,9 @@ public class ChildsToParentsFromChilds {
 	}
 
 
-
+	/**
+	 * Adding child records to parent records based on the information of the child record. 
+	 */
 	public void addChildsToParentsFromChilds() {
 
 		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedChildRecords(true, null);
@@ -122,7 +124,14 @@ public class ChildsToParentsFromChilds {
 		}
 	}
 
-	// Add all parent SYS numbers to a class variable to have no duplicated values because this would cause an overhead
+	// 
+	/**
+	 * Adding all parent SYS numbers to a class variable to have no duplicated values because this would cause an overhead.
+	 * 
+	 * @param	isFirstPage		True if first page of Solr results	
+	 * @param	lastDocId		Doc ID of the last processed Solr document
+	 * @return
+	 */
 	public String setParentSYSsForLinking(boolean isFirstPage, String lastDocId) {
 		// Variable for return value:
 		String returnValue = null;
@@ -152,7 +161,9 @@ public class ChildsToParentsFromChilds {
 	}
 
 
-
+	/**
+	 * Set documents for atomic Solr update an index them.
+	 */
 	private void setParentAtomicUpdateDocs() {
 
 		int counter = 0;
@@ -285,7 +296,12 @@ public class ChildsToParentsFromChilds {
 
 
 
-
+	/**
+	 * Getting all child records that are not deleted, based on the Aleph SYS no. of the parent record.
+	 * 
+	 * @param	parentSYS	The Aleph SYS no. of the parent record
+	 * @return				A SolrDocumentList object
+	 */
 	private SolrDocumentList getNonDeletedChildsByParentSYS(String parentSYS) {
 
 		SolrDocumentList nonDeletedChildRecords = null;
@@ -336,7 +352,14 @@ public class ChildsToParentsFromChilds {
 		return nonDeletedChildRecords;
 	}
 
-
+	
+	/**
+	 * Check if a specific child record belongs to a specific parent record.
+	 * 
+	 * @param parentSYSsOfChild		An array of Aleph SYS nos.
+	 * @param parentSYS				An Aleph SYS no. to check against.
+	 * @return						True if the child record belongs to the parent record.
+	 */
 	private boolean isChildOfParent(String[] parentSYSsOfChild, String parentSYS) {
 		for(String parentSYSOfChild : parentSYSsOfChild){
 			if(parentSYSOfChild.equals(parentSYS)) {

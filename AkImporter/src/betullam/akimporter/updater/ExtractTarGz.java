@@ -38,6 +38,13 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 public class ExtractTarGz {
 
+	/**
+	 * Extracting a tar.gz file
+	 * 
+	 * @param pathToTarGz		Full path to a tar.gz file that should be extracted.
+	 * @param timeStamp			Timestamp when the update process was started (used for renaming files).
+	 * @param pathToExtracted	Path to a directory where the extracted content should be stored.
+	 */
 	public void extractTarGz(String pathToTarGz, String timeStamp, String pathToExtracted) {
 		FileInputStream gzFis = null;
 		BufferedInputStream gzBin = null;

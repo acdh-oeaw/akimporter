@@ -52,7 +52,13 @@ public class UnlinkChildsFromParents {
 	List<String> parentAcs = new ArrayList<String>();
 	boolean print = false;
 
-
+	
+	/**
+	 * Constructor for a class which unlinks child records from their parent records.
+	 * @param solrServer	The Solr server where the records are stored.
+	 * @param timeStamp		Timestamp of moment the import process started.
+	 * @param print			True if status messages should be printed to console.
+	 */
 	public UnlinkChildsFromParents(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
@@ -61,7 +67,9 @@ public class UnlinkChildsFromParents {
 
 
 
-
+	/**
+	 * Handling the unlinking of child records from their parent records.
+	 */
 	public void unlinkChildsFromParents() {
 
 		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedChildRecords(true, null);
@@ -119,7 +127,13 @@ public class UnlinkChildsFromParents {
 
 
 
-	// Add all parent AC numbers to a class variable to have no duplicated values because this would cause an overhead
+	/**
+	 * Add all parent AC numbers to a class variable to have no duplicated values because this would cause an overhead.
+	 * 
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the previous last processed Solr document
+	 * @return				Doc Id of the new last processed Solr document
+	 */
 	public String setParentAcsFromWhichToUnlink(boolean isFirstPage, String lastDocId) {
 
 		// Variable for return value:
@@ -153,7 +167,9 @@ public class UnlinkChildsFromParents {
 	}
 
 
-
+	/**
+	 * Set documents for atomic Solr update an index them.
+	 */
 	private void setParentAtomicUpdateDocs() {
 
 		int counter = 0;

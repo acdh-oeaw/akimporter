@@ -47,10 +47,18 @@ public class MatchingOperations {
 	HashMap<String, List<String>> translateFields = Index.translateFields;
 
 
+	/**
+	 * This re-works a MarcXML record to records we can use for indexing to Solr.
+	 * The matching between MAB fields and Solr fields is handled here.
+	 * 
+	 * @param oldRecordSet			List<Record>: A set of "old" MarcXML records
+	 * @param listOfMatchingObjs	List<MatchingObject>: A list of rules that define how a MAB field should be matched with a Solr field.
+	 * 								The rules are defined in the mab.properties file.
+	 * @return						List<Record>: A set of "new" records we can use for indexing to Solr
+	 */
 	public List<Record> matching(List<Record> oldRecordSet, List<MatchingObject> listOfMatchingObjs) {
 
 		newListOfRecords = new ArrayList<Record>();		
-
 
 		for (Record oldRecord : oldRecordSet) {	
 
@@ -111,6 +119,13 @@ public class MatchingOperations {
 
 
 
+	/**
+	 * Matching a MAB field to the Solr field according to the rules in mab.properties.
+	 * 
+	 * @param mabField				The MAB field from the MarcXML record
+	 * @param listOfMatchingObjects	The rules from the mab.properties file
+	 * @return						A list of matched fields for indexing to Solr.
+	 */
 	public List<Mabfield> matchField(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {		
 
 		String mabFieldnameXml = mabField.getFieldname();
@@ -262,6 +277,13 @@ public class MatchingOperations {
 
 
 
+	/**
+	 * Matching operation: All given indicators and subfields must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean allFields(String in, String matchValue) {
 
 		String match = matchValue.substring(0, 3);
@@ -279,6 +301,13 @@ public class MatchingOperations {
 	}
 
 
+	/**
+	 * Matching operation: Indicator 1 must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchInd1(String in, String matchValue) {
 		String fieldNo = matchValue.substring(0, 3);
 		String indicator1 = matchValue.substring(4, 5);
@@ -286,6 +315,13 @@ public class MatchingOperations {
 		return matches;
 	}
 
+	/**
+	 * Matching operation: Indicator 2 must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchInd2(String in, String matchValue) {
 		String fieldNo = matchValue.substring(0, 3);
 		String indicator2 = matchValue.substring(5, 6);
@@ -293,6 +329,13 @@ public class MatchingOperations {
 		return matches;
 	}
 
+	/**
+	 * Matching operation: Indicator 1 and 2 must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchInd1AndInd2(String in, String matchValue) {
 		String fieldNo = matchValue.substring(0, 3);
 		String indicator1 = matchValue.substring(4, 5);
@@ -301,6 +344,13 @@ public class MatchingOperations {
 		return matches;
 	}
 
+	/**
+	 * Matching operation: Indicator 1 and subfield must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchInd1AndSubfield(String in, String matchValue) {
 		String fieldNo = matchValue.substring(0, 3);
 		String indicator1 = matchValue.substring(4, 5);
@@ -309,6 +359,13 @@ public class MatchingOperations {
 		return matches;
 	}
 
+	/**
+	 * Matching operation: Indicator 2 and subfield must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchInd2AndSubfield(String in, String matchValue) {
 		String fieldNo = matchValue.substring(0, 3);
 		String indicator2 = matchValue.substring(5, 6);
@@ -317,6 +374,13 @@ public class MatchingOperations {
 		return matches;
 	}
 
+	/**
+	 * Matching operation: Subfield must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchSubfield(String in, String matchValue) {
 		String fieldNo = matchValue.substring(0, 3);
 		String subfield = matchValue.substring(7, 8);
@@ -324,12 +388,29 @@ public class MatchingOperations {
 		return matches;
 	}
 
+	/**
+	 * Matching operation: Controlfield must match.
+	 * 
+	 * @param in			String: Fieldname from MarcXML file
+	 * @param matchValue	String: Fieldname from mab.properties file
+	 * @return				boolean: true if the fieldnames are matching according to the rules
+	 */
 	public boolean matchControlfield(String in, String matchValue) {
 		String fieldName = matchValue;
 		boolean matches = Pattern.matches(fieldName, in);		
 		return matches;
 	}
 	
+	/**
+	 * Getting the value of a translation file.
+	 * 
+	 * @param solrFieldname			String: Name of Solr field 
+	 * @param mabField				Mabfield: Mabfield object
+	 * @param translateProperties	HashMap<String, String>: Contents of a translation.properties file
+	 * @param fromCount				int: Index of first character to match
+	 * @param toCount				int: Index of last character to match
+	 * @return						String containing the translated value
+	 */
 	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, int fromCount, int toCount) {
 		String translateValue = null;
 		String fieldValueXml = mabField.getFieldvalue();

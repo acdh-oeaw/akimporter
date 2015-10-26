@@ -56,6 +56,22 @@ public class Updater {
 	private SolrMabHelper smHelper;
 
 	
+	/**
+	 * Handling the update process of ongoing data deliveries.
+	 * 
+	 * @param remotePath			Path to a directory on FTP server in which the file containing the updates is stored.
+	 * @param localPath				Local path where the update file should be stored.
+	 * @param host					Host name of FTP server where the updates are stored.
+	 * @param port					Port of the FTP server.
+	 * @param user					FTP username.
+	 * @param password				FTP password.
+	 * @param solrAddress			URL to Solr server incl. core name where the updates should be indexed to.
+	 * @param ownMabProps			true if own custom mab.properties file should be used for indexing. False if the default should be used.
+	 * @param pathToOwnMabProps		If using own custom mab.properties file: full path to it.
+	 * @param optimize				true if Solr core should be optimized after update process.
+	 * @param print					true if status messages should be printed to console.
+	 * @return						true if update process was successful.
+	 */ 
 	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
 
 		this.solrServer = new HttpSolrServer(solrAddress);
@@ -145,7 +161,12 @@ public class Updater {
 		
 	}
 	
-	
+	/**
+	 * Remove last file separator character of a String representing a path to a directory
+	 *  
+	 * @param path	A string representing a path to a directory.
+	 * @return		The path without the last file separator character.
+	 */
 	private static String stripFileSeperatorFromPath(String path) {
 		if (!path.equals(File.separator) && (path.length() > 0) && (path.charAt(path.length()-1) == File.separatorChar)) {
 			path = path.substring(0, path.length()-1);
@@ -153,6 +174,11 @@ public class Updater {
 		return path;
 	}
 	
+	/**
+	 * Creates a directory if it does not exist.
+	 * 
+	 * @param path	Path to the directory that should be created.
+	 */
 	private static void mkDirIfNoExists(String path) {
 		File dir = new File(path);
 		if (!dir.exists()) {
