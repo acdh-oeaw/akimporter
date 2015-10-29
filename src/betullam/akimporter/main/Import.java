@@ -149,7 +149,7 @@ public class Import {
 				isMergeOk = Main.getUserInput("\nThe xml files will be merged into one xml file now."
 						+ " It will be saved in the temporary folder of the system under " + pathToMergedFile + ". The original data"
 						+ " won't be changed. Do you want to continue? If not, the whole import process will be cancelled!"
-						+ "\n J = Yes, merge\n N = No, cancel", "Y, N", scanner);
+						+ "\n Y = Yes, merge\n N = No, cancel", "Y, N", scanner);
 			}
 
 			if (isMergeOk.equals("Y")) {
