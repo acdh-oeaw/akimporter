@@ -292,7 +292,7 @@ public class RelationHelper {
 	public SolrDocument getParentRecord(String parentAc) {
 		SolrDocument parentRecord = null;
 		SolrQuery queryParent = new SolrQuery(); // New Solr query
-		queryParent.setQuery("acNo_txt:"+parentAc); // Define a query
+		queryParent.setQuery("acNo_txt:\""+parentAc+"\""); // Define a query
 		queryParent.setFields("id", "title"); // Set fields that should be given back from the query
 
 		try {
