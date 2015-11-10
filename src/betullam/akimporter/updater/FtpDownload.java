@@ -52,7 +52,7 @@ public class FtpDownload {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
 
-		if( showMessages ) { System.out.println( "Start FTP Download from " + host + " ..."); }
+		if( showMessages ) { System.out.print( "\nDownloading data from " + host + " to "+localPathTarGz+" ... "); }
 		
 		try {
 
@@ -60,9 +60,9 @@ public class FtpDownload {
 			ftpClient.enterLocalPassiveMode();
 			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
-			if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
+			//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 			ftpOk &= ftpClient.login( user, password );
-			if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
+			//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 
 			FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
 
@@ -75,24 +75,24 @@ public class FtpDownload {
 					ftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
 					success = ftpClient.retrieveFile(remotePath + File.separator + fileName, outputStream);
 					//ftpClient.getReplyString();
-					if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
+					//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 
 					if (success) {
 						ftpOk = true;
-						if( showMessages ) { System.out.println("Successfully downloaded file \"" + fileName + "\""); }
+						if( showMessages ) { System.out.print("Done\n"); }
 					} else {
 						ftpOk = false;
-						if( showMessages ) { System.out.println("ERROR downloading file from FTP-Server!"); }
+						if( showMessages ) { System.out.println("ERROR downloading file \"" + fileName + "\" from FTP-Server!"); }
 					}
 					outputStream.close();
 				}
 			}
 
 			ftpClient.logout();
-			if( showMessages ) { System.out.println( "Logging out of FTP Server " + host + "." ); }
-			if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
+			//if( showMessages ) { System.out.println( "Logging out of FTP Server " + host + "." ); }
+			//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 			ftpClient.disconnect();
-			if( showMessages ) { System.out.println( "FTP Client disconnected" ); }
+			//if( showMessages ) { System.out.println( "FTP Client disconnected" ); }
 		} catch (IOException e) {
 			ftpOk = false;
 			e.printStackTrace();

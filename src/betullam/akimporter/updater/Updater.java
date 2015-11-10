@@ -73,7 +73,7 @@ public class Updater {
 	 * @return						true if update process was successful.
 	 */ 
 	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
-
+		
 		this.solrServer = new HttpSolrServer(solrAddress);
 		this.timeStamp = String.valueOf(new Date().getTime());
 		this.optimize = optimize;
@@ -81,6 +81,8 @@ public class Updater {
 		this.useDefaultMabProperties = (ownMabProps) ? false : true;
 		this.pathToMabPropertiesFile = (ownMabProps) ? pathToOwnMabProps : null;
 		this.smHelper = new SolrMabHelper(solrServer);
+		
+		this.smHelper.print(this.print, "\n-------------------------------------------");
 		
 		localPathOriginal = stripFileSeperatorFromPath(localPath) + File.separator + "original" + File.separator + timeStamp;
 		localPathExtracted = stripFileSeperatorFromPath(localPath) + File.separator + "extracted" + File.separator + timeStamp;
@@ -96,23 +98,23 @@ public class Updater {
 		if (isDownloadSuccessful) {
 			
 			// Extract downloaded .tar.gz file(s):
-			this.smHelper.print(this.print, "Extracting downloaded files ...\r");
+			this.smHelper.print(this.print, "Extracting downloaded files to "+localPathExtracted+" ... ");
 			ExtractTarGz etg = new ExtractTarGz();
 			etg.extractTarGz(localPathOriginal, timeStamp, localPathExtracted);
-			this.smHelper.print(this.print, "Extracting downloaded files ... Done");
+			this.smHelper.print(this.print, "Done");
 			
 			// Merge extracted files from downloaded .tar.gz file(se):
-			this.smHelper.print(this.print, "\nMerging extracted files ...\r");
+			this.smHelper.print(this.print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
 			pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
 			xmlm.mergeElementNodes(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
-			this.smHelper.print(this.print, "Merging extracted files ... Done");
+			this.smHelper.print(this.print, "Done");
 			
 			// Validate merged XML file:
-			this.smHelper.print(this.print, "\nValidate merged file ...\r");
+			this.smHelper.print(this.print, "\nValidating merged file ... ");
 			XmlValidator bxh = new XmlValidator();
 			hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
-			this.smHelper.print(this.print, "Validate merged file ... Done");
+			this.smHelper.print(this.print, "Done");
 			
 			// Index XML file:
 			if (hasValidationPassed) {
@@ -125,24 +127,29 @@ public class Updater {
 					this.smHelper.print(this.print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
 				}
 				
-				this.smHelper.print(this.print, "\nStart importing ...");
+				this.smHelper.print(this.print, "\nStart importing ... ");
 				
 				// Index metadata so Solr
-				Index index = new Index(pathToMabXmlFile, this.solrServer, this.useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
+				Index index = new Index(pathToMabXmlFile, this.solrServer, this.useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, false);
 				boolean isIndexingSuccessful = index.isIndexingSuccessful();
 
+				if (isIndexingSuccessful) {
+					this.smHelper.print(this.print, "Done");
+				}
+				
 				// Connect child and parent volumes:
-				Relate relate = new Relate(this.solrServer, this.timeStamp, false, this.print);
+				Relate relate = new Relate(this.solrServer, this.timeStamp, false, false);
 				boolean isRelateSuccessful = relate.isRelateSuccessful();
 				
 				if (this.optimize) {
-					this.smHelper.print(this.print, "\nOptimizing Solr Server ...\n");
+					this.smHelper.print(this.print, "\nOptimizing Solr Server ... ");
 					this.smHelper.solrOptimize();
+					this.smHelper.print(this.print, "Done");
 				}
 
 				
 				if (isIndexingSuccessful && isRelateSuccessful) {
-					this.smHelper.print(this.print, "\nDone importing.\nEVERYTHING WAS SUCCESSFUL!");
+					this.smHelper.print(this.print, "\nEVERYTHING WAS SUCCESSFUL!");
 					isUpdateSuccessful = true;
 				} else {
 					this.smHelper.print(this.print, "\nError while importing!\n");
@@ -157,6 +164,7 @@ public class Updater {
 			isUpdateSuccessful = false;
 		}
 		
+		this.smHelper.print(this.print, "\n-------------------------------------------");
 		return isUpdateSuccessful;
 		
 	}
