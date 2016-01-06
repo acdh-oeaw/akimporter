@@ -101,7 +101,7 @@ public class Main {
 	static String pathToMergedFile;
 	static boolean isMergingSuccessful;
 
-	
+
 	/**
 	 * Main method of AkImporter.
 	 * This is the starting point for all following actions.
@@ -596,6 +596,7 @@ public class Main {
 		}
 
 
+		/*
 		// Loop through properties:
 		for(String key : mabProperties.stringPropertyNames()) {
 
@@ -620,6 +621,51 @@ public class Main {
 				}
 			}
 		}
+		 */
+
+		// Create list:
+		List<List<String>> lstValues = new ArrayList<List<String>>();
+
+		// Loop through properties:
+		for(String key : mabProperties.stringPropertyNames()) {
+			// Add properties as list to another list:
+			String strValues = mabProperties.getProperty(key);			
+			lstValues.add(Arrays.asList(strValues.split("\\s*,\\s*")));
+		}
+
+		// Check if there is at least one "translateValue"
+		boolean translateValueExists = false;
+		for (List<String> lstValue : lstValues) {
+			if (lstValue.contains("translateValue")) {
+				translateValueExists = true;
+				break;
+			}
+		}
+
+		if (translateValueExists) {
+
+			// Get all translateValue fields:
+			for (List<String> lstValue : lstValues) {
+				if (lstValue.toString().contains(".properties")) { // Check if a .properties-File is indicated
+
+					// Get the filename with the help of RegEx:
+					Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
+					Matcher matcherPropFile = patternPropFile.matcher("");
+					for(String lstVal : lstValue) {
+						matcherPropFile.reset(lstVal);
+						if(matcherPropFile.find()) {
+							translationFilenames.add(matcherPropFile.group());
+						}
+					}
+				}
+			}
+
+		} else {
+			// We don't need a translation file.
+			// Return true so that the import script can go on without an error:
+			translationFilesExist = true;
+		}
+
 
 		for (String translationFilename : translationFilenames) {
 			String pathToTranslationFiles = directoryOfTranslationFiles + File.separator + translationFilename;

@@ -250,11 +250,12 @@ public class Import {
 						pathToMabPropertiesFile = Main.getUserInput("\nSpecify a path to your own custom .properties file (e. g. /home/username/my.properties)."
 								+ " Please be aware that the file suffix must be \".properties\".", "propertiesExists", scanner);
 					}
+					
 					propertiesFileInfo = "Use custom .properties file: " + pathToMabPropertiesFile;
 
 					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
 					areTranslationFilesOk = Main.translationFilesExist(pathToMabPropertiesFile, directoryOfTranslationFiles);
-
+					
 					// It the translation files, that are defined in the custom MAB properties file, do not exist
 					// (they have to be in the same directory), that give an appropriate message:
 					while (areTranslationFilesOk == false) {
