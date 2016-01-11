@@ -26,6 +26,7 @@
 package betullam.akimporter.updater;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -72,14 +73,14 @@ public class Updater {
 	 * @param print					true if status messages should be printed to console.
 	 * @return						true if update process was successful.
 	 */ 
-	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
-		
+	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, boolean defaultMabProperties, String pathToCustomMabProps, boolean optimize, boolean print) {
+
 		this.solrServer = new HttpSolrServer(solrAddress);
 		this.timeStamp = String.valueOf(new Date().getTime());
 		this.optimize = optimize;
 		this.print = print;
-		this.useDefaultMabProperties = (ownMabProps) ? false : true;
-		this.pathToMabPropertiesFile = (ownMabProps) ? pathToOwnMabProps : null;
+		this.useDefaultMabProperties = (defaultMabProperties) ? true : false;
+		this.pathToMabPropertiesFile = (defaultMabProperties) ? null : pathToCustomMabProps;
 		this.smHelper = new SolrMabHelper(solrServer);
 		
 		this.smHelper.print(this.print, "\n-------------------------------------------");
@@ -91,6 +92,7 @@ public class Updater {
 		mkDirIfNoExists(localPathExtracted);
 		mkDirIfNoExists(localPathMerged);
 		
+		this.smHelper.print(this.print, "\nUpdate starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(timeStamp))));
 		
 		FtpDownload ftpDownload = new FtpDownload();
 		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, this.print);
@@ -127,7 +129,7 @@ public class Updater {
 					this.smHelper.print(this.print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
 				}
 				
-				this.smHelper.print(this.print, "\nStart importing ... ");
+				this.smHelper.print(this.print, "\nStart indexing ... ");
 				
 				// Index metadata so Solr
 				Index index = new Index(pathToMabXmlFile, this.solrServer, this.useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, false);
@@ -137,9 +139,15 @@ public class Updater {
 					this.smHelper.print(this.print, "Done");
 				}
 				
+				this.smHelper.print(this.print, "\nStart linking parent and child records ... ");
+				
 				// Connect child and parent volumes:
 				Relate relate = new Relate(this.solrServer, this.timeStamp, false, false);
 				boolean isRelateSuccessful = relate.isRelateSuccessful();
+				
+				if (isRelateSuccessful) {
+					this.smHelper.print(this.print, "Done");
+				}
 				
 				if (this.optimize) {
 					this.smHelper.print(this.print, "\nOptimizing Solr Server ... ");

@@ -96,7 +96,7 @@ public class Import {
 	 * @param	optimize					boolean: Optimize Solr core after indexing? Is recommended, but could take quite some time. You could say false for quick testing. 
 	 * @param	print						boolean: Print status messages to console?
 	 */
-	public Import(String typeOfDataset, String pathToMabXmlFile, String pathToMultipleXmlFolder, boolean validate, String solrUrl, boolean ownMabProps, String pathToOwnMabProps, boolean optimize, boolean print) {
+	public Import(String typeOfDataset, String pathToMabXmlFile, String pathToMultipleXmlFolder, boolean validate, String solrUrl, boolean defaultMabProps, String pathToCustomMabProps, boolean optimize, boolean print) {
 		isMergeOk = "Y";
 		isXmlCleanOk = "Y";
 		isIndexingOk = "Y";
@@ -107,8 +107,8 @@ public class Import {
 		this.pathToMultipleXmlFolder = pathToMultipleXmlFolder;
 		this.isValidationOk = (validate) ? "V" : "S";
 		this.solrServerAddress = solrUrl;	
-		this.useDefaultMabPropertiesFile = (ownMabProps) ? "N" : "D";
-		this.pathToMabPropertiesFile = (ownMabProps) ? pathToOwnMabProps : null;
+		this.useDefaultMabPropertiesFile = (defaultMabProps) ? "D" : "C";
+		this.pathToMabPropertiesFile = (defaultMabProps) ? null : pathToCustomMabProps;
 		this.optimize = optimize;
 		this.print = print;
 		this.startImporting();
@@ -237,7 +237,7 @@ public class Import {
 				if (!isWithCliArgs) {
 					useDefaultMabPropertiesFile = Main.getUserInput("\nDo you want to use the default \"mab.properties\" file? "
 							+ "If not, you can specify your own custom .properties file."
-							+ "\n D = Yes, default\n N = No, custom file", "D, N", scanner);
+							+ "\n D = Default file\n C = Custom file", "D, C", scanner);
 				}
 				if (useDefaultMabPropertiesFile.equals("D")) {
 					useDefaultMabProperties = true;

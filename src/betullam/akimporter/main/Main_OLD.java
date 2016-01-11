@@ -31,7 +31,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -65,38 +67,41 @@ import betullam.akimporter.updater.Updater;
  *
  */
 
-public class Main {
-	
+public class Main_OLD {
 
-	// General
-	static boolean optimize = false;
-	static boolean print = false;
+	//static boolean isIndexerTest = false;
+	static boolean isUpdate = false;
 	static boolean isUpdateSuccessful = false;
+	static boolean isIndexingOnly = false;
+	static boolean isLinkingOnly = false;
+	static boolean isReIndexOngoing = false;
+	//static boolean isReIndexAll = false;
+	static boolean optimize = true;
+	static boolean print = false;
+	static boolean isWithCliArgs = false;
 
-	// Get settings from AkImporter.properties file and set them to variables
-	static Properties importerProperties = getImporterProperties("AkImporter.properties");
-	static String iDataset = importerProperties.getProperty("import.dataset");
-	static String iPath = importerProperties.getProperty("import.path");
-	static boolean iValidation = (importerProperties.getProperty("import.validation").equals("V")) ? true : false;
-	static String iSolr = importerProperties.getProperty("import.solr");
-	static boolean iDefaultMabProperties = (importerProperties.getProperty("import.defaultMabProperties").equals("D")) ? true : false;
-	static String iCustomMabProperties = importerProperties.getProperty("import.customMabProperties");
-	static String uFtpHost = importerProperties.getProperty("update.ftpHost");
-	static int uFtpPort = Integer.valueOf(importerProperties.getProperty("update.ftpPort"));
-	static String uFtpUser = importerProperties.getProperty("update.ftpUser");
-	static String uFtpPass = importerProperties.getProperty("update.ftpPass");
-	static String uRemotePath = importerProperties.getProperty("update.remotePath");
-	static String uLocalPath = importerProperties.getProperty("update.localPath");
-	static String uSolr = importerProperties.getProperty("update.solr");
-	static boolean uDefaultMabProperties = (importerProperties.getProperty("update.defaultMabProperties").equals("D")) ? true : false;
-	static String uCustomMabProperties = importerProperties.getProperty("update.customMabProperties");
-	static String aPath = importerProperties.getProperty("authority.path");
-	static String aSolrAuth = importerProperties.getProperty("authority.solrAuth");
-	static String aSolrBibl = importerProperties.getProperty("authority.solrBibl");
-	static boolean aDefaultMabProperties = (importerProperties.getProperty("authority.defaultMabProperties").equals("D")) ? true : false;
-	static String aCustomMabProperties = importerProperties.getProperty("authority.customMabProperties");
-	
-	
+	// 1
+	static Scanner scanner;
+	static String typeOfDataset;
+	static String pathToMabXmlFile;
+	static String isValidationOk;
+	static boolean hasValidationPassed;
+	static String isXmlCleanOk;
+	static String solrServerAddress;
+	static String useDefaultMabPropertiesFile;
+	static String pathToMabPropertiesFile;
+	static String directoryOfTranslationFiles;
+	static boolean areTranslationFilesOk;
+	static String propertiesFileInfo;
+	static boolean useDefaultMabProperties;
+	static String isIndexingOk;
+	static boolean isIndexingSuccessful;
+
+	// 2
+	static String pathToMultipleXmlFolder;
+	static String isMergeOk;
+	static String pathToMergedFile;
+	static boolean isMergingSuccessful;
 
 
 	/**
@@ -106,23 +111,19 @@ public class Main {
 	 * @param	args	Command line arguments
 	 */
 	public static void main(String[] args) {
-        
+
 		// Log4J
 		BasicConfigurator.configure();
 		Logger.getRootLogger().setLevel(Level.WARN);
 		CommandLineParser clParser = new DefaultParser();
-
-
+		
+		Properties importerProperties = getImporterProperties("AkImporter.properties");
+		System.out.println(importerProperties.toString());
 
 		/**
 		 * Main options
 		 * 
 		 * TODO: Realize these options with the new AkImporter.properties file (see above):
-		 * 
-		 * NOTES:
-		 *  To "import" means indexing data and linking of parent and child records.
-		 *  To "index" means indexing data without linking parent and child records.
-		 *  To "link" means linking only existing parent and child records in the index.
 		 * 
 		 * -i:
 		 * Normal interactive import (user answers questions)
@@ -138,16 +139,13 @@ public class Main {
 		 * Import should starts immediately. Mainly for fast testing.
 		 * 
 		 * -r:
-		 * Re-Import all data from MarcXML (initial dataset and all ongoing updates).
-		 * Uses settings from the AkImporter.properties file.
+		 * Re-Import all data from MarcXML file.
 		 * 
 		 * -R:
-		 * Re-Import all data from ongoing data deliveries only (without initial dataset).
-		 * Uses settings from the AkImporter.properties file.
+		 * Re-Import all data from ongoing data deliveries.
 		 * 
 		 * -l:
-		 * Linking existing parent and child records in the main bibliographic Solr index
-		 * (see setting "import.solr" in AkImporter.properties file).
+		 * Linking parent and child records.
 		 * 
 		 * -u
 		 * Update mode. Use this for automatically importing ongoing data
@@ -163,8 +161,7 @@ public class Main {
 		 * Do not show properties and do not let the user confirm them.
 		 * Import should starts immediately. Mainly for fast testing.
 		 * 
-		 * -h
-		 * Show help
+		 * 
 		 * 
 		 * 
 		 * 
@@ -177,56 +174,53 @@ public class Main {
 		 * -o
 		 * Optimize solr index.
 		 * 
+		 * 
+		 * 
+		 * OTHER PARAMETERS
+		 * -------------------
+		 * 
+		 * -h
+		 * Show help
+		 * 
+		 * 
 		 */
-
-
+		
+		
 		Options options = new Options();
 		OptionGroup ogMain = new OptionGroup();
 
-		// i (interactive) option
+		// i (import) option
 		Option oImport = Option
 				.builder("i")
 				.required(true)
-				.longOpt("interactive")
-				.desc("Import metadata from one or multiple MarcXML file(s) using interactive mode")
+				.longOpt("import")
+				.desc("Import metadata from one or multiple MarcXML file(s)")
 				.build();
 
-		// p (import) option
-		Option oProperties = Option
-				.builder("p")
+		// u (update) option
+		Option oUpdate = Option
+				.builder("u")
+				.numberOfArgs(7)
+				.argName("remotePath localPath host port user password solrAddress defaultSolrMab")
 				.required(true)
-				.longOpt("properties")
-				.desc("Import metadata from one or multiple MarcXML file(s) using the properties"
-						+ "file after confirming the settings")
+				.longOpt("update")
+				.desc("Update from ongoing data delivery in MarcXML")
 				.build();
 
-		// P (import) option
-		Option oPropertiesSilent = Option
-				.builder("P")
-				.required(true)
-				.longOpt("properties-silent")
-				.desc("Import metadata from one or multiple MarcXML file(s) using the properties"
-						+ "file without confirming the settings")
-				.build();
-
-		// r (reimport) option
+		// r (reindex) option
 		Option oReIndex = Option
 				.builder("r")
 				.required(true)
 				.longOpt("reimport")
-				.desc("Re-Import all data from MarcXML (initial dataset and all ongoing updates). Uses some "
-						+ "of the \"import\" and \"update\" settings from the AkImporter.properties file. They "
-						+ "have to be set correctly.")
+				.desc("Re-import all data from MarcXML")
 				.build();
 
-		// R (reindex ongoing) option
+		// ro (reindexongoing) option
 		Option oReIndexOngoing = Option
-				.builder("R")
+				.builder("ro")
 				.required(true)
-				.longOpt("reimport-ongoing")
-				.desc("Re-Import all data from ongoing data deliveries only (without initial dataset). "
-						+ "Uses some of the \"update\" settings from the AkImporter.properties file. "
-						+ "They have to be set correctly.")
+				.longOpt("reimportongoing")
+				.desc("Re-import all ongoing data deliveries")
 				.build();
 
 		// l (link) option
@@ -234,33 +228,7 @@ public class Main {
 				.builder("l")
 				.required(true)
 				.longOpt("link")
-				.desc("Linking existing parent and child records in the main bibliographic Solr index (see setting \"import.solr\" in AkImporter.properties file).")
-				.build();
-
-		// u (update) option
-		Option oUpdate = Option
-				.builder("u")
-				//.numberOfArgs(7)
-				//.argName("remotePath localPath host port user password solrAddress defaultSolrMab")
-				.required(true)
-				.longOpt("update")
-				.desc("Update from ongoing data delivery in MarcXML")
-				.build();
-
-		// a (authority) option
-		Option oAuthority = Option
-				.builder("a")
-				.required(true)
-				.longOpt("authority")
-				.desc("Index authority data after confirming the settings")
-				.build();
-
-		// A (authority-silent) option
-		Option oAuthoritySilent = Option
-				.builder("A")
-				.required(true)
-				.longOpt("authority-silent")
-				.desc("Index authority data without confirming the settings")
+				.desc("Link parents and child volumes")
 				.build();
 
 		// h (help) option
@@ -279,32 +247,81 @@ public class Main {
 				.desc("Print detailed process messages")
 				.build();
 
-		// o (optimize) option
-		Option oOptimize = Option
-				.builder("o")
-				.required(false)
-				.longOpt("optimize")
-				.desc("Optimize Solr")
-				.build();
-
 
 		ogMain.addOption(oImport);
-		ogMain.addOption(oProperties);
-		ogMain.addOption(oPropertiesSilent);
+		ogMain.addOption(oUpdate);
 		ogMain.addOption(oReIndex);
 		ogMain.addOption(oReIndexOngoing);
 		ogMain.addOption(oLink);
-		ogMain.addOption(oUpdate);
-		ogMain.addOption(oAuthority);
-		ogMain.addOption(oAuthoritySilent);
 		ogMain.addOption(oHelp);
 		ogMain.setRequired(true);
 		options.addOptionGroup(ogMain);
 		options.addOption(oVerbose);
+
+
+		/**
+		 * Import with arguments
+		 */
+		// Single metadata file
+		Option oPathToMabXmlFile = Option
+				.builder("px")
+				.required(false)
+				.hasArg()
+				.longOpt("pathxml")
+				.desc("Full path to single xml file containing metadata, e. g. /home/username/filename.xml")
+				.build();
+
+		// Multiple metadata files which has to be merged
+		Option oPathToMabXmlFolder = Option
+				.builder("pf")
+				.required(false)
+				.hasArg()
+				.longOpt("pathfolder")
+				.desc("Full path to folder with multiple xml files containing metadata, e. g. /home/username/xmlfiles")
+				.build();
+
+		Option oValidateXml = Option
+				.builder("vx")
+				.required(false)
+				.longOpt("validate")
+				.desc("Validate XML file")
+				.build();
+
+		Option oSolrUrl = Option
+				.builder("su")
+				.required(false)
+				.hasArg()
+				.longOpt("solrurl")
+				.desc("Url to the Solr Server including core name, e. g. http://localhost:8080/solr/corename")
+				.build();
+
+		Option oOwnMabProps = Option
+				.builder("om")
+				.required(false)
+				.hasArg()
+				.longOpt("ownmabprops")
+				.desc("Use own .properties file and indicate the full path to it, e. g. /home/username/myownmab.properties")
+				.build();
+
+		Option oOptimize = Option
+				.builder("os")
+				.required(false)
+				.longOpt("optimizesolr")
+				.desc("Optimize Solr")
+				.build();
+
+		// Add options for import from single file
+		options.addOption(oPathToMabXmlFile);
+		options.addOption(oPathToMabXmlFolder);
+		options.addOption(oValidateXml);
+		options.addOption(oSolrUrl);
+		options.addOption(oOwnMabProps);
 		options.addOption(oOptimize);
 
 
+
 		try {
+
 
 			CommandLine cmd = clParser.parse(options, args, true);
 			String selectedMainOption = ogMain.getSelected();
@@ -314,214 +331,97 @@ public class Main {
 				print = true;
 			}
 
-			// Optimize?
-			if (cmd.hasOption("o")) {
-				optimize = true;
-			}
-
 
 			// Switch between main options
 			switch (selectedMainOption) {
-			case "i": {
-				new Import(optimize, print);
-				break;
-			}
+			case "i":
 
-			case "p": {
-
-				// Show properties and ask user for confirmation:
-				Scanner scanner = new Scanner(System.in);
-				System.out.println("Your import settings in AkImporter.properties are:");
-				System.out.println("-------------------------------------------");
-				for (String key : importerProperties.stringPropertyNames()) {
-					if (key.startsWith("import.")) {
-						System.out.println(key + ": " + importerProperties.getProperty(key));
-					}
-				}
-				System.out.println("-------------------------------------------");
-				String startImport = getUserInput("Would you like to start the import process with these settings?\n Y = Yes, start import\n N = No, cancel import", "Y, N", scanner);
-
-				if (startImport.equals("Y")) {
-					// Start import process:
+				if (cmd.hasOption("px")) { // Import from single file
 					new Import(
-							iDataset,
-							iPath,
-							iPath,
-							iValidation,
-							iSolr,
-							iDefaultMabProperties,
-							iCustomMabProperties,
-							optimize,
-							print
+							"1",
+							cmd.getOptionValue("px"),
+							null,
+							cmd.hasOption("vx"),
+							cmd.getOptionValue("su"),
+							cmd.hasOption("om"),
+							cmd.getOptionValue("om"),
+							cmd.hasOption("os"),
+							cmd.hasOption("v")
 							);
-				} else if (startImport.equals("N")){
-					System.out.println("\nImport process cancelled as requested by user.\n");
+				} else if (cmd.hasOption("pf")) { // Import multiple files from folder
+
+					new Import(
+							"2",
+							null,
+							cmd.getOptionValue("pf"),
+							cmd.hasOption("vx"),
+							cmd.getOptionValue("su"),
+							cmd.hasOption("om"),
+							cmd.getOptionValue("om"),
+							cmd.hasOption("os"),
+							cmd.hasOption("v")
+							);
+				} else {
+					print = true;
+					new Import(optimize, print);
 				}
+				break;
+
+
+			case "u":
+				String[] updateArgs = cmd.getOptionValues("u");				
+
+				String remotePath = updateArgs[0];
+				String localPath = updateArgs[1];
+				String host = updateArgs[2];
+				int port = Integer.valueOf(updateArgs[3]);
+				String user = updateArgs[4];
+				String password = updateArgs[5];
+				String solrAddress = updateArgs[6];
+
+				Updater updater = new Updater();																			
+				isUpdateSuccessful = updater.update(remotePath, localPath, host, port, user, password, solrAddress, cmd.hasOption("om"), cmd.getOptionValue("om"), cmd.hasOption("os"), cmd.hasOption("v"));
 
 				break;
-			}
 
-			case "P": {
-				// Start import process with settings in AkImporter.properties immediately:
-				new Import(
-						iDataset,
-						iPath,
-						iPath,
-						iValidation,
-						iSolr,
-						iDefaultMabProperties,
-						iCustomMabProperties,
-						optimize,
-						print
-						);
+
+			case "r":
+				System.out.println("This function \"Reimoprt all\" is not working at the moment. Work in progress ...");
 				break;
-			}
 
-			case "r": {
-				System.out.println("\n-----------------------------------\n");
-				System.out.println("Start re-importing initial dataset ...");
-				
-				// Start import process of initial dataset:
-				new Import(
-						iDataset,
-						iPath,
-						iPath,
-						iValidation,
-						iSolr,
-						iDefaultMabProperties,
-						iCustomMabProperties,
-						optimize,
-						print
-				);
-				System.out.println("\n-----------------------------------\n");
-				
-				
-				// Start import process of ongoing updates (from "merged data" directory):
-				System.out.println("Start re-importing ongoing data updates ...");
-				ReImport reImport = new ReImport(print, optimize);
-				reImport.reImportOngoing(
-						uLocalPath,
-						iValidation,
-						uSolr,
-						uDefaultMabProperties,
-						uCustomMabProperties
-				);
+			case "ro":
+				ReImport reImport = new ReImport(cmd.hasOption("v"), optimize);
 				boolean isReImportingSuccessful = reImport.isReImportingSuccessful();
 				if (isReImportingSuccessful) {
-					System.out.println("\n-----------------------------------\n");
-					System.out.println("Re-Importing of all data was successful.");
+					System.out.println("Re-importing successful");
+				}
+				break;
+
+			case "l":
+				// Connect child and parent volumes:
+				if (cmd.hasOption("su")) {
+					String solrUrl = cmd.getOptionValue("su");
+					HttpSolrServer solrServer = new HttpSolrServer(solrUrl);
+					Relate relate = new Relate(solrServer, null, false, cmd.hasOption("v"));
+					boolean isRelateSuccessful = relate.isRelateSuccessful();
+					if (cmd.hasOption("v")) {
+						if (isRelateSuccessful) {
+							System.out.println("Done linking parent and child records. Everything was successful.");
+						}
+					}
 				} else {
-					System.err.println("Error while re-importing of ongoing data updates.");
+					System.out.println("Missing option -su (--solrurl). Please specify also a Solr Server URL incl. core name, e. g. -su http://localhost:8080/solr/corename");
 				}
 				break;
-			}
 
-			case "R": {
-				System.out.println("Start re-importing ongoing data updates ...");
-				// Start import process of ongoing updates (from "merged data" directory):				
-				ReImport reImport = new ReImport(print, optimize);
-				reImport.reImportOngoing(
-						uLocalPath,
-						iValidation,
-						uSolr,
-						uDefaultMabProperties,
-						uCustomMabProperties
-				);
-				break;
-			}
 
-			case "l": {
-				// Connect child and parent volumes:	
-				HttpSolrServer solrServer = new HttpSolrServer(iSolr);
-				Relate relate = new Relate(solrServer, null, optimize, print);
-				boolean isRelateSuccessful = relate.isRelateSuccessful();
-				if (cmd.hasOption("v")) {
-					if (isRelateSuccessful) {
-						System.out.println("Done linking parent and child records. Everything was successful.");
-					}
-				}
-				
-				break;
-			}
-
-			case "u": {
-				Updater updater = new Updater();																			
-				isUpdateSuccessful = updater.update (
-						uRemotePath,
-						uLocalPath,
-						uFtpHost,
-						uFtpPort,
-						uFtpUser,
-						uFtpPass,
-						uSolr,
-						uDefaultMabProperties,
-						uCustomMabProperties,
-						optimize,
-						print
-						);
-				break;
-			}
-			
-			case "a": {
-				// Show properties for authority importing and ask user for confirmation:
-				Scanner scanner = new Scanner(System.in);
-				System.out.println("Your authority settings in AkImporter.properties are:");
-				System.out.println("-------------------------------------------");
-				for (String key : importerProperties.stringPropertyNames()) {
-					if (key.startsWith("authority.")) {
-						System.out.println(key + ": " + importerProperties.getProperty(key));
-					}
-				}
-				System.out.println("-------------------------------------------");
-				String startImport = getUserInput("Would you like to start the import process of the authority file with these settings?\n Y = Yes, start import\n N = No, cancel import", "Y, N", scanner); 
-				
-				if (startImport.equals("Y")) {
-					// Start import process for authority records:
-					Authority auth = new Authority(
-							aPath,
-							aDefaultMabProperties,
-							aCustomMabProperties,
-							aSolrAuth,
-							null,
-							print,
-							optimize
-					);
-					auth.indexAuthority();
-				} else if (startImport.equals("N")){
-					System.out.println("\nImport process cancelled as requested by user.\n");
-				}
-				
-				break;
-			}
-
-			case "A": {
-				// Start import process for authority records:
-				Authority auth = new Authority(
-						aPath,
-						aDefaultMabProperties,
-						aCustomMabProperties,
-						aSolrAuth,
-						null,
-						print,
-						optimize
-				);
-				auth.indexAuthority();
-				
-				break;
-			}
-
-			case "h": {
+			case "h":
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
+
+
+			default:
 				break;
-			}
-			
-			default: {
-				HelpFormatter helpFormatter = new HelpFormatter();
-				helpFormatter.printHelp("AkImporter", "", options, "", true);
-				break;
-			}
-			
 			}
 
 
