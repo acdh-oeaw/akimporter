@@ -104,7 +104,7 @@ public class Index {
 
 			// Load .properties file:
 			if (useDefaultMabProperties) {
-				mabPropertiesInputStream = new BufferedInputStream(Main.class.getResourceAsStream("/betullam/akimporter/resources/mab.properties"));
+				mabPropertiesInputStream = new BufferedInputStream(Main.class.getResourceAsStream(this.mabPropertiesFile));
 			} else {
 				mabPropertiesInputStream = new BufferedInputStream(new FileInputStream(this.mabPropertiesFile));
 			}

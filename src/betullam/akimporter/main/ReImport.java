@@ -117,8 +117,8 @@ public class ReImport {
 		String directoryOfTranslationFiles = null;
 
 		if (useDefaultMabProperties) {
-			pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
-			directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
+			pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
+			directoryOfTranslationFiles = "/betullam/akimporter/resources";
 			propertiesFileInfo = "Using default mab.properties file";
 		} else {
 			propertiesFileInfo = "Using custom .properties file: " + pathToMabPropertiesFile;
@@ -256,8 +256,8 @@ public class ReImport {
 
 			if (useDefaultMabPropertiesFile.equals("D")) {
 				useDefaultMabProperties = true;
-				pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
-				directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
+				pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
+				directoryOfTranslationFiles = "/betullam/akimporter/resources";
 				propertiesFileInfo = "Use default mab.properties file";
 			} else {
 				useDefaultMabProperties = false;

@@ -31,7 +31,6 @@ import java.util.Date;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
-import betullam.akimporter.main.Main;
 import betullam.akimporter.solrmab.Index;
 import betullam.akimporter.solrmab.Relate;
 import betullam.akimporter.solrmab.SolrMabHelper;
@@ -121,8 +120,8 @@ public class Updater {
 			// Index XML file:
 			if (hasValidationPassed) {
 				if (this.useDefaultMabProperties) {
-					pathToMabPropertiesFile = Main.class.getResource("/betullam/akimporter/resources/mab.properties").getFile();
-					directoryOfTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
+					pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
+					directoryOfTranslationFiles = "/betullam/akimporter/resources";
 					this.smHelper.print(this.print, "\nUse default mab.properties file for indexing.");
 				} else {
 					directoryOfTranslationFiles = new File(this.pathToMabPropertiesFile).getParent();

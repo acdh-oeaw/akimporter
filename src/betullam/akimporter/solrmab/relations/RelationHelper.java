@@ -41,18 +41,20 @@ import org.apache.solr.common.SolrInputDocument;
 public class RelationHelper {
 
 	// General variables
-	private HttpSolrServer solrServer;
+	private HttpSolrServer solrServerBiblio;
+	private HttpSolrServer solrServerAuth;
 	private String timeStamp = null;
 	private int NO_OF_ROWS = 500;
 
 	/**
 	 * Constructor for helper class for relating parent records and child records
 	 * 
-	 * @param solrServer	Solr Server we want to index to
+	 * @param solrServerBiblio	Solr Server we want to index to
 	 * @param timeStamp		Timestamp of moment the import process started
 	 */
-	public RelationHelper(HttpSolrServer solrServer, String timeStamp) {
-		this.solrServer = solrServer;
+	public RelationHelper(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuth, String timeStamp) {
+		this.solrServerBiblio = solrServerBiblio;
+		this.solrServerAuth = solrServerAuth;
 		this.timeStamp = timeStamp;
 	}
 
@@ -60,7 +62,7 @@ public class RelationHelper {
 	 * Getting all child records of the current index process.
 	 *  
 	 * @param isFirstPage	True if first page of Solr results
-	 * @param lastDocId		Doc Id of the previous last processed Solr document
+	 * @param lastDocId		Doc Id of the last processed Solr document
 	 * @return				SolrDocumentList object
 	 */
 	public SolrDocumentList getCurrentlyIndexedChildRecords(boolean isFirstPage, String lastDocId) {
@@ -105,7 +107,7 @@ public class RelationHelper {
 
 		try {
 			// Execute query and get results
-			queryResult = this.solrServer.query(query).getResults();
+			queryResult = this.solrServerBiblio.query(query).getResults();
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
@@ -117,7 +119,7 @@ public class RelationHelper {
 	 * Getting all currently indexed records that don't have child records.
 	 * 
 	 * @param isFirstPage	True if first page of Solr results
-	 * @param lastDocId		Doc Id of the previous last processed Solr document
+	 * @param lastDocId		Doc Id of the last processed Solr document
 	 * @return				SolrDocumentList object
 	 */
 	public SolrDocumentList getCurrentlyIndexedRecordsWithNoChilds(boolean isFirstPage, String lastDocId) {
@@ -160,13 +162,89 @@ public class RelationHelper {
 
 		try {
 			// Execute query and get results
-			queryResult = this.solrServer.query(query).getResults();
+			queryResult = this.solrServerBiblio.query(query).getResults();
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
 
 		return queryResult;
 	}
+
+
+
+
+	/**
+	 * Getting all records that contains authority data (a GND-No).
+	 * 
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the last processed Solr document
+	 * @return				SolrDocumentList object
+	 */
+	public SolrDocumentList getRecordsWithGnd(boolean isFirstPage, String lastDocId) {
+		// Set up variable
+		SolrDocumentList queryResult = null;
+
+		// New Solr query
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting (more efficient for deep paging)
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance
+		query.setQuery("*:*");
+
+		// Filter all records that were indexed with the current import process
+		if (this.timeStamp != null) {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:*");	
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+			}
+		} else {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:*", "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:*", "id:[" + lastDocId + " TO *]");
+			}
+		}
+
+		// Set fields that should be given back from the query
+		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv");
+
+		try {
+			// Execute query and get results
+			queryResult = this.solrServerBiblio.query(query).getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		return queryResult;
+	}
+	
+	
+	public SolrDocument getGndRecordById(String gndId) {
+		SolrDocument gndRecord = null;
+		
+		SolrQuery queryGndRecord = new SolrQuery(); // New Solr query
+		queryGndRecord.setQuery("id:\""+gndId+"\""); // Define a query
+		queryGndRecord.setFields("id"); // Set fields that should be given back from the query
+
+		try {
+			SolrDocumentList resultList = this.solrServerAuth.query(queryGndRecord).getResults();
+			gndRecord = (resultList.getNumFound() > 0 && resultList != null) ? resultList.get(0) : null;// Get GND record (there should only be one)
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+		
+		return gndRecord;
+	}
+
+
 
 
 	/**
@@ -296,9 +374,9 @@ public class RelationHelper {
 		queryParent.setFields("id", "title"); // Set fields that should be given back from the query
 
 		try {
-			SolrDocumentList resultList = this.solrServer.query(queryParent).getResults();
+			SolrDocumentList resultList = this.solrServerBiblio.query(queryParent).getResults();
 			if (resultList.getNumFound() > 0 && resultList != null) {
-				parentRecord = this.solrServer.query(queryParent).getResults().get(0);// Get parent document (there should only be one)
+				parentRecord = this.solrServerBiblio.query(queryParent).getResults().get(0);// Get parent document (there should only be one)
 			}
 		} catch (SolrServerException e) {
 			e.printStackTrace();
@@ -333,10 +411,10 @@ public class RelationHelper {
 	 * 
 	 * @param docsForAtomicUpdates	A collection of SolrImputDocument objects.
 	 */
-	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates) {		
+	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates, HttpSolrServer solrServer) {		
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
-				this.solrServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
+				solrServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {

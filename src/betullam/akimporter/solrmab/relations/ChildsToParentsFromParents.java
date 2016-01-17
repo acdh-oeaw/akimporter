@@ -68,7 +68,7 @@ public class ChildsToParentsFromParents {
 	public ChildsToParentsFromParents(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
-		this.relationHelper = new RelationHelper(solrServer, timeStamp);
+		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
 	}
 
 
@@ -105,7 +105,7 @@ public class ChildsToParentsFromParents {
 				lastDocId = setParentAtomicUpdateDocs(isFirstPage, lastDocId);
 				
 				// Add documents to Solr
-				relationHelper.indexDocuments(docsForAtomicUpdates);
+				relationHelper.indexDocuments(docsForAtomicUpdates, solrServer);
 
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
 				docsForAtomicUpdates.clear();
@@ -122,7 +122,7 @@ public class ChildsToParentsFromParents {
 				setParentAtomicUpdateDocs(isFirstPage, lastDocId);
 				
 				// Add documents to Solr
-				relationHelper.indexDocuments(docsForAtomicUpdates);
+				relationHelper.indexDocuments(docsForAtomicUpdates, solrServer);
 
 				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
 				docsForAtomicUpdates.clear();

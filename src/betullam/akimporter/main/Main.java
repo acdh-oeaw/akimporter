@@ -60,6 +60,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
 import betullam.akimporter.solrmab.Relate;
+import betullam.akimporter.solrmab.relations.AuthorityFlag;
 import betullam.akimporter.updater.Updater;
 
 /** TODO:
@@ -77,6 +78,7 @@ public class Main {
 	static boolean optimize = false;
 	static boolean print = false;
 	static boolean test = false;
+	static boolean flag = false;
 	static boolean isUpdateSuccessful = false;
 
 	// CLI options
@@ -118,6 +120,7 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
+
 		// Log4J
 		BasicConfigurator.configure();
 		Logger.getRootLogger().setLevel(Level.WARN);
@@ -146,9 +149,20 @@ public class Main {
 				test = true;
 			}
 
+			// Flag only?
+			if (cmd.hasOption("f")) {
+				flag = true;
+			}
+
 
 			// Switch between main options
 			switch (selectedMainOption) {
+			case "k": { // FOR TESTING ONLY
+				// Set flag of existance to authority records:
+				System.out.println("No test case specified.");
+				break;
+			}
+
 			case "i": {
 				new Import(optimize, print);
 				break;
@@ -359,20 +373,26 @@ public class Main {
 							System.out.println("Properties are OK");
 							break;
 						} else {
-							// Start import process for authority records:
-							Authority auth = new Authority(
-									aPath,
-									aDefaultMabProperties,
-									aCustomMabProperties,
-									aSolrAuth,
-									null,
-									print,
-									optimize
-							);
-							auth.indexAuthority();
+							if (!flag) {
+								// Start import process for authority records:
+								Authority auth = new Authority(
+										aPath,
+										aDefaultMabProperties,
+										aCustomMabProperties,
+										aSolrAuth,
+										null,
+										print,
+										optimize
+										);
+								auth.indexAuthority();
+							}
+
+							// Set flag of existance to authority records:							 
+							AuthorityFlag af = new AuthorityFlag(new HttpSolrServer(aSolrBibl), new HttpSolrServer(aSolrAuth), null, print);
+							af.setFlagOfExistance();
 						}
 					}
-					
+
 				} else if (startImport.equals("N")){
 					System.out.println("\nImport process cancelled as requested by user.\n");
 				}
@@ -387,20 +407,26 @@ public class Main {
 						System.out.println("Properties are OK");
 						break;
 					} else {
-						// Start import process for authority records:
-						Authority auth = new Authority(
-								aPath,
-								aDefaultMabProperties,
-								aCustomMabProperties,
-								aSolrAuth,
-								null,
-								print,
-								optimize
-								);
-						auth.indexAuthority();
+						if (!flag) {
+							// Start import process for authority records:
+							Authority auth = new Authority(
+									aPath,
+									aDefaultMabProperties,
+									aCustomMabProperties,
+									aSolrAuth,
+									null,
+									print,
+									optimize
+									);
+							auth.indexAuthority();
+						}
+
+						// Set flag of existance to authority records:							 
+						AuthorityFlag af = new AuthorityFlag(new HttpSolrServer(aSolrBibl), new HttpSolrServer(aSolrAuth), null, print);
+						af.setFlagOfExistance();
 					}
 				}
-				
+
 				break;
 			}
 
@@ -422,6 +448,10 @@ public class Main {
 		} catch (ParseException e) {
 			e.printStackTrace();
 			return;
+		}
+		
+		if (print) {
+			System.out.print("\n");
 		}
 	}
 
@@ -736,7 +766,7 @@ public class Main {
 	}
 
 
-	
+
 
 
 
@@ -802,7 +832,7 @@ public class Main {
 		} else {
 			ftpIsOk = true; // We don't need to check FTP, so this is true.
 		}
-		
+
 		if (!ftpIsOk) {
 			System.err.println(ftpErrorMsg);
 		} else {
@@ -838,9 +868,9 @@ public class Main {
 		return updatePropertiesOk;
 	}
 
-	
+
 	private static boolean checkAuthorityProperties() {
-		
+
 		boolean authorityPropertiesOk = false;
 
 		// Check if there are empty values
@@ -853,7 +883,7 @@ public class Main {
 				}
 			}
 		}
-		
+
 		boolean xmlFileExists = fileExists(new File(aPath));
 		if (!xmlFileExists) {
 			System.err.println("File specified for \"authority.path\" in \"AkImporter.properties\" does not exist.");
@@ -881,14 +911,14 @@ public class Main {
 				}
 			}
 		}
-		
+
 		return authorityPropertiesOk;
 
 	}
-	
+
 
 	private static boolean checkImportProperties() {
-		
+
 		boolean importPropertiesOk = false;
 
 		// Check if there are empty values
@@ -944,7 +974,7 @@ public class Main {
 		return importPropertiesOk;
 	}
 
-	
+
 	private static void setCLI() {
 
 		/**
@@ -1013,7 +1043,21 @@ public class Main {
 		 * Can be used with -p, -P, -r, -R, -u, -a, -A
 		 * Example: java -jar AkImporter.jar -p -t
 		 * 
+		 * -f
+		 * Set only flag of existance to authority records instead
+		 * of indexing them. The flag tells us if the authority
+		 * record is used in at least one bibliographich record.
+		 * Can be used with -a and -A
+		 * Example: java -jar AkImporter.jar -a -f
 		 */
+
+		// k (AK mode) option - FOR TESTING ONLY
+		Option oAkTest = Option
+				.builder("k")
+				.required(true)
+				.longOpt("aktest")
+				.desc("ONLY FOR TESTING - DO NOT USE IN PRODUCTION ENVIRONMENT!")
+				.build();
 
 		// i (interactive) option
 		Option oImport = Option
@@ -1127,7 +1171,17 @@ public class Main {
 				.desc("Test parameters specified in AkImporter.properties. Can be used with options -p, -P, -r, -R, -u, -a, -A.\nExample: java -jar AkImporter.jar -p -t")
 				.build();
 
+		// o (optimize) option
+		Option oFlagAuthority = Option
+				.builder("f")
+				.required(false)
+				.longOpt("flag")
+				.desc("Set only flag of existance to authority records instead of indexing them. The flag tells us if the authority record is used in at least one bibliographich record. Can be used with -a and -A\nExample: java -jar AkImporter.jar -a -f")
+				.build();
 
+
+
+		optionGroup.addOption(oAkTest);
 		optionGroup.addOption(oImport);
 		optionGroup.addOption(oProperties);
 		optionGroup.addOption(oPropertiesSilent);
@@ -1143,6 +1197,7 @@ public class Main {
 		options.addOption(oVerbose);
 		options.addOption(oOptimize);
 		options.addOption(oTestParameter);
+		options.addOption(oFlagAuthority);
 
 	}
 

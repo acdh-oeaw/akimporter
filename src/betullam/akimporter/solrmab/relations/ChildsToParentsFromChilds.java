@@ -60,7 +60,7 @@ public class ChildsToParentsFromChilds {
 	public ChildsToParentsFromChilds(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
-		this.relationHelper = new RelationHelper(solrServer, timeStamp);
+		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
 	}
 
 
@@ -186,7 +186,6 @@ public class ChildsToParentsFromChilds {
 				// Query all childs from a parent except the deleted ones
 				SolrDocumentList nonDeletedChilds = getNonDeletedChildsByParentSYS(parentSYS);
 
-
 				// Add all non deleted childs to it's parents:
 				for (SolrDocument nonDeletedChild : nonDeletedChilds) {
 
@@ -276,12 +275,12 @@ public class ChildsToParentsFromChilds {
 
 				// Add documents from the class variable which was set before to Solr
 				if (counter % CHILD_INDEX_RATE == 0) { // Every n-th record, add documents to solr
-					relationHelper.indexDocuments(docsForAtomicUpdates);
+					relationHelper.indexDocuments(docsForAtomicUpdates, solrServer);
 					docsForAtomicUpdates.clear();
 					docsForAtomicUpdates = null;
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				} else if (counter >= noOfParents) { // The remainding documents (if division with NO_OF_ROWS 
-					relationHelper.indexDocuments(docsForAtomicUpdates);
+					relationHelper.indexDocuments(docsForAtomicUpdates, solrServer);
 					docsForAtomicUpdates.clear();
 					docsForAtomicUpdates = null;
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument

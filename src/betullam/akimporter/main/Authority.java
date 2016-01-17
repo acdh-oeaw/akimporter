@@ -24,8 +24,8 @@ public class Authority {
 		this.pathToAuthFile = pathToAuthFile;
 		this.useDefaultAuthProperties = useDefaultAuthProperties;
 		if (this.useDefaultAuthProperties) {
-			this.pathToAuthProperties = Main.class.getResource("/betullam/akimporter/resources/authority.properties").getFile();
-			this.pathToTranslationFiles = Main.class.getResource("/betullam/akimporter/resources").getPath();
+			this.pathToAuthProperties = "/betullam/akimporter/resources/authority.properties";
+			this.pathToTranslationFiles = "/betullam/akimporter/resources";
 		} else {
 			this.pathToAuthProperties = pathToCustomAuthProperties;
 			this.pathToTranslationFiles = new File(this.pathToAuthProperties).getParent();
@@ -52,7 +52,7 @@ public class Authority {
 		new Index (
 				this.pathToAuthFile,
 				solrServerAuth,
-				false,
+				this.useDefaultAuthProperties,
 				this.pathToAuthProperties,
 				this.pathToTranslationFiles,
 				this.timeStamp,
