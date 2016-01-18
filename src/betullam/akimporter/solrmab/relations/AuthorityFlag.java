@@ -160,6 +160,7 @@ public class AuthorityFlag {
 			String[] authorAdditionalGndNos = (recordWithAuth.getFieldValues("author_additional_GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("author_additional_GndNo_str_mv").toArray(new String[0]) : null;
 			String authorCorporateGndNo = (recordWithAuth.getFieldValue("corporateAuthorGndNo_str") != null) ? recordWithAuth.getFieldValue("corporateAuthorGndNo_str").toString() : null;
 			String[] authorCorporate2GndNos = (recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv").toArray(new String[0]) : null;				
+			String subjectGndNo = (recordWithAuth.getFieldValue("subjectGndNo_str") != null) ? recordWithAuth.getFieldValue("subjectGndNo_str").toString() : null;
 
 			// Add all possible GND Numbers to a List<String> so that we can iterate over it later on
 			String replaceRegex = "(\\(.*?\\))|(GKD)"; // Replace unwanted characters in GND-ID (e. g. (DE-505), GKD, etc.)
@@ -178,6 +179,8 @@ public class AuthorityFlag {
 					gndNos.add(authorCorporate2GndNo.replaceAll(replaceRegex, ""));
 				}
 			}
+			if (subjectGndNo != null) {gndNos.add(subjectGndNo.replaceAll(replaceRegex, "")); }
+
 
 			gndIds.addAll(gndNos);
 			
