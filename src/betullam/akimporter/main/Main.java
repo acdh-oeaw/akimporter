@@ -128,6 +128,12 @@ public class Main {
 
 		// Set the command line options:
 		setCLI();
+		
+		if (args.length <= 0) {
+			HelpFormatter helpFormatter = new HelpFormatter();
+			helpFormatter.printHelp("AkImporter", "", options, "", true);
+			return;
+		}
 
 		try {
 
