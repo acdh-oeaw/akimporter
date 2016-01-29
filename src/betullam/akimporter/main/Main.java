@@ -158,8 +158,7 @@ public class Main {
 			// Switch between main options
 			switch (selectedMainOption) {
 			case "k": { // FOR TESTING ONLY
-				// Set flag of existance to authority records:
-				System.out.println("No test case specified.");
+				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
 				break;
 			}
 
@@ -1147,6 +1146,8 @@ public class Main {
 				.desc("Print help")
 				.build();
 
+		
+		
 		// v (verbose) option
 		Option oVerbose = Option
 				.builder("v")
@@ -1163,7 +1164,7 @@ public class Main {
 				.desc("Optimize Solr")
 				.build();
 
-		// o (optimize) option
+		// t (test) option
 		Option oTestParameter = Option
 				.builder("t")
 				.required(false)
@@ -1171,7 +1172,7 @@ public class Main {
 				.desc("Test parameters specified in AkImporter.properties. Can be used with options -p, -P, -r, -R, -u, -a, -A.\nExample: java -jar AkImporter.jar -p -t")
 				.build();
 
-		// o (optimize) option
+		// f (flag) option
 		Option oFlagAuthority = Option
 				.builder("f")
 				.required(false)
