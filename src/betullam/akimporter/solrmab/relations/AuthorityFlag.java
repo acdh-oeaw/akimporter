@@ -1,3 +1,33 @@
+/**
+ * Setting "flag fo existence" in authority records.
+ * Explanation: Authority records that are used in bibliograpic
+ * 				records will get a flag (actually an extra Solr
+ * 				fiels named "existsInBiblio_str"). Only these
+ * 				authority records will be used for searches in
+ * 				AkSearch.
+ *
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
+ * 
+ * This file is part of AkImporter.
+ * 
+ * AkImporter is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * AkImporter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with AkImporter.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @author   Michael Birkner <michael.birkner@akwien.at>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.html
+ * @link     http://wien.arbeiterkammer.at/service/bibliothek/
+ */
+
 package betullam.akimporter.solrmab.relations;
 
 import java.io.IOException;
@@ -27,12 +57,23 @@ public class AuthorityFlag {
 	private int INDEX_RATE = 500;
 	Set<String> gndIds = new HashSet<String>();
 
+	/**
+	 * Constructor for setting some variables.
+	 * 
+	 * @param solrServerBiblio			String indicating the URL incl. core name of the Solr bibliographic index (e. g. http://localhost:8080/solr/biblio)
+	 * @param solrServerAuthority		String indicating the URL incl. core name of the Solr authority index (e. g. http://localhost:8080/solr/authority)
+	 * @param timeStamp					Current unix time stamp as a String or null
+	 * @param print						boolean indicating whether to print status messages or not
+	 */
 	public AuthorityFlag(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean print) {
 		this.solrServerAuthority = solrServerAuthority;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServerBiblio, solrServerAuthority, timeStamp);
 	}
 
+	/**
+	 * Starting the process of setting the "flag of existence"
+	 */
 	public void setFlagOfExistance() {
 		SolrDocumentList queryResults = this.relationHelper.getRecordsWithGnd(true, null);
 
@@ -219,38 +260,6 @@ public class AuthorityFlag {
 
 		return returnValue;
 	}
-
-	/*
-	private boolean idExistsInGnd(String gndIdFromBibRecord) {
-		boolean existsInGnd = false;
-
-		// New Solr query
-		SolrQuery query = new SolrQuery();
-
-		// Set no of rows
-		query.setRows(0);
-
-		// Define a query for getting document by id
-		query.setQuery("id:\"" + gndIdFromBibRecord + "\"");
-
-		// Set fields that are given back from query
-		query.setFields("id");
-
-		// Set up variable
-		long numFound = 0;
-		try {
-			// Execute query and get results
-			numFound = this.solrServerAuthority.query(query).getResults().getNumFound();
-			if (numFound > 0) {
-				existsInGnd = true;
-			}
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		}
-
-		return existsInGnd;
-	}
-	*/
 }
 
 

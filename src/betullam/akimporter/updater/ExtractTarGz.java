@@ -114,10 +114,6 @@ public class ExtractTarGz {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-
-
-
 	}
 
 }

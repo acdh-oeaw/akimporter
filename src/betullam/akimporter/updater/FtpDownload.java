@@ -59,10 +59,7 @@ public class FtpDownload {
 			ftpClient.connect( host, port );
 			ftpClient.enterLocalPassiveMode();
 			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-
-			//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 			ftpOk &= ftpClient.login( user, password );
-			//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 
 			FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
 
@@ -74,8 +71,6 @@ public class FtpDownload {
 					OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
 					ftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
 					success = ftpClient.retrieveFile(remotePath + File.separator + fileName, outputStream);
-					//ftpClient.getReplyString();
-					//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 
 					if (success) {
 						ftpOk = true;
@@ -87,12 +82,9 @@ public class FtpDownload {
 					outputStream.close();
 				}
 			}
-
+			
 			ftpClient.logout();
-			//if( showMessages ) { System.out.println( "Logging out of FTP Server " + host + "." ); }
-			//if( showMessages ) { System.out.print( "FTP Reply: " + ftpClient.getReplyString() ); }
 			ftpClient.disconnect();
-			//if( showMessages ) { System.out.println( "FTP Client disconnected" ); }
 		} catch (IOException e) {
 			ftpOk = false;
 			e.printStackTrace();

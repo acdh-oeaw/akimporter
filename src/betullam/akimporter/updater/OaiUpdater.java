@@ -1,3 +1,30 @@
+/**
+ * Updating Solr index via OAI harvesting. Mainly written for updating
+ * authority records from DNB (GND), but parts could be used for other
+ * sources providing an OAI interface.
+ * 
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
+ * 
+ * This file is part of AkImporter.
+ * 
+ * AkImporter is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * AkImporter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with AkImporter.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @author   Michael Birkner <michael.birkner@akwien.at>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.html
+ * @link     http://wien.arbeiterkammer.at/service/bibliothek/
+ */
+
 package betullam.akimporter.updater;
 
 import java.io.BufferedInputStream;
@@ -36,11 +63,27 @@ import betullam.akimporter.solrmab.SolrMabHelper;
 import betullam.xmlhelper.XmlMerger;
 import betullam.xmlhelper.XmlParser;
 
+
 public class OaiUpdater {
 
 	String timeStamp;
 	SolrMabHelper smHelper = new SolrMabHelper();
 
+	/**
+	 * Starting the harvesting and index process of authority records.
+	 * 
+	 * @param oaiUrl					String representing an URL to an OAI interface
+	 * @param format					Format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
+	 * @param set						String representing the set of the OAI interface you want to harvest
+	 * @param destinationPath			String representing a path to a local directory where the downloaded data should be stored (e. g. /home/username/oai_data)
+	 * @param oaiDatefile				String representing a path to a .properties file with at least a "from" date/time in format YYYY-MM-DDTHH:MM:SSZ. It could also contain an "until" date/time. Example: /path/to/oai_date-time_file.properties
+	 * @param useDefaultAuthProps		boolean indicating whether tho use the default authority properties or not
+	 * @param customAuthProps			If using custom properties for authority indexing, a String representing the path to a .properties file, e. g. /home/username/my_authority.properties
+	 * @param solrServerAuth			String indicating the URL incl. core name of the Solr authority index (e. g. http://localhost:8080/solr/authority)
+	 * @param solrServerBiblio			String indicating the URL incl. core name of the Solr bibliographic index (e. g. http://localhost:8080/solr/biblio)
+	 * @param print						boolean indicating whether to print status messages or not
+	 * @param optimize					boolean indicating whether to optimize the solr index not
+	 */
 	public void oaiUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, boolean print, boolean optimize) {
 
 		boolean isAuthorityUpdateSuccessful = false;
@@ -74,6 +117,18 @@ public class OaiUpdater {
 		
 	}
 
+	
+	/**
+	 * Downloads, saves and merges data from an OAI interface.
+	 * 
+	 * @param oaiUrl				String representing an URL to an OAI interface
+	 * @param format				Format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
+	 * @param set					String representing the set of the OAI interface you want to harvest
+	 * @param destinationPath		String representing a path to a local directory where the downloaded data should be stored (e. g. /home/username/oai_data)
+	 * @param oaiDatefile			String representing a path to a .properties file with at least a "from" date/time in format YYYY-MM-DDTHH:MM:SSZ. It could also contain an "until" date/time. Example: /path/to/oai_date-time_file.properties
+	 * @param print					boolean indicating whether to print status messages or not
+	 * @return						String representing the path to a file with the downloaded data
+	 */
 	private String oaiDownload(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean print) {
 
 		String mergedFileName = null;
@@ -147,6 +202,12 @@ public class OaiUpdater {
 
 	}
 
+	/**
+	 * Getting the values from the .properties file for the date/time information for the OAI harvest date span ("from" and "until").
+	 * 
+	 * @param propertiesFile	String representing the path to the .properties file for the date/time information for the OAI harvest date span
+	 * @return					Properties object containing all values of the .properties file
+	 */
 	private Properties getOaiDateTime(String propertiesFile) {
 
 		Properties oaiDateTimeProperties = new Properties();
@@ -171,6 +232,12 @@ public class OaiUpdater {
 	}
 
 
+	/**
+	 * Writing a given date/time to the .properties file for the "from" date/time information for the OAI harvest date span
+	 * 
+	 * @param oaiDatefilePath	String representing the path to the .properties file for the date/time information for the OAI harvest date span
+	 * @param dateTime			The "from" date/time in format YYYY-MM-DDTHH:MM:SSZ to write to the file
+	 */
 	private void writeOaiDateFile(String oaiDatefilePath, String dateTime) {
 		File oaiDateFile = new File(oaiDatefilePath);
 		String content = "from: " + dateTime;
@@ -182,6 +249,13 @@ public class OaiUpdater {
 	}
 
 
+	/**
+	 * Merge multiple XML files into one.
+	 * 
+	 * @param sourcePath			String representing a path to a directory with multiple XML files (e. g. /folder/with/multiple/xml/files)
+	 * @param destinationPath		String representing a path to a file containing the merged XML data (e. g. /path/to/merged_file.xml)
+	 * @return
+	 */
 	private boolean mergeXmlFiles(String sourcePath, String destinationPath) {
 		XmlMerger xmlm = new XmlMerger();
 		boolean isMergeSuccessful = xmlm.mergeMultipleElementNodes(sourcePath, destinationPath, "collection", "slim:record");
@@ -189,6 +263,13 @@ public class OaiUpdater {
 	}
 
 
+	/**
+	 * Writing the downloaded data to a local XML file.
+	 * 
+	 * @param doc						Document: The DOM document representing the downloaded XML data.
+	 * @param destinationDirectory		String: The path to a directory where to save the new XML file locally (e. g. /save/xml/file/here)
+	 * @param fileName					String: The name of the xml file (e. g. myNewXmlFile.xml)
+	 */
 	private void writeXmlToFile(Document doc, String destinationDirectory, String fileName) {
 
 		destinationDirectory = stripFileSeperatorFromPath(destinationDirectory);
@@ -211,6 +292,17 @@ public class OaiUpdater {
 	}
 
 
+	/**
+	 * Getting the DOM document representing XML data from an OAI interface.
+	 * 
+	 * @param oaiUrl				String representing an URL to an OAI interface
+	 * @param metadataPrefix		Format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
+	 * @param set					String representing the set of the OAI interface you want to harvest
+	 * @param from					String representing the "from" date/time (format YYYY-MM-DDTHH:MM:SSZ) for the date span in which to harvest changed, new or deleted records
+	 * @param until					String representing the "until" date/time (format YYYY-MM-DDTHH:MM:SSZ) for the date span in which to harvest changed, new or deleted records
+	 * @param resumptionToken		String representing the resumption token of the OAI response
+	 * @return						Document: A DOM document representing the XML requested from the OAI interface
+	 */
 	private Document getOaiUpdated(String oaiUrl, String metadataPrefix, String set, String from, String until, String resumptionToken) {
 		URL url;
 		Document document = null;
@@ -242,6 +334,13 @@ public class OaiUpdater {
 		return document;
 	}
 
+	
+	/**
+	 * Getting HTTP response code (e. g. 200, 404, etc.) to check for errors
+	 * 
+	 * @param url	URL to the resource to check.
+	 * @return		The HTTP response code as an integer
+	 */
 	private int getHttpResponseCode(URL url) {
 		int httpResponseCode = 0;
 		try {
@@ -257,6 +356,12 @@ public class OaiUpdater {
 	}
 
 
+	/**
+	 * Getting the resumption token of an OAI interface query result
+	 * 
+	 * @param doc	Document: A DOM document representing the XML of the OAI interface query result
+	 * @return		String representing the resumption token or null if none was found
+	 */
 	private String getResumptionToken(Document doc) {
 		String resumptionToken = null;
 		XmlParser xmlParser = new XmlParser();

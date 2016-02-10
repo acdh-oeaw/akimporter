@@ -1,7 +1,7 @@
 /**
  * Helper class for linking childs to parents and vice versa.
  * 
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -227,6 +227,12 @@ public class RelationHelper {
 	}
 	
 	
+	/**
+	 * Getting an authority record (GND) by it's ID.
+	 * 
+	 * @param gndId		String representing an ID of an authority record.
+	 * @return			SolrDocument containing the authority record.
+	 */
 	public SolrDocument getGndRecordById(String gndId) {
 		SolrDocument gndRecord = null;
 		

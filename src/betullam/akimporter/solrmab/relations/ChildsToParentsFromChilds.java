@@ -57,6 +57,13 @@ public class ChildsToParentsFromChilds {
 	private boolean print = false;
 
 
+	/**
+	 * Constructor for setting some variables.
+	 * 
+	 * @param solrServer	String indicating the URL incl. core name of the Solr bibliographic index (e. g. http://localhost:8080/solr/biblio)
+	 * @param timeStamp		A unix time stamp as a String or null
+	 * @param print			boolean indicating whether to print status messages or not
+	 */
 	public ChildsToParentsFromChilds(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
@@ -124,7 +131,7 @@ public class ChildsToParentsFromChilds {
 		}
 	}
 
-	// 
+	
 	/**
 	 * Adding all parent SYS numbers to a class variable to have no duplicated values because this would cause an overhead.
 	 * 

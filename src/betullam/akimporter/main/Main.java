@@ -1,7 +1,7 @@
 /**
  * This is the main file of AkImporter that is started when the programm is invoked.
  *
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -459,24 +459,7 @@ public class Main {
 								aSolrBibl,
 								print,
 								optimize
-						);
-
-						
-						/*
-						String mergedAuthFile = oaiUpdater.oaiUpdate(aUpdateOaiUrl, aUpdateFormat, aUpdateOaiSet, aUpdateLocalPath, aUpdateLastUpdateFile, print);
-						Authority auth = new Authority(
-								mergedAuthFile,
-								aDefaultMabProperties,
-								aCustomMabProperties,
-								aSolrAuth,
-								aSolrBibl,
-								null,
-								print,
-								optimize
-								);
-						auth.indexAuthority();
-						*/
-						
+						);						
 					}
 				}
 				break;
@@ -711,6 +694,11 @@ public class Main {
 		return isSolrserverRunning;
 	}
 
+	/**
+	 * Get properties from AkImporter.properties file. This file must exist in the same directory as AkImporter-vX.X.jar
+	 * @param 		String that indicates the path to the AkImporter.properties file
+	 * @return		Properties object with all properties
+	 */
 	public static Properties getImporterProperties(String pathToImporterProperties) {
 		
 		Properties importerProperties = new Properties();
@@ -822,7 +810,12 @@ public class Main {
 
 
 
-
+	/**
+	 * Checking properties in AkImporter.properties for bibliographic data updates
+	 * 
+	 * @param checkFtp	a boolean that indicates wether to check the FTP connection or not
+	 * @return			true if everything is OK, false otherwise
+	 */
 	private static boolean checkUpdateProperties(boolean checkFtp) {
 
 		boolean updatePropertiesOk = false;
@@ -922,6 +915,11 @@ public class Main {
 	}
 
 
+	/**
+	 * Checking properties in AkImporter.properties for authority indexing
+	 * 
+	 * @return			true if everything is OK, false otherwise
+	 */
 	private static boolean checkAuthorityProperties() {
 
 		boolean authorityPropertiesOk = false;
@@ -969,6 +967,11 @@ public class Main {
 
 	}
 	
+	/**
+	 * Checking properties in AkImporter.properties for authority updating via OAI harvesting
+	 * 
+	 * @return			true if everything is OK, false otherwise
+	 */
 	private static boolean checkAuthorityUpdateProperties() {
 		
 		boolean authorityUpdatePropertiesOk = false;
@@ -1020,15 +1023,17 @@ public class Main {
 					}
 				}
 			}
-			
-			
-			
 		}
 		
 		return authorityUpdatePropertiesOk;
 	}
 
 
+	/**
+	 * Checking properties in AkImporter.properties for importing bibliographic records
+	 * 
+	 * @return			true if everything is OK, false otherwise
+	 */
 	private static boolean checkImportProperties() {
 
 		boolean importPropertiesOk = false;
@@ -1087,81 +1092,10 @@ public class Main {
 	}
 
 
+	/**
+	 * Setting up command line options
+	 */
 	private static void setCLI() {
-
-		/**
-		 * Main options
-		 *  
-		 * NOTES:
-		 *  To "import" means indexing data and linking of parent and child records.
-		 *  To "index" means indexing data without linking parent and child records.
-		 *  To "link" means linking only existing parent and child records in the index.
-		 * 
-		 * -i:
-		 * Normal interactive import (user answers questions)
-		 * 
-		 * -p:
-		 * Automatic import with use of AkImporter.properties file.
-		 * Show properties and let the user confirm them before
-		 * starting import process.
-		 * 
-		 * -P:
-		 * Automatic import with use of AkImporter.properties file.
-		 * Do not show properties and do not let the user confirm them.
-		 * Import should starts immediately. Mainly for fast testing.
-		 * 
-		 * -r:
-		 * Re-Import all data from MarcXML (initial dataset and all ongoing updates).
-		 * Uses settings from the AkImporter.properties file.
-		 * 
-		 * -R:
-		 * Re-Import all data from ongoing data deliveries only (without initial dataset).
-		 * Uses settings from the AkImporter.properties file.
-		 * 
-		 * -l:
-		 * Linking existing parent and child records in the main bibliographic Solr index
-		 * (see setting "import.solr" in AkImporter.properties file).
-		 * 
-		 * -u
-		 * Update mode. Use this for automatically importing ongoing data
-		 * deliveries using a cron job.
-		 * 
-		 * -a:
-		 * Authority mode. Import authority records.
-		 * Show properties and let the user confirm them before
-		 * starting import process.
-		 * 
-		 * -A:
-		 * Authority mode. Import authority records.
-		 * Do not show properties and do not let the user confirm them.
-		 * Import should starts immediately. Mainly for fast testing.
-		 * 
-		 * -h
-		 * Show help
-		 * 
-		 * 
-		 * 
-		 * OPTIONAL PARAMETERS
-		 * -------------------
-		 * 
-		 * -v
-		 * Verbose: Print status messages.
-		 * 
-		 * -o
-		 * Optimize solr index.
-		 * 
-		 * -t
-		 * Test the parameters set in AkImporter.properties
-		 * Can be used with -p, -P, -r, -R, -u, -a, -A
-		 * Example: java -jar AkImporter.jar -p -t
-		 * 
-		 * -f
-		 * Set only flag of existance to authority records instead
-		 * of indexing them. The flag tells us if the authority
-		 * record is used in at least one bibliographich record.
-		 * Can be used with -a and -A
-		 * Example: java -jar AkImporter.jar -a -f
-		 */
 
 		// k (AK mode) option - FOR TESTING ONLY
 		Option oAkTest = Option
@@ -1228,8 +1162,6 @@ public class Main {
 		// u (update) option
 		Option oUpdate = Option
 				.builder("u")
-				//.numberOfArgs(7)
-				//.argName("remotePath localPath host port user password solrAddress defaultSolrMab")
 				.required(true)
 				.longOpt("update")
 				.desc("Update from ongoing data delivery in MarcXML")
