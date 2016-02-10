@@ -47,14 +47,14 @@ public class AuthorityFlag {
 			queryResults = null;
 
 			this.smHelper.print(this.print, "Getting relevant authority records ... ");
-			
+
 			// Calculate the number of solr result pages we need to iterate over
 			long wholePages = (noOfDocs/NO_OF_ROWS);
 			long fractionPages = (noOfDocs%NO_OF_ROWS);
 
 			// Variable for lastDocId
 			String lastDocId = null;
-			
+
 			for (long l = 0; l < wholePages; l++) {
 				boolean isFirstPage = (l == 0) ? true : false;
 
@@ -69,11 +69,15 @@ public class AuthorityFlag {
 				// If there is no whole page but only a fraction page, the fraction page is the first page, because it's the only one
 				setGndNos(isFirstPage, lastDocId);
 			}
-			
+
 			this.smHelper.print(this.print, "Done\n");
 			this.smHelper.print(this.print, "Found " + gndIds.size() + " uses of authority records in bibliograpic index.\n");
-			
+
+			// Add flag of existance to authority records
 			addFlagToAuthorityRecord();
+			
+			// Delete wrong authority records (see explanation at method):
+			deleteAuhtorityWithoutHeading();
 
 			// Commit the changes
 			try {
@@ -93,31 +97,32 @@ public class AuthorityFlag {
 	}
 
 	/**
-	 * Set documents for atomic Solr update an index them.
+	 * Set documents for atomic Solr update and index them.
 	 */
 	private void addFlagToAuthorityRecord() {
-		
+
 		int counter = 0;
 		int noOfGndIds = gndIds.size();
 
 		if (noOfGndIds > 0) {
 
 			for (String gndId : gndIds) {
-				
+				counter = counter + 1;
+
 				// Prepare GND record for atomic update:
 				SolrInputDocument gndRecord = null;
 				gndRecord = new SolrInputDocument();
 				gndRecord.setField("id", gndId);
 
 				// Set values for atomic update of parent record:
-				Map<String, String> mapChildType = new HashMap<String, String>();
-				mapChildType.put("set", "true");
-				gndRecord.setField("existsInBiblio_str", mapChildType);
-				
+				Map<String, String> existsInBiblio = new HashMap<String, String>();
+				existsInBiblio.put("set", "true");
+				gndRecord.setField("existsInBiblio_str", existsInBiblio);
+
+				this.smHelper.print(this.print, "Setting flag in authority record " + gndId + ". Processing record no " + counter  + " of " + noOfGndIds + "                          \r");
+
 				docsForAtomicUpdates.add(gndRecord);
-				
-				counter = counter + 1;
-				
+
 				// Add documents from the class variable which was set before to Solr
 				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr
 					relationHelper.indexDocuments(docsForAtomicUpdates, solrServerAuthority);
@@ -131,14 +136,35 @@ public class AuthorityFlag {
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-				this.smHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                          \r");
 			}
 		}
 	}
-	
-	
+
+
 	/**
-	 * Adding all GND-IDs numbers to a class variable to have no duplicated values because this would cause an overhead.
+	 * Deletes authority records without heading. Due to the fact that there could be wrong authority ids in bibliographic records
+	 * (e. g. typo in GND ID), there could be record stubs with just 3 fields (id, existsInBiblio_str, _version_) in the index. This
+	 * happens when doing atomic updates (setting flag of existence) for wrong id numbers. Conclusion: These records are wrong (they
+	 * don't even have a heading which is mandatory) and should be deleted.
+	 * 
+	 * INFO: We *could* prevent the creation or these record stubs while doing the atomic updates, but actually it's more performant
+	 * to index the stubs and then deleting them, because otherwise we would have to check for every authority id of the bibliographic
+	 * records if it exists in the authority index before doing the atomic update, which would be a lot of queries and therefore slow.
+	 */
+	private void deleteAuhtorityWithoutHeading() {
+		try {
+			this.smHelper.print(this.print, "Deleting wrong authority records                          \r");
+			solrServerAuthority.deleteByQuery("-heading:*");
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * Adding all GND-IDs of bibliographic records to a class variable to have no duplicated values because this would cause an overhead.
 	 * 
 	 * @param	isFirstPage		True if first page of Solr results	
 	 * @param	lastDocId		Doc ID of the last processed Solr document
@@ -152,7 +178,7 @@ public class AuthorityFlag {
 		String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
 
 		for (SolrDocument recordWithAuth : resultDocList) {
-			
+
 			String docId = (recordWithAuth.getFieldValue("id") != null) ? recordWithAuth.getFieldValue("id").toString() : null;
 
 			String authorGndNo = (recordWithAuth.getFieldValue("author_GndNo_str") != null) ? recordWithAuth.getFieldValue("author_GndNo_str").toString() : null;
@@ -183,16 +209,48 @@ public class AuthorityFlag {
 
 
 			gndIds.addAll(gndNos);
-			
+
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {
 				returnValue = docId;
 			}
 
 		}
-				
+
 		return returnValue;
 	}
+
+	/*
+	private boolean idExistsInGnd(String gndIdFromBibRecord) {
+		boolean existsInGnd = false;
+
+		// New Solr query
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(0);
+
+		// Define a query for getting document by id
+		query.setQuery("id:\"" + gndIdFromBibRecord + "\"");
+
+		// Set fields that are given back from query
+		query.setFields("id");
+
+		// Set up variable
+		long numFound = 0;
+		try {
+			// Execute query and get results
+			numFound = this.solrServerAuthority.query(query).getResults().getNumFound();
+			if (numFound > 0) {
+				existsInGnd = true;
+			}
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		return existsInGnd;
+	}
+	*/
 }
 
 

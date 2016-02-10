@@ -30,7 +30,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +63,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
 import betullam.akimporter.solrmab.Relate;
-import betullam.akimporter.solrmab.relations.AuthorityFlag;
+import betullam.akimporter.updater.OaiUpdater;
 import betullam.akimporter.updater.Updater;
 
 /** TODO:
@@ -75,6 +78,8 @@ import betullam.akimporter.updater.Updater;
 public class Main {
 
 	// General
+	static String pathToAkImporterJar = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath(); // Path to AkImporter.jar
+	static String akImporterExecutionPath = new File(pathToAkImporterJar).getParent(); // AkImporter.jar execution path
 	static boolean optimize = false;
 	static boolean print = false;
 	static boolean test = false;
@@ -86,7 +91,7 @@ public class Main {
 	static OptionGroup optionGroup = new OptionGroup();
 
 	// Get settings from AkImporter.properties file and set them to variables
-	static Properties importerProperties = getImporterProperties("AkImporter.properties");
+	static Properties importerProperties = getImporterProperties(akImporterExecutionPath + File.separator + "AkImporter.properties");
 	static String iDataset = importerProperties.getProperty("import.dataset");
 	static String iPath = importerProperties.getProperty("import.path");
 	static boolean iValidation = (importerProperties.getProperty("import.validation").equals("V")) ? true : false;
@@ -108,9 +113,12 @@ public class Main {
 	static String aSolrBibl = importerProperties.getProperty("authority.solrBibl");
 	static boolean aDefaultMabProperties = (importerProperties.getProperty("authority.defaultMabProperties").equals("D")) ? true : false;
 	static String aCustomMabProperties = importerProperties.getProperty("authority.customMabProperties");
-
-
-
+	static String aUpdateLastUpdateFile = importerProperties.getProperty("authority.update.lastUpdateFile");
+	static String aUpdateLocalPath = importerProperties.getProperty("authority.update.localPath");
+	static String aUpdateOaiUrl = importerProperties.getProperty("authority.update.oaiUrl");
+	static String aUpdateFormat = importerProperties.getProperty("authority.update.format");
+	static String aUpdateOaiSet = importerProperties.getProperty("authority.update.set");
+	
 
 	/**
 	 * Main method of AkImporter.
@@ -120,7 +128,8 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-
+		
+		
 		// Log4J
 		BasicConfigurator.configure();
 		Logger.getRootLogger().setLevel(Level.WARN);
@@ -190,7 +199,7 @@ public class Main {
 				if (startImport.equals("Y")) {
 					if(checkImportProperties()) {
 						if (test) {
-							// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+							// If test option is specified, just tell the user if the properties are OK, but do not start the process
 							System.out.println("Properties are OK");
 							break;
 						} else {
@@ -219,7 +228,7 @@ public class Main {
 
 				if(checkImportProperties()) {
 					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
@@ -245,7 +254,7 @@ public class Main {
 				boolean doNotCheckFtp = false;
 				if(checkImportProperties() && checkUpdateProperties(doNotCheckFtp)) {
 					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
@@ -294,7 +303,7 @@ public class Main {
 				boolean doNotCheckFtp = false;
 				if(checkImportProperties() && checkUpdateProperties(doNotCheckFtp)) {
 					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
@@ -333,7 +342,7 @@ public class Main {
 				// Check if update properties are correct
 				if(checkUpdateProperties(true)) {
 					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
@@ -374,7 +383,7 @@ public class Main {
 				if (startImport.equals("Y")) {
 					if(checkAuthorityProperties()) {
 						if (test) {
-							// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+							// If test option is specified, just tell the user if the properties are OK, but do not start the process
 							System.out.println("Properties are OK");
 							break;
 						} else {
@@ -385,16 +394,13 @@ public class Main {
 										aDefaultMabProperties,
 										aCustomMabProperties,
 										aSolrAuth,
+										aSolrBibl,
 										null,
 										print,
 										optimize
 										);
 								auth.indexAuthority();
 							}
-
-							// Set flag of existance to authority records:							 
-							AuthorityFlag af = new AuthorityFlag(new HttpSolrServer(aSolrBibl), new HttpSolrServer(aSolrAuth), null, print);
-							af.setFlagOfExistance();
 						}
 					}
 
@@ -408,7 +414,7 @@ public class Main {
 			case "A": {
 				if(checkAuthorityProperties()) {
 					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the update process
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
@@ -419,19 +425,60 @@ public class Main {
 									aDefaultMabProperties,
 									aCustomMabProperties,
 									aSolrAuth,
+									aSolrBibl,
 									null,
 									print,
 									optimize
 									);
 							auth.indexAuthority();
 						}
-
-						// Set flag of existance to authority records:							 
-						AuthorityFlag af = new AuthorityFlag(new HttpSolrServer(aSolrBibl), new HttpSolrServer(aSolrAuth), null, print);
-						af.setFlagOfExistance();
 					}
 				}
 
+				break;
+			}
+			
+			case "e": {
+				if(checkAuthorityUpdateProperties()) {
+					if (test) {
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
+						System.out.println("Properties are OK");
+						break;
+					} else {
+						OaiUpdater oaiUpdater = new OaiUpdater();
+						
+						oaiUpdater.oaiUpdate(
+								aUpdateOaiUrl,
+								aUpdateFormat,
+								aUpdateOaiSet,
+								aUpdateLocalPath,
+								aUpdateLastUpdateFile,
+								aDefaultMabProperties,
+								aCustomMabProperties,
+								aSolrAuth,
+								aSolrBibl,
+								print,
+								optimize
+						);
+
+						
+						/*
+						String mergedAuthFile = oaiUpdater.oaiUpdate(aUpdateOaiUrl, aUpdateFormat, aUpdateOaiSet, aUpdateLocalPath, aUpdateLastUpdateFile, print);
+						Authority auth = new Authority(
+								mergedAuthFile,
+								aDefaultMabProperties,
+								aCustomMabProperties,
+								aSolrAuth,
+								aSolrBibl,
+								null,
+								print,
+								optimize
+								);
+						auth.indexAuthority();
+						*/
+						
+					}
+				}
 				break;
 			}
 
@@ -665,6 +712,7 @@ public class Main {
 	}
 
 	public static Properties getImporterProperties(String pathToImporterProperties) {
+		
 		Properties importerProperties = new Properties();
 
 		// Load .properties file:
@@ -920,6 +968,65 @@ public class Main {
 		return authorityPropertiesOk;
 
 	}
+	
+	private static boolean checkAuthorityUpdateProperties() {
+		
+		boolean authorityUpdatePropertiesOk = false;
+		
+		// Check if there are empty values
+		for (String key : importerProperties.stringPropertyNames()) {
+			if (key.startsWith("authority.") && !key.contains(".customMabProperties") && !key.contains("authority.path")) {
+				String value = importerProperties.getProperty(key);
+				if (value.isEmpty() || value == null) {
+					System.err.println("Please specify a valid value for \"" + key + "\" in \"AkImporter.properties\"");
+					return authorityUpdatePropertiesOk;
+				}
+			}
+		}
+		
+		boolean solrAuthorityRunning = isSolrserverRunning(aSolrAuth);
+		boolean solrBibliographicRunning = isSolrserverRunning(aSolrBibl);
+		if (!solrAuthorityRunning || !solrBibliographicRunning) {
+			System.err.println("Please make sure that your Solr server is running and that you specified correct values for \"authority.solrAuth\" and \"authority.solrBibl\" in \"AkImporter.properties\".");
+		} else {
+			
+			boolean oaiUrlOk = false;
+			try {
+			    URL url = new URL(aUpdateOaiUrl);
+			    URLConnection conn = url.openConnection();
+			    conn.connect();
+			    oaiUrlOk = true;
+			} catch (MalformedURLException e) {
+				System.err.println("The URL for \"authority.update.oaiUrl\" in \"AkImporter.properties\" is not valid.");
+			} catch (IOException e) {
+				System.err.println("The connection to the URL for \"authority.update.oaiUrl\" in \"AkImporter.properties\" cannot be established.");
+			}
+			
+			if (oaiUrlOk) {
+			    String aDefaultMabPropertiesStr = importerProperties.getProperty("authority.defaultMabProperties");
+				boolean defaultMabPropertiesIsValid = (aDefaultMabPropertiesStr.equals("D") || aDefaultMabPropertiesStr.equals("C")) ? true : false;
+				if (!defaultMabPropertiesIsValid) {
+					System.err.println("Please specify a valid value for \"authority.defaultMabProperties\" in \"AkImporter.properties\"");
+				} else {
+					if (aDefaultMabPropertiesStr.equals("C")) {
+						boolean customMabPropertiesExists = fileExists(new File(aCustomMabProperties));
+						if (!customMabPropertiesExists) {
+							System.err.println("Please make sure that the file specified for \"authority.customMabProperties\" in \"AkImporter.properties\" exists.");
+						} else {
+							authorityUpdatePropertiesOk = true;
+						}
+					} else {
+						authorityUpdatePropertiesOk = true;
+					}
+				}
+			}
+			
+			
+			
+		}
+		
+		return authorityUpdatePropertiesOk;
+	}
 
 
 	private static boolean checkImportProperties() {
@@ -1143,6 +1250,14 @@ public class Main {
 				.longOpt("authority-silent")
 				.desc("Index authority data without confirming the settings")
 				.build();
+		
+		// e (ernten [harvest]) option
+		Option oErnten = Option
+				.builder("e")
+				.required(true)
+				.longOpt("ernten")
+				.desc("Harvest (german \"ernten\") and update authority records")
+				.build();
 
 		// h (help) option
 		Option oHelp = Option
@@ -1198,6 +1313,7 @@ public class Main {
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
+		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
 		optionGroup.setRequired(true);
 		options.addOptionGroup(optionGroup);
