@@ -162,7 +162,8 @@ public class ChildsToParentsFromParents {
 		String returnValue = null;
 
 		// Records without childs (these could be parents with childs that are not linked yet)
-		SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(true, null);
+		//SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(true, null);
+		SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(isFirstPage, lastDocId);
 
 		int counter = 0;
 		long noOfParents = recordsWithNoChilds.getNumFound();
@@ -176,10 +177,12 @@ public class ChildsToParentsFromParents {
 			String parentSYS = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 
 			if (parentSYS != null) {
-
+				
 				// Get all non deleted childs of this records
 				SolrDocumentList nonDeletedChilds = getNonDeletedChildsByParentSYS(parentSYS);
 				long noOfNonDeletedChilds = nonDeletedChilds.getNumFound();
+				
+				
 				// If childs are existing, link them to it's parent
 				if (nonDeletedChilds != null && noOfNonDeletedChilds > 0) {
 
@@ -226,8 +229,7 @@ public class ChildsToParentsFromParents {
 						childVolumeNos.add(childVolumeNo);
 						childVolumeNosSort.add(childVolumeNoSort);
 						childEditions.add(childEdition);
-						childPublishDates.add(childPublishDate);
-						
+						childPublishDates.add(childPublishDate);						
 					}
 
 					// Prepare parent record for atomic updates:
@@ -282,8 +284,7 @@ public class ChildsToParentsFromParents {
 				returnValue = docId;
 			}
 		}
-
-
+		
 		return returnValue;
 	}
 
@@ -304,10 +305,10 @@ public class ChildsToParentsFromParents {
 		// Add sorting
 		querynonDeletedChilds.addSort(new SortClause("id", SolrQuery.ORDER.asc));
 
-		// Set rows to a very high number so that we really get all child records
+		// Set rows to max integer value so that we really get all child records.
 		// This should not be the bottleneck concerning performance because no parent record will have
 		// such a high number of child volumes
-		querynonDeletedChilds.setRows(500000);
+		querynonDeletedChilds.setRows(Integer.MAX_VALUE);
 
 		// Define a query for getting all documents. We get the deleted records with a filter query because of performance (see below)
 		querynonDeletedChilds.setQuery("*:*");

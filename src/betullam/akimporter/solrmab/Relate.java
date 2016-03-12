@@ -71,6 +71,7 @@ public class Relate {
 		ptc.addParentsToChilds();
 		this.smHelper.print(this.print, "\n");
 		
+		
 		// 2. Remove all childs from parents:
 		UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp, this.print);
 		ucfp.unlinkChildsFromParents();
@@ -82,11 +83,12 @@ public class Relate {
 		ctpfc.addChildsToParentsFromChilds();
 		this.smHelper.print(this.print, "\n");
 		
+		
 		// 4. Relink childs to parents from all currently indexed parent records:
 		ChildsToParentsFromParents ctpfp = new ChildsToParentsFromParents(this.solrServer, this.timeStamp, this.print);
 		ctpfp.addChildsToParentsFromParents();
 		this.smHelper.print(this.print, "\n");
-
+		
 		
 		if (optimize) {
 			this.smHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");

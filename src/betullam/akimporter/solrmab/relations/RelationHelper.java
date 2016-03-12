@@ -149,10 +149,10 @@ public class RelationHelper {
 			}
 		} else {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("id:*");
+				query.setFilterQueries("-childSYS_str_mv:*", "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("id:[" + lastDocId + " TO *]");
+				query.setFilterQueries("-childSYS_str_mv:*", "id:[" + lastDocId + " TO *]");
 			}
 		}
 
@@ -189,7 +189,7 @@ public class RelationHelper {
 
 		// Set no of rows
 		query.setRows(NO_OF_ROWS);
-
+		
 		// Add sorting (more efficient for deep paging)
 		query.addSort(SolrQuery.SortClause.asc("id"));
 

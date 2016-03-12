@@ -702,7 +702,7 @@ public class Main {
 	public static Properties getImporterProperties(String pathToImporterProperties) {
 		
 		Properties importerProperties = new Properties();
-
+		
 		// Load .properties file:
 		BufferedInputStream propertiesInputStream;
 		try {
