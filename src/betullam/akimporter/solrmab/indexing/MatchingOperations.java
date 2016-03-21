@@ -413,17 +413,26 @@ public class MatchingOperations {
 	 */
 	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, int fromCount, int toCount) {
 		String translateValue = null;
+		String matchedValueXml = null;
 		String fieldValueXml = mabField.getFieldvalue();
-
-		if (fieldValueXml.length() >= toCount) { // Avoid "Index out of range" exceptions
-			String matchedValueXml = fieldValueXml.substring(fromCount, toCount);
-			
+		
+		
+		//if (fieldValueXml.length() >= toCount) {
+		if (toCount <= fieldValueXml.length()) {
+			matchedValueXml = fieldValueXml.substring(fromCount, toCount);
+		//} else if (fieldValueXml.length() >= fromCount && fieldValueXml.length() <= toCount) {
+		} else if (fromCount <= fieldValueXml.length() && toCount >= fieldValueXml.length()) {
+			matchedValueXml = fieldValueXml.substring(fromCount, fieldValueXml.length());
+		}
+		
+		if (matchedValueXml != null) {
 			for (Entry<String, String> translateProperty : translateProperties.entrySet()) {
 				if (matchedValueXml.equals(translateProperty.getKey())) {
 					translateValue = translateProperty.getValue();
 				}
 			}
 		}
+		
 		return translateValue;
 	}
 
