@@ -464,6 +464,17 @@ public class Main {
 				}
 				break;
 			}
+			
+			case "c": {				
+				String consolidatedFile = new File(iPath).getParent() + File.separator + "consolidated.xml";
+				new Consolidate(
+						iPath,
+						uLocalPath,
+						consolidatedFile,
+						true
+				);
+				break;
+			}
 
 			case "h": {
 				HelpFormatter helpFormatter = new HelpFormatter();
@@ -1105,7 +1116,7 @@ public class Main {
 				.desc("ONLY FOR TESTING - DO NOT USE IN PRODUCTION ENVIRONMENT!")
 				.build();
 
-		// i (interactive) option
+		// i (import with interactive mode)
 		Option oImport = Option
 				.builder("i")
 				.required(true)
@@ -1113,7 +1124,7 @@ public class Main {
 				.desc("Import metadata from one or multiple MarcXML file(s) using interactive mode")
 				.build();
 
-		// p (import) option
+		// p (import with settings in properties file after confirming them)
 		Option oProperties = Option
 				.builder("p")
 				.required(true)
@@ -1122,7 +1133,7 @@ public class Main {
 						+ "file after confirming the settings")
 				.build();
 
-		// P (import) option
+		// P (import with settings in properties file without confirming them)
 		Option oPropertiesSilent = Option
 				.builder("P")
 				.required(true)
@@ -1131,7 +1142,7 @@ public class Main {
 						+ "file without confirming the settings")
 				.build();
 
-		// r (reimport) option
+		// r (reimport)
 		Option oReIndex = Option
 				.builder("r")
 				.required(true)
@@ -1141,7 +1152,7 @@ public class Main {
 						+ "have to be set correctly.")
 				.build();
 
-		// R (reindex ongoing) option
+		// R (reindex ongoing data updates)
 		Option oReIndexOngoing = Option
 				.builder("R")
 				.required(true)
@@ -1151,15 +1162,16 @@ public class Main {
 						+ "They have to be set correctly.")
 				.build();
 
-		// l (link) option
+		// l (link parent and child records)
 		Option oLink = Option
 				.builder("l")
 				.required(true)
 				.longOpt("link")
-				.desc("Linking existing parent and child records in the main bibliographic Solr index (see setting \"import.solr\" in AkImporter.properties file).")
+				.desc("Linking existing parent and child records in the main bibliographic Solr index "
+						+ "(see setting \"import.solr\" in AkImporter.properties file).")
 				.build();
 
-		// u (update) option
+		// u (update from ongoing data delivery)
 		Option oUpdate = Option
 				.builder("u")
 				.required(true)
@@ -1167,7 +1179,7 @@ public class Main {
 				.desc("Update from ongoing data delivery in MarcXML")
 				.build();
 
-		// a (authority) option
+		// a (index authority data after confirming the settings in the properties file)
 		Option oAuthority = Option
 				.builder("a")
 				.required(true)
@@ -1175,7 +1187,7 @@ public class Main {
 				.desc("Index authority data after confirming the settings")
 				.build();
 
-		// A (authority-silent) option
+		// A (authority-silent without confirming the settings in the properties file)
 		Option oAuthoritySilent = Option
 				.builder("A")
 				.required(true)
@@ -1183,15 +1195,24 @@ public class Main {
 				.desc("Index authority data without confirming the settings")
 				.build();
 		
-		// e (ernten [harvest]) option
+		// e (ernten [harvest] and update authority properties from OAI interface)
 		Option oErnten = Option
 				.builder("e")
 				.required(true)
 				.longOpt("ernten")
 				.desc("Harvest (german \"ernten\") and update authority records")
 				.build();
+		
+		// c (consolidate)
+		Option oConsolidate = Option
+				.builder("c")
+				.required(true)
+				.longOpt("consolidate")
+				.desc("Consolidate all data (initial dataset and all ongoing updates) and get one new "
+						+ "file which is up to date")
+				.build();
 
-		// h (help) option
+		// h (help)
 		Option oHelp = Option
 				.builder("h")
 				.required(true)
@@ -1201,7 +1222,7 @@ public class Main {
 
 		
 		
-		// v (verbose) option
+		// v (verbose)
 		Option oVerbose = Option
 				.builder("v")
 				.required(false)
@@ -1209,7 +1230,7 @@ public class Main {
 				.desc("Print detailed process messages")
 				.build();
 
-		// o (optimize) option
+		// o (optimize solr)
 		Option oOptimize = Option
 				.builder("o")
 				.required(false)
@@ -1217,7 +1238,7 @@ public class Main {
 				.desc("Optimize Solr")
 				.build();
 
-		// t (test) option
+		// t (test)
 		Option oTestParameter = Option
 				.builder("t")
 				.required(false)
@@ -1225,7 +1246,7 @@ public class Main {
 				.desc("Test parameters specified in AkImporter.properties. Can be used with options -p, -P, -r, -R, -u, -a, -A.\nExample: java -jar AkImporter.jar -p -t")
 				.build();
 
-		// f (flag) option
+		// f (set flag of existance to authority records)
 		Option oFlagAuthority = Option
 				.builder("f")
 				.required(false)
@@ -1245,6 +1266,7 @@ public class Main {
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
+		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
 		optionGroup.setRequired(true);
