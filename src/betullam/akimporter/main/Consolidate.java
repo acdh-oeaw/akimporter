@@ -1,6 +1,7 @@
 package betullam.akimporter.main;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,10 +31,13 @@ public class Consolidate {
 
 	private void start() {
 
-		// Get a sorted list (oldest to newest) from all ongoing data deliveries:
-		File fPathToMergedDir = new File(stripFileSeperatorFromPath(this.pathToUpdateDir) + File.separator + "merged");
-		List<File> filesForSplitting = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
-		Collections.sort(filesForSplitting); // Sort oldest to newest
+		List<File> filesForSplitting = new ArrayList<File>();
+		if (this.pathToUpdateDir != null && !this.pathToUpdateDir.isEmpty()) {
+			// Get a sorted list (oldest to newest) from all ongoing data deliveries:
+			File fPathToMergedDir = new File(stripFileSeperatorFromPath(this.pathToUpdateDir) + File.separator + "merged");
+			filesForSplitting = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
+			Collections.sort(filesForSplitting); // Sort oldest to newest
+		}
 
 		// Add the initial dataset at the first position of the file list
 		File initialDataset = new File(pathToInitialDataset);

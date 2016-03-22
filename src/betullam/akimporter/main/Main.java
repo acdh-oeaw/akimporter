@@ -465,7 +465,7 @@ public class Main {
 				break;
 			}
 			
-			case "c": {				
+			case "c": {
 				String consolidatedFile = new File(iPath).getParent() + File.separator + "consolidated.xml";
 				new Consolidate(
 						iPath,
@@ -768,10 +768,10 @@ public class Main {
 			lstValues.add(Arrays.asList(strValues.split("\\s*,\\s*")));
 		}
 
-		// Check if there is at least one "translateValue"
+		// Check if there is at least one "translateValue" or "translateValueContains"
 		boolean translateValueExists = false;
 		for (List<String> lstValue : lstValues) {
-			if (lstValue.contains("translateValue")) {
+			if (lstValue.contains("translateValue") || lstValue.contains("translateValueContains")) {
 				translateValueExists = true;
 				break;
 			}
