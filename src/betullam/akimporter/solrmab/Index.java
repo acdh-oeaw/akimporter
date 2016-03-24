@@ -98,7 +98,7 @@ public class Index {
 	private void startIndexing() {
 
 		setLogger();
-		
+
 		try {
 			BufferedInputStream mabPropertiesInputStream = null;
 
@@ -194,6 +194,7 @@ public class Index {
 	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
 	 * @return							The rules of defined in mab.properties file represented as a list of MatchingObjects
 	 */
+	
 	private List<MatchingObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
 
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
@@ -210,31 +211,100 @@ public class Index {
 				boolean multiValued = false;
 				boolean customText = false;
 				boolean translateValue = false;
+				boolean translateValueContains = false;
+				String translateDefaultValue = null;
 				String strValues = mabProperties.getProperty(key);
+				String strValuesClean = mabProperties.getProperty(key).replaceAll("\\[.*?\\]", "");
 				HashMap<String, String> translateProperties = new HashMap<String, String>();
+				String filename = null;
 				HashMap<String, List<String>> mabFieldnames = new HashMap<String, List<String>>();
 				List<String> fieldsToRemove = new ArrayList<String>();
 
 				// Create CHANGABLE list:
 				List<String> lstValues = new ArrayList<String>();
 				lstValues.addAll(Arrays.asList(strValues.split("\\s*,\\s*")));
+				
+				// Create a clean list (without square brackets) for option check below. This is in case a translateValue
+				// uses the default text option, e. g. translateValueContains[MyDefaultText]. The function
+				// "lstValues.contains("translateValueContains") would not match with translateValueContains[MyDefaultText].
+				List<String> lstValuesClean = new ArrayList<String>();
+				lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*,\\s*")));
+
+				// Check for options and prepare values
+				if (lstValuesClean.contains("multiValued")) {
+					multiValued = true;
+					lstValues.remove(lstValuesClean.indexOf("multiValued")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(lstValuesClean.indexOf("multiValued")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
+				}
+				if (lstValuesClean.contains("customText")) {
+					customText = true;
+					lstValues.remove(lstValuesClean.indexOf("customText")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(lstValuesClean.indexOf("customText")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+				}
+				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains")) {
+					int index = 0;
+					String translateValueString = null;
+					
+					// Is translateValue
+					if (lstValuesClean.contains("translateValue")) {
+						translateValue = true;
+						translateValueContains = false;
+						index = lstValuesClean.indexOf("translateValue");
+						translateValueString = lstValues.get(index); // Get whole string of translateValue incl. square brackets, e. g. translateValue[DefaultValue]
+						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					}
+
+					// Is translateValueContains
+					if (lstValuesClean.contains("translateValueContains")) {
+						translateValueContains = true;
+						translateValue = false;
+						index = lstValuesClean.indexOf("translateValueContains");
+						translateValueString = lstValues.get(index); // Get whole string of translateValue incl. square brackets, e. g. translateValue[DefaultValue]
+						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					}
+					
+					if (translateValueString != null) {
+						// Extract the default value in the square brackets:
+						Pattern patternDefaultValue = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcherDefaultValue = patternDefaultValue.matcher(translateValueString);
+						translateDefaultValue = (matcherDefaultValue.find()) ? matcherDefaultValue.group().replace("[", "").replace("]", "").trim() : null;
+					}
+					
+
+					// Get the filename with the help of RegEx:
+					Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
+					Matcher matcherPropFile = patternPropFile.matcher("");
+					for(String lstValue : lstValues) {
+						matcherPropFile.reset(lstValue);
+						if(matcherPropFile.find()) {
+							filename = matcherPropFile.group();
+						}
+					}
+					lstValues.remove(filename);
+				}
 
 				// Get all multiValued fields and remove them after we finished:
-				if (lstValues.contains("multiValued")) {
-					multiValued = true;
-					lstValues.remove(lstValues.indexOf("multiValued"));
+				if (multiValued) {
 					for(String lstValue : lstValues) {
-						mabFieldnames.put(lstValue, null);
-						fieldsToRemove.add(lstValue);
+						
+						// Remove  square brackets from the mabfield name (in case it is also a translateValue field) so that
+						// we have a clear mabfield-name to process. If not, it wouldn't work in the matching operations!
+						String cleanLstValue = lstValue.replaceAll("\\[.*?\\]", "");
+						mabFieldnames.put(cleanLstValue, null);
+						
+						// Do not remove field if it's also a translateValue or translateValueContains (then just add "null"),
+						// because in this case we will still need the fields further down for the translate operations.
+						fieldsToRemove.add((translateValue || translateValueContains) ? null : lstValue);
 					}
 					lstValues.removeAll(fieldsToRemove);
 					fieldsToRemove.clear();
 				}
+				
 
 				// Get all customText fields and remove them after we finished:
-				if (lstValues.contains("customText")) {
-					customText = true;
-					lstValues.remove(lstValues.indexOf("customText"));
+				if (customText) {
 					for(String lstValue : lstValues) {
 						mabFieldnames.put(lstValue, null);
 						fieldsToRemove.add(lstValue);
@@ -243,26 +313,10 @@ public class Index {
 					fieldsToRemove.clear();
 				}
 
-				// Get all translateValue fields and remove them after we finished:
-				if (lstValues.contains("translateValue")) {
-					if (lstValues.toString().contains(".properties")) {
-						translateValue = true;
-						// Remove non-mabfield value from the matching-values list:
-						lstValues.remove(lstValues.indexOf("translateValue"));
+				// Get all translateValue and translateValueContains fields and remove them after we finished:
+				if (translateValue || translateValueContains) {
 
-						// Get the filename with the help of RegEx:
-						String filename = "";
-						Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
-						Matcher matcherPropFile = patternPropFile.matcher("");
-						for(String lstValue : lstValues) {
-							matcherPropFile.reset(lstValue);
-							if(matcherPropFile.find()) {
-								filename = matcherPropFile.group();
-								fieldsToRemove.add(lstValue);
-							}
-						}
-						lstValues.removeAll(fieldsToRemove);
-						fieldsToRemove.clear();
+					if (filename != null) {
 
 						// Get the mapping values from .properties file:
 						translateProperties = getTranslateProperties(filename, pathToTranslationFiles);
@@ -271,21 +325,34 @@ public class Index {
 						// Then add everything to a HashMap<String, List<String>>.
 						String from = "";
 						String to = "";
+						String all = "";
 
 						Pattern patternFrom = Pattern.compile("(?<=\\[)\\d*");
 						Pattern patternTo = Pattern.compile("\\d*(?=\\])");
+						Pattern patternAll = Pattern.compile("(all)");
 						Matcher matcherFrom = patternFrom.matcher("");
 						Matcher matcherTo = patternTo.matcher("");
+						Matcher matcherAll = patternAll.matcher("");
+
+
 						for(String lstValue : lstValues) {
 
-							// Get the numbers of the characters in square brackets (e. g. 051[1-3]: get 1 and 3):
+							// Get the numbers of the characters in square brackets (e. g. 051[1-3]: get 1 and 3) or "all" (e. g. 051[all]):
 							List<String> fromTo = new ArrayList<String>();
-							matcherFrom.reset(lstValue);
-							from = (matcherFrom.find()) ? matcherFrom.group() : "";
-							matcherTo.reset(lstValue);
-							to = (matcherTo.find()) ? matcherTo.group() : "";
-							fromTo.add(from);
-							fromTo.add(to);
+							matcherAll.reset(lstValue);
+							all = (matcherAll.find()) ? matcherAll.group() : "";
+
+							if (!all.isEmpty() && all != "") {
+								fromTo.add("all");
+								fromTo.add("all");
+							} else {
+								matcherFrom.reset(lstValue);
+								from = (matcherFrom.find()) ? matcherFrom.group() : "";
+								matcherTo.reset(lstValue);
+								to = (matcherTo.find()) ? matcherTo.group() : "";
+								fromTo.add(from);
+								fromTo.add(to);
+							}
 
 							// Remove the square brackets from the mabfield name so that we have a clear mabfield-name:
 							String cleanLstValue = lstValue.replaceAll("\\[.*?\\]", "");
@@ -297,10 +364,11 @@ public class Index {
 
 						lstValues.removeAll(fieldsToRemove);
 						fieldsToRemove.clear();
+
 					} else {
 						System.out.println("Error: You need to specify a translation-properties file with the file-ending \".properties\"!");
 					}
-				}
+				}				
 
 				// Get all default fields (the other fields were removed):
 				for(String lstValue : lstValues) {
@@ -309,8 +377,9 @@ public class Index {
 				}
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
-
-				matchingObjects.add(new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateProperties));
+				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateDefaultValue, translateProperties);
+				matchingObjects.add(mo);
 			}
 
 		} catch (IOException e) {
@@ -337,7 +406,7 @@ public class Index {
 				}
 			}
 
-			if (matchingObject.isTranslateValue()) {
+			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains()) {
 				translateFields = matchingObject.getMabFieldnames();
 			}
 
@@ -345,7 +414,6 @@ public class Index {
 
 		return matchingObjects;
 	}
-
 
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

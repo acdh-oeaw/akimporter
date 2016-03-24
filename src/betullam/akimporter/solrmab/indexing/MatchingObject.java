@@ -35,16 +35,20 @@ public class MatchingObject {
 	private boolean multiValued;
 	private boolean customText;
 	private boolean translateValue;
+	private boolean translateValueContains;
+	private String translateDefaultValue;
 	private HashMap<String, String> translateProperties;
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, HashMap<String, String> translateProperties) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, String translateDefaultValue, HashMap<String, String> translateProperties) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
 		this.setCustomText(customText);
 		this.setTranslateValue(translateValue);
+		this.setTranslateValueContains(translateValueContains);
+		this.setTranslateDefaultValue(translateDefaultValue);
 		this.setTranslateProperties(translateProperties);
 	}
 
@@ -87,7 +91,23 @@ public class MatchingObject {
 	public void setTranslateValue(boolean translateValue) {
 		this.translateValue = translateValue;
 	}
+	
+	public boolean isTranslateValueContains() {
+		return translateValueContains;
+	}
 
+	public void setTranslateValueContains(boolean translateValueContains) {
+		this.translateValueContains = translateValueContains;
+	}
+	
+	public String getTranslateDefaultValue() {
+		return translateDefaultValue;
+	}
+	
+	public void setTranslateDefaultValue(String translateDefaultValue) {
+		this.translateDefaultValue = translateDefaultValue;
+	}
+	
 	public HashMap<String, String> getTranslateProperties() {
 		return translateProperties;
 	}
@@ -98,12 +118,13 @@ public class MatchingObject {
 
 	@Override
 	public String toString() {
-		return "MatchingObject [solrFieldname=" + solrFieldname
-				+ ", mabFieldnames=" + mabFieldnames + ", multiValued="
-				+ multiValued + ", customText=" + customText
-				+ ", translateValue=" + translateValue
-				+ ", translateProperties=" + translateProperties + "]";
+		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
+				+ multiValued + ", customText=" + customText + ", translateValue=" + translateValue
+				+ ", translateValueContains=" + translateValueContains + ", translateDefaultValue="
+				+ translateDefaultValue + ", translateProperties=" + translateProperties + "]";
 	}
+
+	
 	
 
 }
