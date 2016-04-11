@@ -36,7 +36,6 @@ public class MatchingObject {
 	private boolean customText;
 	private boolean translateValue;
 	private boolean translateValueContains;
-	private String translateDefaultValue;
 	private HashMap<String, String> translateProperties;
 	private boolean hasDefaultValue;
 	private String defaultValue;
@@ -44,14 +43,13 @@ public class MatchingObject {
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, String translateDefaultValue, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
 		this.setCustomText(customText);
 		this.setTranslateValue(translateValue);
 		this.setTranslateValueContains(translateValueContains);
-		this.setTranslateDefaultValue(translateDefaultValue);
 		this.setTranslateProperties(translateProperties);
 		this.setHasDefaultValue(hasDefaultValue);
 		this.setDefaultValue(defaultValue);
@@ -104,15 +102,7 @@ public class MatchingObject {
 	public void setTranslateValueContains(boolean translateValueContains) {
 		this.translateValueContains = translateValueContains;
 	}
-	
-	public String getTranslateDefaultValue() {
-		return translateDefaultValue;
-	}
-	
-	public void setTranslateDefaultValue(String translateDefaultValue) {
-		this.translateDefaultValue = translateDefaultValue;
-	}
-	
+
 	public HashMap<String, String> getTranslateProperties() {
 		return translateProperties;
 	}
@@ -141,17 +131,8 @@ public class MatchingObject {
 	public String toString() {
 		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
 				+ multiValued + ", customText=" + customText + ", translateValue=" + translateValue
-				+ ", translateValueContains=" + translateValueContains + ", translateDefaultValue="
-				+ translateDefaultValue + ", translateProperties=" + translateProperties + ", hasDefaultValue="
-				+ hasDefaultValue + ", defaultValue=" + defaultValue + "]";
+				+ ", translateValueContains=" + translateValueContains + ", translateProperties=" + translateProperties
+				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + "]";
 	}
 	
-
-	
-
-	
-	
-
 }
-
- 

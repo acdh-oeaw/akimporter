@@ -118,7 +118,7 @@ public class Index {
 
 			// Get contents of mab.properties files and put them to MatchingObjects
 			listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
-
+			
 			// Create SAX parser:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
@@ -212,7 +212,6 @@ public class Index {
 				boolean customText = false;
 				boolean translateValue = false;
 				boolean translateValueContains = false;
-				String translateDefaultValue = null;
 				boolean hasDefaultValue = false;
 				String defaultValue = null;
 				String strValues = mabProperties.getProperty(key);
@@ -243,16 +242,16 @@ public class Index {
 					lstValues.remove(lstValuesClean.indexOf("customText")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("customText")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 				}
+				
+				
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains")) {
 					int index = 0;
-					String translateValueString = null;
-					
+										
 					// Is translateValue
 					if (lstValuesClean.contains("translateValue")) {
 						translateValue = true;
 						translateValueContains = false;
 						index = lstValuesClean.indexOf("translateValue");
-						translateValueString = lstValues.get(index); // Get whole string of translateValue incl. square brackets, e. g. translateValue[DefaultValue]
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					}
@@ -262,19 +261,10 @@ public class Index {
 						translateValueContains = true;
 						translateValue = false;
 						index = lstValuesClean.indexOf("translateValueContains");
-						translateValueString = lstValues.get(index); // Get whole string of translateValue incl. square brackets, e. g. translateValue[DefaultValue]
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					}
 					
-					if (translateValueString != null) {
-						// Extract the default value in the square brackets:
-						Pattern patternDefaultValue = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
-						Matcher matcherDefaultValue = patternDefaultValue.matcher(translateValueString);
-						translateDefaultValue = (matcherDefaultValue.find()) ? matcherDefaultValue.group().replace("[", "").replace("]", "").trim() : null;
-					}
-					
-
 					// Get the filename with the help of RegEx:
 					Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
 					Matcher matcherPropFile = patternPropFile.matcher("");
@@ -303,6 +293,7 @@ public class Index {
 						defaultValue = (matcherDefaultValue.find()) ? matcherDefaultValue.group().replace("[", "").replace("]", "").trim() : null;
 					}
 				}
+				
 
 				// Get all multiValued fields and remove them after we finished:
 				if (multiValued) {
@@ -334,12 +325,12 @@ public class Index {
 
 				// Get all translateValue and translateValueContains fields and remove them after we finished:
 				if (translateValue || translateValueContains) {
-
+					
 					if (filename != null) {
-
+						
 						// Get the mapping values from .properties file:
 						translateProperties = getTranslateProperties(filename, pathToTranslationFiles);
-
+						
 						// Get the count of characters that should be matched (e. g. 051[1-3]: get 1 and 3) and add it to a List<String>.
 						// Then add everything to a HashMap<String, List<String>>.
 						String from = "";
@@ -396,8 +387,8 @@ public class Index {
 				}
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
-				
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateDefaultValue, translateProperties, hasDefaultValue, defaultValue);
+
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue);				
 				matchingObjects.add(mo);
 			}
 
