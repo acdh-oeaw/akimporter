@@ -213,6 +213,8 @@ public class Index {
 				boolean translateValue = false;
 				boolean translateValueContains = false;
 				String translateDefaultValue = null;
+				boolean hasDefaultValue = false;
+				String defaultValue = null;
 				String strValues = mabProperties.getProperty(key);
 				String strValuesClean = mabProperties.getProperty(key).replaceAll("\\[.*?\\]", "");
 				HashMap<String, String> translateProperties = new HashMap<String, String>();
@@ -283,6 +285,23 @@ public class Index {
 						}
 					}
 					lstValues.remove(filename);
+					lstValuesClean.remove(filename);
+				}
+				
+				if (lstValuesClean.contains("defaultValue")) {
+					String defaultValueString = null;
+					hasDefaultValue = true;
+					int index = lstValuesClean.indexOf("defaultValue");
+					defaultValueString =  lstValues.get(index); // Get whole string of defaultValue incl. square brackets, e. g. defaultValue[DefaultValue]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+				
+					if (defaultValueString != null) {
+						// Extract the default value in the square brackets:
+						Pattern patternDefaultValue = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcherDefaultValue = patternDefaultValue.matcher(defaultValueString);
+						defaultValue = (matcherDefaultValue.find()) ? matcherDefaultValue.group().replace("[", "").replace("]", "").trim() : null;
+					}
 				}
 
 				// Get all multiValued fields and remove them after we finished:
@@ -378,7 +397,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 				
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateDefaultValue, translateProperties);
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateDefaultValue, translateProperties, hasDefaultValue, defaultValue);
 				matchingObjects.add(mo);
 			}
 

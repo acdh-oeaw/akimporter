@@ -61,7 +61,7 @@ public class MatchingOperations {
 		newListOfRecords = new ArrayList<Record>();		
 
 		for (Record oldRecord : oldRecordSet) {	
-
+			
 			listOfNewSolrfieldLists = new ArrayList<List<Mabfield>>();
 			listOfNewFieldsForNewRecord = new ArrayList<Mabfield>();
 			newRecord = new Record();			
@@ -70,6 +70,7 @@ public class MatchingOperations {
 				//System.out.println("oldMabField: " + oldMabField.getFieldname() + ": " + oldMabField.getFieldvalue());
 				// Match each Mabfield in the Record to the defined Solrfields. As one old Mabfield could match multiple Solrfields, we get back a List of Fields:
 				List<Mabfield> listOfSolrfieldsForMabfield = this.matchField(oldMabField, listOfMatchingObjs);
+				//System.out.println(oldMabField.getFieldname() + ": " + listOfSolrfieldsForMabfield.toString());
 				listOfNewSolrfieldLists.add(listOfSolrfieldsForMabfield);
 			}
 
@@ -79,7 +80,7 @@ public class MatchingOperations {
 					listOfNewFieldsForNewRecord.add(newSolrField);
 				}
 			}
-			
+
 
 			for (Mabfield customTextField : customTextFields) {
 				//System.out.println("2. Solr Fieldname: " + customTextField.getFieldname() + ": " + customTextField.getFieldvalue());
@@ -127,27 +128,36 @@ public class MatchingOperations {
 	 * @return						A list of matched fields for indexing to Solr.
 	 */
 	public List<Mabfield> matchField(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {		
-
+		
 		String mabFieldnameXml = mabField.getFieldname();
 		listOfMatchedFields = new ArrayList<Mabfield>();
 
 		// Remove unnecessary MatchingObjects so that we don't have to iterate over all of them. This saves a lot of time!
+		// A MatchingObject is not necessary if it does not contain the MAB-fieldnumber from the parst MarcXML record.
 		List<MatchingObject> listOfRelevantMatchingObjects = new ArrayList<MatchingObject>();
 		for (MatchingObject matchingObject : listOfMatchingObjects) {
 			String mabFieldNo = mabFieldnameXml.substring(0, 3);
 			boolean containsMabFieldNo = matchingObject.getMabFieldnames().keySet().toString().contains(mabFieldNo);
-			
+
 			if (containsMabFieldNo) {
 				listOfRelevantMatchingObjects.add(matchingObject);
 			}
 		}
 
+		//if (matchingObject.getSolrFieldname().equals("urlText_str_mv")) {
+			//System.out.println("Begin match");
+		//}
+		
+		
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
-			String solrFieldname = matchingObject.getSolrFieldname();
 			
+			
+			
+			//Mabfield newMabField = null;
+			String solrFieldname = matchingObject.getSolrFieldname();
 			HashMap<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
-
-
+			String defaultValue = matchingObject.getDefaultValue();
+			
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains()) {
 
 				boolean isTranslateValue = false;
@@ -157,83 +167,88 @@ public class MatchingOperations {
 				} else if (matchingObject.isTranslateValueContains()) {
 					isTranslateValueContains = true;
 				}
-				
+
 				HashMap<String, String> translateProperties = matchingObject.getTranslateProperties();
 				String translateDefaultValue = matchingObject.getTranslateDefaultValue();
-
+				
+				
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
+
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
 					String fromCharacter = valueToMatchWith.getValue().get(0);
 					String toCharacter = valueToMatchWith.getValue().get(1);
-					//int fromCharacterCount = Integer.valueOf(valueToMatchWith.getValue().get(0)); // Beginning Index of value to match
-					//int toCharacterCount = Integer.valueOf(valueToMatchWith.getValue().get(1)); // Ending Index of value to match
-					//fromCharacterCount = (fromCharacterCount-1);
+					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
 
-					if (mabFieldnameProps.length() == 3) {
-						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
-						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+					
+					//if (translatedValue != null) {
+						if (mabFieldnameProps.length() == 3) {
+							// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
+							if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
+							if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
+							if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
+							if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
+							if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									//System.out.println(translatedValue);
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
+							if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
+							if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
+							}
+						} else { 
+							if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
+								//String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
+								if (translatedValue != null) {
+									listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
+								}
 							}
 						}
-					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
-						if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
-						if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
-						if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
-						if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
-						if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
-						if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					} else { 
-						if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
-							String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, translateDefaultValue, isTranslateValue, isTranslateValueContains);
-							if (translatedValue != null) {
-								listOfMatchedFields.add(new Mabfield(solrFieldname, translatedValue));
-							}
-						}
-					}
+					//}
 				}
-			} else {
 
+			} else {
+				
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
-					
+
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
@@ -278,9 +293,9 @@ public class MatchingOperations {
 				}
 			}
 		}
-		
+
 		listOfRelevantMatchingObjects = null;
-		
+
 		return listOfMatchedFields;
 	}
 
@@ -409,7 +424,7 @@ public class MatchingOperations {
 		boolean matches = Pattern.matches(fieldName, in);		
 		return matches;
 	}
-	
+
 	/**
 	 * Getting the value of a translation file.
 	 * 
@@ -424,21 +439,21 @@ public class MatchingOperations {
 		String translateValue = null;
 		String matchedValueXml = null;
 		String fieldValueXml = mabField.getFieldvalue();
-		
+
 		if (fromCount.equals("all") && toCount.equals("all")) {
 			matchedValueXml = fieldValueXml.substring(0, fieldValueXml.length());
 		} else {
 			int intFromCount = Integer.valueOf(fromCount); // Beginning Index of value to match
 			intFromCount = (intFromCount-1);
 			int intToCount = Integer.valueOf(toCount); // Ending Index of value to match
-			
+
 			if (intToCount <= fieldValueXml.length()) {
 				matchedValueXml = fieldValueXml.substring(intFromCount, intToCount);
 			} else if (intFromCount <= fieldValueXml.length() && intToCount >= fieldValueXml.length()) {
 				matchedValueXml = fieldValueXml.substring(intFromCount, fieldValueXml.length());
 			}
 		}
-		
+
 		if (matchedValueXml != null) {
 			for (Entry<String, String> translateProperty : translateProperties.entrySet()) {
 				if (isTranslateValue && matchedValueXml.equals(translateProperty.getKey())) {
@@ -448,12 +463,12 @@ public class MatchingOperations {
 				}
 			}
 		}
-		
+
 		// Set default value if user specified one and if not other translate value was found
 		if (translateValue == null && translateDefaultValue != null) {
 			translateValue = translateDefaultValue;
 		}
-		
+
 		return translateValue;
 	}
 

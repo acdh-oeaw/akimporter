@@ -38,10 +38,13 @@ public class MatchingObject {
 	private boolean translateValueContains;
 	private String translateDefaultValue;
 	private HashMap<String, String> translateProperties;
+	private boolean hasDefaultValue;
+	private String defaultValue;
+	
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, String translateDefaultValue, HashMap<String, String> translateProperties) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, String translateDefaultValue, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
@@ -50,6 +53,8 @@ public class MatchingObject {
 		this.setTranslateValueContains(translateValueContains);
 		this.setTranslateDefaultValue(translateDefaultValue);
 		this.setTranslateProperties(translateProperties);
+		this.setHasDefaultValue(hasDefaultValue);
+		this.setDefaultValue(defaultValue);
 	}
 
 	public String getSolrFieldname() {
@@ -116,13 +121,33 @@ public class MatchingObject {
 		this.translateProperties = translateProperties;
 	}
 
+	public boolean hasDefaultValue() {
+		return hasDefaultValue;
+	}
+
+	public void setHasDefaultValue(boolean hasDefaultValue) {
+		this.hasDefaultValue = hasDefaultValue;
+	}
+
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
 	@Override
 	public String toString() {
 		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
 				+ multiValued + ", customText=" + customText + ", translateValue=" + translateValue
 				+ ", translateValueContains=" + translateValueContains + ", translateDefaultValue="
-				+ translateDefaultValue + ", translateProperties=" + translateProperties + "]";
+				+ translateDefaultValue + ", translateProperties=" + translateProperties + ", hasDefaultValue="
+				+ hasDefaultValue + ", defaultValue=" + defaultValue + "]";
 	}
+	
+
+	
 
 	
 	
