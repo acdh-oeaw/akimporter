@@ -118,7 +118,7 @@ public class Index {
 
 			// Get contents of mab.properties files and put them to MatchingObjects
 			listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
-			
+
 			// Create SAX parser:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
@@ -194,9 +194,48 @@ public class Index {
 	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
 	 * @return							The rules of defined in mab.properties file represented as a list of MatchingObjects
 	 */
-	
+
 	private List<MatchingObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
 
+		/*
+		System.out.println("\n\n-------------------------------------------");
+		String test = "123$**$a, contains[test], regEx[[\\d],te\\[st], test, regEx[[\\]\\[est]]";
+		test = test.replace("\\[", "").replace("\\]", "");
+		String newTest = "";
+		int openBracketsCounter = 0;
+		int closeBracketsCounter = 0;
+		int bracketCounter = 0;
+		// Iterate over each character of a line in the properties file:
+		for (int i = 0; i < test.length(); i++){
+		    char c = test.charAt(i);
+		    String s = Character.toString(c);
+		    // Check if the current character is an opening bracket
+		    if (s.equals("[")) {
+		    	openBracketsCounter = openBracketsCounter + 1;
+		    	bracketCounter = bracketCounter + 1;
+		    }
+		    // Add characters to the new string only if not within an opening bracket
+		    if (bracketCounter <= 0) {
+		    	newTest += s;
+		    }
+		    // Check if the current character is a closing bracket
+		    if (s.equals("]")) {
+		    	closeBracketsCounter = closeBracketsCounter + 1;
+		    	bracketCounter = bracketCounter - 1;
+		    }
+		}
+		
+	    // If there are not as many opening brackets as closing brackets, there is an error in the syntax
+		if (openBracketsCounter != closeBracketsCounter) {
+			System.err.println("Please check in our mab properties file if you forgot an opening [ or closing ] square bracket. "
+					+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it with a double backslash, e. g.: \\\\[");
+			System.exit(0);
+		}
+		System.out.println(newTest);
+		System.out.println("\n-------------------------------------------\n");
+		*/
+		
+		
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
 
 		try {
@@ -213,9 +252,51 @@ public class Index {
 				boolean translateValue = false;
 				boolean translateValueContains = false;
 				boolean hasDefaultValue = false;
+				boolean hasRegex = false;
 				String defaultValue = null;
+				String regexValue = null;
 				String strValues = mabProperties.getProperty(key);
-				String strValuesClean = mabProperties.getProperty(key).replaceAll("\\[.*?\\]", "");
+				
+				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
+				// INFO:
+				// We can't use something like replaceAll or replaceFirst becaus in regEx rules, we could have nested brackets, e. g.
+				// regEX[test[\\d]test\\[test]. This would cause problems with replaceAll or replaceFirst. That's why we will iterate over
+				// each character of the string and check for opening and closing brackets while counting them. We will then create a new
+				// String by adding one character after another of the original string, except the characters between outer brackets with
+				// count value 0.
+				String strValuesNoRegexBrackets = strValues.replace("\\[", "").replace("\\]", "");
+				String strValuesClean = "";
+				int openBracketsCounter = 0;
+				int closeBracketsCounter = 0;
+				int bracketCounter = 0;
+				// Iterate over each character of a line in the properties file:
+				for (int i = 0; i < strValuesNoRegexBrackets.length(); i++){
+				    char c = strValuesNoRegexBrackets.charAt(i);
+				    String s = Character.toString(c);
+				    // Check if the current character is an opening bracket
+				    if (s.equals("[")) {
+				    	openBracketsCounter = openBracketsCounter + 1;
+				    	bracketCounter = bracketCounter + 1;
+				    }
+				    // Add characters to the new string only if not within an outer bracket (count value 0)
+				    if (bracketCounter <= 0) {
+				    	strValuesClean += s;
+				    }
+				    // Check if the current character is a closing bracket
+				    if (s.equals("]")) {
+				    	closeBracketsCounter = closeBracketsCounter + 1;
+				    	bracketCounter = bracketCounter - 1;
+				    }
+				}
+				
+			    // If there are not as many opening brackets as closing brackets, there is an error in the syntax
+				if (openBracketsCounter != closeBracketsCounter) {
+					System.err.println("Please check in our mab properties file if you forgot an opening [ or closing ] square bracket. "
+							+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it with a double backslash, e. g.: \\\\[");
+					System.exit(0);
+				}
+				
+				
 				HashMap<String, String> translateProperties = new HashMap<String, String>();
 				String filename = null;
 				HashMap<String, List<String>> mabFieldnames = new HashMap<String, List<String>>();
@@ -224,10 +305,11 @@ public class Index {
 				// Create CHANGABLE list:
 				List<String> lstValues = new ArrayList<String>();
 				lstValues.addAll(Arrays.asList(strValues.split("\\s*,\\s*")));
-				
+
 				// Create a clean list (without square brackets) for option check below. This is in case a translateValue
 				// uses the default text option, e. g. translateValueContains[MyDefaultText]. The function
 				// "lstValues.contains("translateValueContains") would not match with translateValueContains[MyDefaultText].
+				// Also if regex[REGEX] is used. It would not match with the square brackets!
 				List<String> lstValuesClean = new ArrayList<String>();
 				lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*,\\s*")));
 
@@ -242,11 +324,12 @@ public class Index {
 					lstValues.remove(lstValuesClean.indexOf("customText")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("customText")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 				}
-				
-				
+
+
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains")) {
 					int index = 0;
-										
+
+					
 					// Is translateValue
 					if (lstValuesClean.contains("translateValue")) {
 						translateValue = true;
@@ -264,7 +347,7 @@ public class Index {
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					}
-					
+
 					// Get the filename with the help of RegEx:
 					Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
 					Matcher matcherPropFile = patternPropFile.matcher("");
@@ -277,7 +360,7 @@ public class Index {
 					lstValues.remove(filename);
 					lstValuesClean.remove(filename);
 				}
-				
+
 				if (lstValuesClean.contains("defaultValue")) {
 					String defaultValueString = null;
 					hasDefaultValue = true;
@@ -285,7 +368,7 @@ public class Index {
 					defaultValueString =  lstValues.get(index); // Get whole string of defaultValue incl. square brackets, e. g. defaultValue[DefaultValue]
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
-				
+
 					if (defaultValueString != null) {
 						// Extract the default value in the square brackets:
 						Pattern patternDefaultValue = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
@@ -293,17 +376,33 @@ public class Index {
 						defaultValue = (matcherDefaultValue.find()) ? matcherDefaultValue.group().replace("[", "").replace("]", "").trim() : null;
 					}
 				}
-				
+
+
+				if (lstValuesClean.contains("regEx")) {
+					String regexValueString = null;
+					hasRegex = true;
+					int index = lstValuesClean.indexOf("regEx");
+					regexValueString =  lstValues.get(index); // Get whole string of regex value incl. square brackets, e. g. regEx[REGEX]
+					lstValues.remove(index); // Use index of clean list (without square brackets).
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					if (regexValueString != null) {
+						// Extract the regex value in the square brackets:
+						Pattern patternRegexValue = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcherRegexValue = patternRegexValue.matcher(regexValueString);
+						regexValue = (matcherRegexValue.find()) ? matcherRegexValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
+					}
+				}
+
 
 				// Get all multiValued fields and remove them after we finished:
 				if (multiValued) {
 					for(String lstValue : lstValues) {
-						
+
 						// Remove  square brackets from the mabfield name (in case it is also a translateValue field) so that
 						// we have a clear mabfield-name to process. If not, it wouldn't work in the matching operations!
 						String cleanLstValue = lstValue.replaceAll("\\[.*?\\]", "");
 						mabFieldnames.put(cleanLstValue, null);
-						
+
 						// Do not remove field if it's also a translateValue or translateValueContains (then just add "null"),
 						// because in this case we will still need the fields further down for the translate operations.
 						fieldsToRemove.add((translateValue || translateValueContains) ? null : lstValue);
@@ -311,7 +410,7 @@ public class Index {
 					lstValues.removeAll(fieldsToRemove);
 					fieldsToRemove.clear();
 				}
-				
+
 
 				// Get all customText fields and remove them after we finished:
 				if (customText) {
@@ -325,12 +424,12 @@ public class Index {
 
 				// Get all translateValue and translateValueContains fields and remove them after we finished:
 				if (translateValue || translateValueContains) {
-					
+
 					if (filename != null) {
-						
+
 						// Get the mapping values from .properties file:
 						translateProperties = getTranslateProperties(filename, pathToTranslationFiles);
-						
+
 						// Get the count of characters that should be matched (e. g. 051[1-3]: get 1 and 3) and add it to a List<String>.
 						// Then add everything to a HashMap<String, List<String>>.
 						String from = "";
@@ -388,7 +487,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue, hasRegex, regexValue);				
 				matchingObjects.add(mo);
 			}
 

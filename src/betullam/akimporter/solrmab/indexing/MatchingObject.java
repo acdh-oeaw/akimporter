@@ -39,11 +39,13 @@ public class MatchingObject {
 	private HashMap<String, String> translateProperties;
 	private boolean hasDefaultValue;
 	private String defaultValue;
+	private boolean hasRegex;
+	private String regexValue;
 	
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasRegex, String regexValue) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
@@ -53,6 +55,8 @@ public class MatchingObject {
 		this.setTranslateProperties(translateProperties);
 		this.setHasDefaultValue(hasDefaultValue);
 		this.setDefaultValue(defaultValue);
+		this.setHasRegex(hasRegex);
+		this.setRegexValue(regexValue);
 	}
 
 	public String getSolrFieldname() {
@@ -126,13 +130,31 @@ public class MatchingObject {
 	public void setDefaultValue(String defaultValue) {
 		this.defaultValue = defaultValue;
 	}
+	
+	
+	public boolean hasRegex() {
+		return hasRegex;
+	}
 
+	public void setHasRegex(boolean hasRegex) {
+		this.hasRegex = hasRegex;
+	}
+
+	public String getRegexValue() {
+		return regexValue;
+	}
+
+	public void setRegexValue(String regexValue) {
+		this.regexValue = regexValue;
+	}
+
+	
 	@Override
 	public String toString() {
 		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
 				+ multiValued + ", customText=" + customText + ", translateValue=" + translateValue
 				+ ", translateValueContains=" + translateValueContains + ", translateProperties=" + translateProperties
-				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + "]";
+				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + ", hasRegex=" + hasRegex
+				+ ", regexValue=" + regexValue + "]";
 	}
-	
 }
