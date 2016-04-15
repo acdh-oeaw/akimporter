@@ -33,10 +33,13 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import betullam.akimporter.solrmab.Index;
 import betullam.akimporter.solrmab.SolrMabHelper;
 import betullam.akimporter.solrmab.relations.AuthorityFlag;
+import betullam.akimporter.solrmab.relations.AuthorityIntegrate;
 
 public class Authority {
 
+	private boolean flagOnly;
 	private String pathToAuthFile = null;
+	private String[] pathsToAuthFiles = null;
 	private boolean useDefaultAuthProperties = true;
 	private String pathToAuthProperties = null;
 	private String pathToTranslationFiles = null;
@@ -46,10 +49,11 @@ public class Authority {
 	private boolean print = false;
 	private boolean optimize = false;
 	private SolrMabHelper smHelper = new SolrMabHelper();
-	
+
 	/**
 	 * Constructor for setting some variables.
 	 * 
+	 * @param flagOnly						boolean indicating if the authority data should be indexed or if only the flag of existance should be set.
 	 * @param pathToAuthFile				String indicating the path to an authority file (e. g. /path/to/persons.xml)
 	 * @param useDefaultAuthProperties		boolean indicating if the default authority properties for indexing should be used
 	 * @param pathToCustomAuthProperties	String indicating the path to a custom .properties file (e. g. /path/to/custom_authority.properties)
@@ -59,8 +63,10 @@ public class Authority {
 	 * @param print							boolean indicating whether to print status messages or not
 	 * @param optimize						boolean indicating whether to optimize the solr index not
 	 */
-	public Authority(String pathToAuthFile, boolean useDefaultAuthProperties, String pathToCustomAuthProperties, String solrServerAuth, String solrServerBiblio, String timeStamp, boolean print, boolean optimize) {
+	public Authority(boolean flagOnly, String pathToAuthFile, boolean useDefaultAuthProperties, String pathToCustomAuthProperties, String solrServerAuth, String solrServerBiblio, String timeStamp, boolean print, boolean optimize) {
+		this.flagOnly = flagOnly;
 		this.pathToAuthFile = pathToAuthFile;
+		this.pathsToAuthFiles = this.pathToAuthFile.split(",");
 		this.useDefaultAuthProperties = useDefaultAuthProperties;
 		if (this.useDefaultAuthProperties) {
 			this.pathToAuthProperties = "/betullam/akimporter/resources/authority.properties";
@@ -68,7 +74,7 @@ public class Authority {
 		} else {
 			this.pathToAuthProperties = pathToCustomAuthProperties;
 			this.pathToTranslationFiles = new File(this.pathToAuthProperties).getParent();
-			
+
 			// It the translation files, that are defined in the custom authority properties file, do not exist
 			// (they have to be in the same directory), that give an appropriate message:
 			boolean areTranslationFilesOk = Main.translationFilesExist(this.pathToAuthProperties, this.pathToTranslationFiles);
@@ -82,22 +88,35 @@ public class Authority {
 		this.print = print;
 		this.optimize = optimize;
 	}
-	
+
 	/**
 	 * Starting the index process for authority records.
+	 * If only the flag of existance should be set, the data itself will not be indexed.
 	 * @return	true if the index process was sucessful, false otherwise
 	 */
 	public boolean indexAuthority() {
-		
 		boolean returnValue = false;
-		
+
 		HttpSolrServer solrServerAuth = new HttpSolrServer(this.solrServerAuth);
 		if (this.timeStamp == null) {
 			this.timeStamp = String.valueOf(new Date().getTime());
 		}
 
-		Index index = new Index (
-						this.pathToAuthFile,
+		if (this.flagOnly) {
+			// TEST DEDUP - BEGIN
+			//this.smHelper.dedupSolrMultivaluedField(solrServerAuth, "gndId035_str_mv", true, false); // Dedup Solr field
+			// TEST DEDUP - END
+			
+			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
+			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
+			af.setFlagOfExistance();
+			this.smHelper.print(this.print, "\nDone setting flag of existance to authority records.");
+			returnValue = true;
+		} else {
+			boolean isIndexingSuccessful = false;
+			for (String pathToAuthFile : this.pathsToAuthFiles) {
+				Index index = new Index (
+						pathToAuthFile.trim(),
 						solrServerAuth,
 						this.useDefaultAuthProperties,
 						this.pathToAuthProperties,
@@ -105,20 +124,98 @@ public class Authority {
 						this.timeStamp,
 						this.optimize,
 						this.print
-		);
+				);
+				
+				isIndexingSuccessful = index.isIndexingSuccessful();
+				if (!isIndexingSuccessful) {
+					break;
+				}
+			}
+
+			if(isIndexingSuccessful) {
+				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
+				
+				// TEST DEDUP - BEGIN
+				//this.smHelper.dedupSolrMultivaluedField(solrServerAuth, "gndId035_str_mv", true, false); // Dedup Solr field
+				// TEST DEDUP - END
+				
+				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
+				af.setFlagOfExistance();
+				this.smHelper.print(this.print, "\nDone indexing authority records.");
+				returnValue = true;
+			} else {
+				System.err.println("Error indexing authority records!");
+				returnValue = false;
+			}
+			
+		}
+
+		return returnValue;
+	}
+	
+	
+	/**
+	 * Integrates the authority data to the bibliographic data.
+	 * If only the flagOnly is true (see class constructor)the data itself will not be indexed. Then, only the
+	 * flag of existance will be set and the data integration will be performed.
+	 * 
+	 * @param entity	The entity of GND records that should be integrated (e. g. Person, Corporation, etc.)
+	 * @return bollean	Indicates if the index process was successful
+	 */
+	public boolean integrateAuthority(String entity) {
+
 		
-		if(index.isIndexingSuccessful()) {;
+		boolean returnValue = false;
+
+		HttpSolrServer solrServerAuth = new HttpSolrServer(this.solrServerAuth);
+		if (this.timeStamp == null) {
+			this.timeStamp = String.valueOf(new Date().getTime());
+		}
+
+		if (this.flagOnly) {
 			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
+			AuthorityIntegrate ai = new AuthorityIntegrate(solrServerBiblio, solrServerAuth, null, print);
 			af.setFlagOfExistance();
-			this.smHelper.print(this.print, "\nDone indexing authority records.");
-			
+			ai.integrateAuthorityRecords(entity);
+			this.smHelper.print(this.print, "\nDone integrating authority records to bibliographic records.");
 			returnValue = true;
 		} else {
-			System.err.println("Error indexing authority records!");
-			returnValue = false;
+			boolean isIndexingSuccessful = false;
+			for (String pathToAuthFile : this.pathsToAuthFiles) {
+				Index index = new Index (
+						pathToAuthFile.trim(),
+						solrServerAuth,
+						this.useDefaultAuthProperties,
+						this.pathToAuthProperties,
+						this.pathToTranslationFiles,
+						this.timeStamp,
+						this.optimize,
+						this.print
+				);
+				
+				isIndexingSuccessful = index.isIndexingSuccessful();
+				if (!isIndexingSuccessful) {
+					break;
+				}
+			}
+			
+
+			if(isIndexingSuccessful) {
+				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
+				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
+				AuthorityIntegrate ai = new AuthorityIntegrate(solrServerBiblio, solrServerAuth, null, print);
+				af.setFlagOfExistance();
+				ai.integrateAuthorityRecords(entity);
+				this.smHelper.print(this.print, "\nDone indexing authority records.");
+				returnValue = true;
+			} else {
+				System.err.println("Error indexing authority records!");
+				returnValue = false;
+			}
 		}
-		
+
 		return returnValue;
+		
 	}
 }

@@ -1,3 +1,28 @@
+/**
+ * Consolidates multiple XML files to a new updated one.
+ *
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
+ * 
+ * This file is part of AkImporter.
+ * 
+ * AkImporter is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * AkImporter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with AkImporter.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @author   Michael Birkner <michael.birkner@akwien.at>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.html
+ * @link     http://wien.arbeiterkammer.at/service/bibliothek/
+ */
+
 package betullam.akimporter.main;
 
 import java.io.File;
@@ -21,6 +46,14 @@ public class Consolidate {
 	private String pathToConsolidatedFile = null;
 	private boolean print = false;
 
+	/**
+	 * Constructor for setting some variables and starting the consolidation process.
+	 * 
+	 * @param pathToInitialDataset		String: Path to the initial dataset of all data
+	 * @param pathToUpdateDir			String: Path to the update directory for ongoing updates
+	 * @param pathToConsolidatedFile	String: Path to where the new consolidated file should be saved
+	 * @param print						boolean indicating if status messages should be print
+	 */
 	public Consolidate(String pathToInitialDataset, String pathToUpdateDir, String pathToConsolidatedFile, boolean print) {
 		this.pathToInitialDataset = pathToInitialDataset;
 		this.pathToUpdateDir = pathToUpdateDir;
@@ -29,6 +62,9 @@ public class Consolidate {
 		this.start();
 	}
 
+	/**
+	 * Start the consolidation process (used in class constructor)
+	 */
 	private void start() {
 
 		List<File> filesForSplitting = new ArrayList<File>();

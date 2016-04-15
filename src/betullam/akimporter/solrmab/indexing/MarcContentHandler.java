@@ -53,7 +53,8 @@ public class MarcContentHandler implements ContentHandler {
 	private SolrServer sServer;
 	private String recordID;
 	private String recordSYS;
-	private boolean is001;
+	private boolean is001Controlfield;
+	private boolean is001Datafield;
 	private boolean isSYS;
 	private boolean print = true;
 	int counter = 0;
@@ -86,7 +87,7 @@ public class MarcContentHandler implements ContentHandler {
 
 	
 	
-	/*
+	/**
 	 * Executed when encountering the start element of the XML file.
 	 */
 	@Override
@@ -101,7 +102,7 @@ public class MarcContentHandler implements ContentHandler {
 
 	
 	
-	/*
+	/**
 	 * Executed when encountering the start element of an XML tag.
 	 * 
 	 * Reading and processing XML attributes is done here.
@@ -128,6 +129,7 @@ public class MarcContentHandler implements ContentHandler {
 			isSYS = (controlfieldTag.equals("SYS")) ? true : false;
 			controlfield = new Mabfield();
 			controlfield.setFieldname(controlfieldTag);
+			is001Controlfield = (controlfieldTag.equals("001")) ? true : false;
 		}
 
 		if(localName.equals("datafield")) {
@@ -140,8 +142,7 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldTag = (datafieldTag != null && !datafieldTag.isEmpty()) ? datafieldTag : "000";
 			datafieldInd1 = (datafieldInd1 != null && !datafieldInd1.isEmpty()) ? datafieldInd1 : "*";
 			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
-
-			is001 = (datafieldTag.equals("001")) ? true : false;
+			is001Datafield = (datafieldTag.equals("001")) ? true : false;
 		}
 
 		if(localName.equals("subfield")) {
@@ -162,7 +163,7 @@ public class MarcContentHandler implements ContentHandler {
 
 
 	
-	/*
+	/**
 	 * Executed when encountering the end element of an XML tag.
 	 * 
 	 * Reading and processing XML attributes is done here.
@@ -180,6 +181,9 @@ public class MarcContentHandler implements ContentHandler {
 			if (isSYS == true) {
 				recordSYS = controlfieldText;
 			}
+			if (is001Controlfield == true && is001Datafield == false) {
+				recordID = controlfieldText;
+			}
 		}
 
 
@@ -188,7 +192,7 @@ public class MarcContentHandler implements ContentHandler {
 			datafield.setFieldvalue(subfieldText);
 			allFields.add(datafield);
 
-			if (is001 == true) {
+			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
 			}
 		}
@@ -211,7 +215,6 @@ public class MarcContentHandler implements ContentHandler {
 			allRecords.add(record);
 			
 			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
-			//System.out.print(StringUtils.repeat("\b", 100) + "\r");
 
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
 			 * it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
@@ -235,12 +238,10 @@ public class MarcContentHandler implements ContentHandler {
 				newRecordSet = null;
 			}
 		}
-
-
-
 	}
 
-	/*
+	
+	/**
 	 * Executed when encountering the end element of the XML file.
 	 */
 	@Override
@@ -267,7 +268,7 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-	/*
+	/**
 	 * Reads the content of the current XML element:
 	 */
 	@Override
@@ -276,7 +277,7 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-	/*
+	/**
 	 * This method contains the code that actually adds a set of Record objects
 	 * (see Record class) to the specified Solr server.
 	 */
@@ -295,10 +296,9 @@ public class MarcContentHandler implements ContentHandler {
 
 					String fieldName = mf.getFieldname();
 					String fieldValue = mf.getFieldvalue();
-
+					
 					// Add the fieldname and fieldvalue to the document:
 					doc.addField(fieldName, fieldValue);
-
 				}
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process - see betullam.akimporter.main.Main):
@@ -326,7 +326,7 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 	
-	/*
+	/**
 	 * Unused methods of ContentHandler class.
 	 * We just define them without any content.
 	 */

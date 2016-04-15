@@ -87,7 +87,7 @@ public class AuthorityFlag {
 			queryResults.clear();
 			queryResults = null;
 
-			this.smHelper.print(this.print, "Getting relevant authority records ... ");
+			this.smHelper.print(this.print, "Getting distinct authority records ... ");
 
 			// Calculate the number of solr result pages we need to iterate over
 			long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -112,11 +112,12 @@ public class AuthorityFlag {
 			}
 
 			this.smHelper.print(this.print, "Done\n");
-			this.smHelper.print(this.print, "Found " + gndIds.size() + " uses of authority records in bibliograpic index.\n");
+			this.smHelper.print(this.print, "Found " + gndIds.size() + " distinct authority records used in bibliograpic index.\n");
 
+			
 			// Add flag of existance to authority records
 			addFlagToAuthorityRecord();
-			
+
 			// Delete wrong authority records (see explanation at method):
 			deleteAuhtorityWithoutHeading();
 
@@ -133,13 +134,73 @@ public class AuthorityFlag {
 				gndIds.clear();
 				gndIds = null;
 				queryResults = null;
-			}			
+			}
 		}
 	}
 
+
 	/**
 	 * Set documents for atomic Solr update and index them.
+	 * USES FIELDS 001 AND 053
 	 */
+
+	private void addFlagToAuthorityRecord() {
+
+		int counter = 0;
+		int noOfGndIds = gndIds.size();
+
+		if (noOfGndIds > 0) {
+
+			for (String gndId : gndIds) {
+				counter = counter + 1;
+
+				SolrDocumentList gndRecords = this.relationHelper.getGndRecordByIds(gndId);
+				if (gndRecords != null) {
+					for(SolrDocument gndRecord : gndRecords) {
+
+						String gndRecordId = gndRecord.getFieldValue("id").toString();
+
+						// Prepare GND record for atomic update:
+						SolrInputDocument gndUpdateRecord = null;
+						gndUpdateRecord = new SolrInputDocument();
+						gndUpdateRecord.setField("id", gndRecordId);
+
+						// Set values for atomic update of parent record:
+						Map<String, String> existsInBiblio = new HashMap<String, String>();
+						existsInBiblio.put("set", "true");
+						gndUpdateRecord.setField("existsInBiblio_str", existsInBiblio);
+
+						docsForAtomicUpdates.add(gndUpdateRecord);
+					}
+				}
+
+				this.smHelper.print(this.print, "Setting flag in authority record " + gndId + ". Processing record no " + counter  + " of " + noOfGndIds + "                          \r");
+
+
+
+				// Add documents from the class variable which was set before to Solr
+				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr
+					relationHelper.indexDocuments(docsForAtomicUpdates, solrServerAuthority);
+					docsForAtomicUpdates.clear();
+					docsForAtomicUpdates = null;
+					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
+				} else if (counter >= noOfGndIds) { // The remainding documents (if division with NO_OF_ROWS 
+					relationHelper.indexDocuments(docsForAtomicUpdates, solrServerAuthority);
+					docsForAtomicUpdates.clear();
+					docsForAtomicUpdates = null;
+					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
+				}
+
+			}
+		}
+	}
+
+
+	/**
+	 * Set documents for atomic Solr update and index them.
+	 * DOES NOT USE FIELD 035, ONLY 001
+	 */
+	/*
 	private void addFlagToAuthorityRecord() {
 
 		int counter = 0;
@@ -154,6 +215,7 @@ public class AuthorityFlag {
 				SolrInputDocument gndRecord = null;
 				gndRecord = new SolrInputDocument();
 				gndRecord.setField("id", gndId);
+
 
 				// Set values for atomic update of parent record:
 				Map<String, String> existsInBiblio = new HashMap<String, String>();
@@ -180,7 +242,7 @@ public class AuthorityFlag {
 			}
 		}
 	}
-
+	 */
 
 	/**
 	 * Deletes authority records without heading. Due to the fact that there could be wrong authority ids in bibliographic records
@@ -194,7 +256,7 @@ public class AuthorityFlag {
 	 */
 	private void deleteAuhtorityWithoutHeading() {
 		try {
-			this.smHelper.print(this.print, "Deleting wrong authority records                          \r");
+			this.smHelper.print(this.print, "\nDeleting wrong authority records");
 			solrServerAuthority.deleteByQuery("-heading:*");
 		} catch (SolrServerException e) {
 			e.printStackTrace();
@@ -209,7 +271,6 @@ public class AuthorityFlag {
 	 * 
 	 * @param	isFirstPage		True if first page of Solr results	
 	 * @param	lastDocId		Doc ID of the last processed Solr document
-	 * @return	nextDocId		Doc ID with which we want to continue
 	 */
 	private String setGndNos(boolean isFirstPage, String lastDocId) {
 		// Variable for return value:
@@ -230,6 +291,24 @@ public class AuthorityFlag {
 			String subjectGndNo = (recordWithAuth.getFieldValue("subjectGndNo_str") != null) ? recordWithAuth.getFieldValue("subjectGndNo_str").toString() : null;
 
 			// Add all possible GND Numbers to a List<String> so that we can iterate over it later on
+			Set<String> gndNos = new HashSet<String>();
+
+			if (authorGndNo != null) { gndNos.add(authorGndNo); }
+			if (author2GndNo != null) { gndNos.add(author2GndNo); }
+			if (authorAdditionalGndNos != null) {
+				for (String authorAdditionalGndNo : authorAdditionalGndNos) {
+					gndNos.add(authorAdditionalGndNo);
+				}
+			}
+			if (authorCorporateGndNo != null) {gndNos.add(authorCorporateGndNo); }
+			if (authorCorporate2GndNos != null) {
+				for (String authorCorporate2GndNo : authorCorporate2GndNos) {
+					gndNos.add(authorCorporate2GndNo);
+				}
+			}
+			if (subjectGndNo != null) {gndNos.add(subjectGndNo); }
+			/*
+			// With replacement of additions like (DE-588)
 			String replaceRegex = "(\\(.*?\\))|(GKD)"; // Replace unwanted characters in GND-ID (e. g. (DE-505), GKD, etc.)
 			Set<String> gndNos = new HashSet<String>();
 
@@ -247,7 +326,7 @@ public class AuthorityFlag {
 				}
 			}
 			if (subjectGndNo != null) {gndNos.add(subjectGndNo.replaceAll(replaceRegex, "")); }
-
+			*/
 
 			gndIds.addAll(gndNos);
 

@@ -28,7 +28,9 @@
 package betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -68,51 +70,57 @@ public class MatchingOperations {
 			newRecord = new Record();			
 
 			for (Mabfield oldMabField : oldRecord.getMabfields()) {
-				//System.out.println("oldMabField: " + oldMabField.getFieldname() + ": " + oldMabField.getFieldvalue());
 				// Match each Mabfield in the Record to the defined Solrfields. As one old Mabfield could match multiple Solrfields, we get back a List of Fields:
 				List<Mabfield> listOfSolrfieldsForMabfield = this.matchField(oldMabField, listOfMatchingObjs);
-				//System.out.println(oldMabField.getFieldname() + ": " + listOfSolrfieldsForMabfield.toString());
 				listOfNewSolrfieldLists.add(listOfSolrfieldsForMabfield);
 			}
 
 			for (List<Mabfield> newSolrFields : listOfNewSolrfieldLists) {
 				for (Mabfield newSolrField : newSolrFields) {
-					//System.out.println(newSolrField.getFieldname() + ": " + newSolrField.getFieldvalue());
 					listOfNewFieldsForNewRecord.add(newSolrField);
 				}
 			}
 
 
 			for (Mabfield customTextField : customTextFields) {
-				//System.out.println("2. Solr Fieldname: " + customTextField.getFieldname() + ": " + customTextField.getFieldvalue());
 				listOfNewFieldsForNewRecord.add(customTextField);
 			}
-
-			// TODO: Is there an easier way to deduplicate certain fields?
+			
+			
 			// DeDuplication of none-multivalued SolrFields:
-			List<Mabfield> finalDedupSolrlist = new ArrayList<Mabfield>();
-			List<String> fieldsInFinalDedupList = new ArrayList<String>();
-
-
+			HashSet<Mabfield> dedupSolrSet = new HashSet<Mabfield>();
+			List<Mabfield> dedupSolrList = new ArrayList<Mabfield>();
+			List<String> fieldNamesInDedupSolrSet = new ArrayList<String>();
 			for (Mabfield solrfield : listOfNewFieldsForNewRecord) {
 				if (multiValuedFields.contains(solrfield.getFieldname()) == false) { // If its a single valued SolrField!
-
+					
 					// Make a list of all fieldvalues that are already added, so we can compare to it in the next step:
-					for (Mabfield mabfield : finalDedupSolrlist) {
-						fieldsInFinalDedupList.add(mabfield.getFieldname());
+					for (Mabfield mabfield : dedupSolrSet) {
+						fieldNamesInDedupSolrSet.add(mabfield.getFieldname());
 					}
 
-					if (fieldsInFinalDedupList.contains(solrfield.getFieldname()) == false) { // If there is not yet a SolrField with that fieldname, add it, but just one!
-						finalDedupSolrlist.add(solrfield);
+					// If there is not yet a SolrField with that fieldname, add it, but just one!
+					if (fieldNamesInDedupSolrSet.contains(solrfield.getFieldname()) == false) {
+						dedupSolrSet.add(solrfield);
 					}
+					
+					
 				} else { // Multi valued SolrField
-					finalDedupSolrlist.add(solrfield);
+					dedupSolrSet.add(solrfield); // Add to a set to avoid duplicates in multivalued fields
 				}
+				
 			}
 
-			newRecord.setMabfields(finalDedupSolrlist);
+			// Add Set<Mabfield> (deduplicated mulitvalued fields) to a List<Mabfield> which we have to use as type for "mabfields" variable
+			// in Record object, because when getting MAB-Codes from XML file, "mabfields" variable should be able to contain duplicates.
+			dedupSolrList.addAll(dedupSolrSet);
+			Collections.sort(dedupSolrList); // Sort by fieldName (better readibility in Solr admin console)
+						
+			// Set variables of new record object:
+			newRecord.setMabfields(dedupSolrList);
 			newRecord.setRecordID(oldRecord.getRecordID());
 			newRecord.setIndexTimestamp(oldRecord.getIndexTimestamp());
+			
 			newListOfRecords.add(newRecord);
 		}
 
@@ -144,10 +152,6 @@ public class MatchingOperations {
 				listOfRelevantMatchingObjects.add(matchingObject);
 			}
 		}
-
-		//if (matchingObject.getSolrFieldname().equals("urlText_str_mv")) {
-			//System.out.println("Begin match");
-		//}
 		
 		
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {

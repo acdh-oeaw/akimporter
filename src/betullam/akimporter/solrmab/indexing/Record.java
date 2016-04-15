@@ -37,7 +37,6 @@ public class Record {
 
 	public Record() {}
 	
-
 	public List<Mabfield> getMabfields() {
 		return mabfields;
 	}
@@ -45,7 +44,6 @@ public class Record {
 	public void setMabfields(List<Mabfield> mabfields) {
 		this.mabfields = mabfields;
 	}
-
 	public String getRecordID() {
 		return recordID;
 	}

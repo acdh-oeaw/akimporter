@@ -24,19 +24,20 @@
  */
 package betullam.akimporter.solrmab.indexing;
 
+import java.util.Comparator;
 
-public class Mabfield {
-	
+public class Mabfield implements Comparable<Mabfield> {
+
 	private String fieldname;
 	private String fieldvalue;
-	
+
 	public Mabfield() {}
 
 	public Mabfield(String fieldname, String fieldvalue) {
 		this.setFieldname(fieldname);
 		this.setFieldvalue(fieldvalue);
 	}
-	
+
 
 	public String getFieldname() {
 		return this.fieldname;
@@ -56,10 +57,67 @@ public class Mabfield {
 
 	@Override
 	public String toString() {
-		return "Mabfield [fieldname=" + fieldname + ", fieldvalue="
-				+ fieldvalue + "]";
+		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + "]";
 	}
-	
-	
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((fieldname == null) ? 0 : fieldname.hashCode());
+		result = prime * result + ((fieldvalue == null) ? 0 : fieldvalue.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof Mabfield)) {
+			return false;
+		}
+		Mabfield other = (Mabfield) obj;
+		if (fieldname == null) {
+			if (other.fieldname != null) {
+				return false;
+			}
+		} else if (!fieldname.equals(other.fieldname)) {
+			return false;
+		}
+		if (fieldvalue == null) {
+			if (other.fieldvalue != null) {
+				return false;
+			}
+		} else if (!fieldvalue.equals(other.fieldvalue)) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public int compareTo(Mabfield mabField) {
+		if (!(mabField instanceof Mabfield)) {
+			throw new ClassCastException("Mabfield object expected in compareTo() method of Mabfield class.");
+		}
+		return fieldname.compareTo(mabField.getFieldname());
+	}
+
+
+	public class FieldNameComparator implements Comparator<Mabfield> {
+		public int compare(Mabfield mabfield1, Mabfield mabfield2) {
+			String fieldName1 = mabfield1.getFieldname().toLowerCase();
+			String fieldName2 = mabfield2.getFieldname().toLowerCase();
+			return fieldName1.compareTo(fieldName2);
+		}
+	}
+
+
+
+
+
 
 }

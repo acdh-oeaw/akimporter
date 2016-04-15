@@ -84,7 +84,7 @@ public class OaiUpdater {
 	 * @param print						boolean indicating whether to print status messages or not
 	 * @param optimize					boolean indicating whether to optimize the solr index not
 	 */
-	public void oaiUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, boolean print, boolean optimize) {
+	public void oaiUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, boolean flagOnly, boolean print, boolean optimize) {
 
 		boolean isAuthorityUpdateSuccessful = false;
 		this.timeStamp = String.valueOf(new Date().getTime());
@@ -96,6 +96,7 @@ public class OaiUpdater {
 			smHelper.print(print, "\nIndexing new authority data ...  ");
 			// Index authority data from merged XML file:
 			Authority auth = new Authority(
+					flagOnly,
 					mergedAuthFileName,
 					useDefaultAuthProps,
 					customAuthProps,

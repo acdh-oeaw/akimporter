@@ -118,7 +118,8 @@ public class Main {
 	static String aUpdateOaiUrl = importerProperties.getProperty("authority.update.oaiUrl");
 	static String aUpdateFormat = importerProperties.getProperty("authority.update.format");
 	static String aUpdateOaiSet = importerProperties.getProperty("authority.update.set");
-	
+	static String aIntegrateEntities = importerProperties.getProperty("authority.integrate.entities");
+
 
 	/**
 	 * Main method of AkImporter.
@@ -128,8 +129,9 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		
-		
+		//System.out.println(aPath);
+		//System.exit(0);
+
 		// Log4J
 		BasicConfigurator.configure();
 		Logger.getRootLogger().setLevel(Level.WARN);
@@ -137,7 +139,7 @@ public class Main {
 
 		// Set the command line options:
 		setCLI();
-		
+
 		if (args.length <= 0) {
 			HelpFormatter helpFormatter = new HelpFormatter();
 			helpFormatter.printHelp("AkImporter", "", options, "", true);
@@ -387,20 +389,19 @@ public class Main {
 							System.out.println("Properties are OK");
 							break;
 						} else {
-							if (!flag) {
-								// Start import process for authority records:
-								Authority auth = new Authority(
-										aPath,
-										aDefaultMabProperties,
-										aCustomMabProperties,
-										aSolrAuth,
-										aSolrBibl,
-										null,
-										print,
-										optimize
-										);
-								auth.indexAuthority();
-							}
+							// Start import process for authority records:
+							Authority auth = new Authority(
+									flag,
+									aPath,
+									aDefaultMabProperties,
+									aCustomMabProperties,
+									aSolrAuth,
+									aSolrBibl,
+									null,
+									print,
+									optimize
+									);
+							auth.indexAuthority();
 						}
 					}
 
@@ -418,26 +419,58 @@ public class Main {
 						System.out.println("Properties are OK");
 						break;
 					} else {
-						if (!flag) {
-							// Start import process for authority records:
-							Authority auth = new Authority(
-									aPath,
-									aDefaultMabProperties,
-									aCustomMabProperties,
-									aSolrAuth,
-									aSolrBibl,
-									null,
-									print,
-									optimize
-									);
-							auth.indexAuthority();
-						}
+						// Start import process for authority records:
+						Authority auth = new Authority(
+								flag,
+								aPath,
+								aDefaultMabProperties,
+								aCustomMabProperties,
+								aSolrAuth,
+								aSolrBibl,
+								null,
+								print,
+								optimize
+								);
+						auth.indexAuthority();
+
 					}
 				}
 
 				break;
 			}
-			
+
+			case "I": {
+
+				boolean integrateEntitiesOk = (aIntegrateEntities != null && !aIntegrateEntities.isEmpty()) ? true : false;
+				if(checkAuthorityProperties() && integrateEntitiesOk) {
+					if (test) {
+						// If test option is specified, just tell the user if the properties are OK, but do not start the process
+						System.out.println("Properties are OK");
+						break;
+					} else {
+						// Start import process for authority records:
+						Authority auth = new Authority(
+								flag,
+								aPath,
+								aDefaultMabProperties,
+								aCustomMabProperties,
+								aSolrAuth,
+								aSolrBibl,
+								null,
+								print,
+								optimize
+								);
+						auth.integrateAuthority(aIntegrateEntities);
+					}
+				}
+
+				if (!integrateEntitiesOk) {
+					System.err.println("Setting \"authority.integrate.entities\" does not exist or is empty in AkImporter.properties.");
+				}
+
+				break;
+			}
+
 			case "e": {
 				if(checkAuthorityUpdateProperties()) {
 					if (test) {
@@ -446,7 +479,7 @@ public class Main {
 						break;
 					} else {
 						OaiUpdater oaiUpdater = new OaiUpdater();
-						
+
 						oaiUpdater.oaiUpdate(
 								aUpdateOaiUrl,
 								aUpdateFormat,
@@ -457,14 +490,15 @@ public class Main {
 								aCustomMabProperties,
 								aSolrAuth,
 								aSolrBibl,
+								flag,
 								print,
 								optimize
-						);						
+								);						
 					}
 				}
 				break;
 			}
-			
+
 			case "c": {
 				String consolidatedFile = new File(iPath).getParent() + File.separator + "consolidated.xml";
 				new Consolidate(
@@ -472,7 +506,7 @@ public class Main {
 						uLocalPath,
 						consolidatedFile,
 						true
-				);
+						);
 				break;
 			}
 
@@ -495,7 +529,7 @@ public class Main {
 			e.printStackTrace();
 			return;
 		}
-		
+
 		if (print) {
 			System.out.print("\n");
 		}
@@ -711,9 +745,9 @@ public class Main {
 	 * @return		Properties object with all properties
 	 */
 	public static Properties getImporterProperties(String pathToImporterProperties) {
-		
+
 		Properties importerProperties = new Properties();
-		
+
 		// Load .properties file:
 		BufferedInputStream propertiesInputStream;
 		try {
@@ -937,7 +971,7 @@ public class Main {
 
 		// Check if there are empty values
 		for (String key : importerProperties.stringPropertyNames()) {
-			if (key.startsWith("authority.") && !key.contains(".customMabProperties")) {
+			if (key.startsWith("authority.") && !key.contains(".customMabProperties") && !key.contains(".integrate.entities")) {
 				String value = importerProperties.getProperty(key);
 				if (value.isEmpty() || value == null) {
 					System.err.println("Please specify a valid value for \"" + key + "\" in \"AkImporter.properties\"");
@@ -946,9 +980,17 @@ public class Main {
 			}
 		}
 
-		boolean xmlFileExists = fileExists(new File(aPath));
+		String[] paths = aPath.split(",");
+		boolean xmlFileExists = false;
+		for (String path : paths) {
+			xmlFileExists = fileExists(new File(path.trim()));
+			if (!xmlFileExists) {
+				break;
+			}
+		}
+		
 		if (!xmlFileExists) {
-			System.err.println("File specified for \"authority.path\" in \"AkImporter.properties\" does not exist.");
+			System.err.println("At least one file specified for \"authority.path\" in \"AkImporter.properties\" does not exist.");
 		} else {
 			boolean solrAuthorityRunning = isSolrserverRunning(aSolrAuth);
 			boolean solrBibliographicRunning = isSolrserverRunning(aSolrBibl);
@@ -977,19 +1019,19 @@ public class Main {
 		return authorityPropertiesOk;
 
 	}
-	
+
 	/**
 	 * Checking properties in AkImporter.properties for authority updating via OAI harvesting
 	 * 
 	 * @return			true if everything is OK, false otherwise
 	 */
 	private static boolean checkAuthorityUpdateProperties() {
-		
+
 		boolean authorityUpdatePropertiesOk = false;
-		
+
 		// Check if there are empty values
 		for (String key : importerProperties.stringPropertyNames()) {
-			if (key.startsWith("authority.") && !key.contains(".customMabProperties") && !key.contains("authority.path")) {
+			if (key.startsWith("authority.") && !key.contains(".customMabProperties") && !key.contains("authority.path") && !key.contains(".integrate.entities")) {
 				String value = importerProperties.getProperty(key);
 				if (value.isEmpty() || value == null) {
 					System.err.println("Please specify a valid value for \"" + key + "\" in \"AkImporter.properties\"");
@@ -997,27 +1039,27 @@ public class Main {
 				}
 			}
 		}
-		
+
 		boolean solrAuthorityRunning = isSolrserverRunning(aSolrAuth);
 		boolean solrBibliographicRunning = isSolrserverRunning(aSolrBibl);
 		if (!solrAuthorityRunning || !solrBibliographicRunning) {
 			System.err.println("Please make sure that your Solr server is running and that you specified correct values for \"authority.solrAuth\" and \"authority.solrBibl\" in \"AkImporter.properties\".");
 		} else {
-			
+
 			boolean oaiUrlOk = false;
 			try {
-			    URL url = new URL(aUpdateOaiUrl);
-			    URLConnection conn = url.openConnection();
-			    conn.connect();
-			    oaiUrlOk = true;
+				URL url = new URL(aUpdateOaiUrl);
+				URLConnection conn = url.openConnection();
+				conn.connect();
+				oaiUrlOk = true;
 			} catch (MalformedURLException e) {
 				System.err.println("The URL for \"authority.update.oaiUrl\" in \"AkImporter.properties\" is not valid.");
 			} catch (IOException e) {
 				System.err.println("The connection to the URL for \"authority.update.oaiUrl\" in \"AkImporter.properties\" cannot be established.");
 			}
-			
+
 			if (oaiUrlOk) {
-			    String aDefaultMabPropertiesStr = importerProperties.getProperty("authority.defaultMabProperties");
+				String aDefaultMabPropertiesStr = importerProperties.getProperty("authority.defaultMabProperties");
 				boolean defaultMabPropertiesIsValid = (aDefaultMabPropertiesStr.equals("D") || aDefaultMabPropertiesStr.equals("C")) ? true : false;
 				if (!defaultMabPropertiesIsValid) {
 					System.err.println("Please specify a valid value for \"authority.defaultMabProperties\" in \"AkImporter.properties\"");
@@ -1035,7 +1077,7 @@ public class Main {
 				}
 			}
 		}
-		
+
 		return authorityUpdatePropertiesOk;
 	}
 
@@ -1194,7 +1236,15 @@ public class Main {
 				.longOpt("authority-silent")
 				.desc("Index authority data without confirming the settings")
 				.build();
-		
+
+		// I (authority-integrate)
+		Option oAuthorityIntegrate = Option
+				.builder("I")
+				.required(true)
+				.longOpt("authority-integrate")
+				.desc("Index authority data and integrate them to bibliographic data")
+				.build();
+
 		// e (ernten [harvest] and update authority properties from OAI interface)
 		Option oErnten = Option
 				.builder("e")
@@ -1202,7 +1252,7 @@ public class Main {
 				.longOpt("ernten")
 				.desc("Harvest (german \"ernten\") and update authority records")
 				.build();
-		
+
 		// c (consolidate)
 		Option oConsolidate = Option
 				.builder("c")
@@ -1220,8 +1270,8 @@ public class Main {
 				.desc("Print help")
 				.build();
 
-		
-		
+
+
 		// v (verbose)
 		Option oVerbose = Option
 				.builder("v")
@@ -1266,6 +1316,7 @@ public class Main {
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
+		optionGroup.addOption(oAuthorityIntegrate);
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);

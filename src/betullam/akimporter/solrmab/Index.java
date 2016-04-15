@@ -2,7 +2,7 @@
  * Indexing records to Solr.
  * This is where the actual importing process is handled.
  *  
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -194,7 +194,6 @@ public class Index {
 	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
 	 * @return							The rules of defined in mab.properties file represented as a list of MatchingObjects
 	 */
-
 	private List<MatchingObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
 
 		/*

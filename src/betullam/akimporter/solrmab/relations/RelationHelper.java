@@ -189,7 +189,7 @@ public class RelationHelper {
 
 		// Set no of rows
 		query.setRows(NO_OF_ROWS);
-		
+
 		// Add sorting (more efficient for deep paging)
 		query.addSort(SolrQuery.SortClause.asc("id"));
 
@@ -225,17 +225,17 @@ public class RelationHelper {
 
 		return queryResult;
 	}
-	
-	
+
+
 	/**
-	 * Getting an authority record (GND) by it's ID.
+	 * Getting an authority record (GND) by it's ID (fiels 001).
 	 * 
 	 * @param gndId		String representing an ID of an authority record.
 	 * @return			SolrDocument containing the authority record.
 	 */
 	public SolrDocument getGndRecordById(String gndId) {
 		SolrDocument gndRecord = null;
-		
+
 		SolrQuery queryGndRecord = new SolrQuery(); // New Solr query
 		queryGndRecord.setQuery("id:\""+gndId+"\""); // Define a query
 		queryGndRecord.setFields("id"); // Set fields that should be given back from the query
@@ -246,10 +246,87 @@ public class RelationHelper {
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
-		
+
 		return gndRecord;
 	}
+	
+	/**
+	 * Getting an authority record (GND) by it's IDs (fields 001 and 035).
+	 * 
+	 * @param gndId		String representing an ID of an authority record.
+	 * @return			SolrDocument containing the authority record.
+	 */
+	public SolrDocumentList getGndRecordByIds(String gndId) {
+		SolrDocumentList gndRecords = null;
 
+		SolrQuery queryGndRecord = new SolrQuery(); // New Solr query
+		queryGndRecord.setQuery("id:\""+gndId+"\" || gndId035_str_mv:\""+gndId+"\""); // Define a query
+		queryGndRecord.setFields("id"); // Set fields that should be given back from the query
+
+		try {
+			SolrDocumentList resultList = this.solrServerAuth.query(queryGndRecord).getResults();
+			gndRecords = (resultList.getNumFound() > 0 && resultList != null) ? resultList : null; // Get GND records
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		return gndRecords;
+	}
+
+	/**
+	 * Getting all authority records of a given entity (e. g. Person) and with the flag of existance
+	 * @param entity		Type of authority entity, e. g. Person
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the last processed Solr document
+	 * @return				SolrDocumentList
+	 */
+	public SolrDocumentList getAuthorityRecords(String entity, boolean isFirstPage, String lastDocId) {
+
+		// Set up variable
+		SolrDocumentList queryResult = null;
+
+		// New Solr query
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting (more efficient for deep paging)
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance
+		query.setQuery("*:*");
+
+		// Filter all records that were indexed with the current import process and that are child volumes
+		// (because we need to get their parent records to be able to unlink these childs from there).
+		if (this.timeStamp != null) {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("entity_str:\""+entity+"\"", "existsInBiblio_str:true", "indexTimestamp_str:"+this.timeStamp, "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("entity_str:\""+entity+"\"", "existsInBiblio_str:true", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+			}
+		} else {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("entity_str:\""+entity+"\"", "existsInBiblio_str:true", "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("entity_str:\""+entity+"\"", "existsInBiblio_str:true", "id:[" + lastDocId + " TO *]");
+			}
+		}
+
+		// Set fields that should be given back from the query
+		query.setFields("id", "gndId035_str_mv", "heading", "heading_additions_txt_mv", "use_for", "use_for_additions_txt_mv", "other_additions_txt_mv");
+
+		try {
+			// Execute query and get results
+			queryResult = this.solrServerAuth.query(query).getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+		return queryResult;
+	}
+	
 
 
 
@@ -416,6 +493,7 @@ public class RelationHelper {
 	 * Helper method for indexing documents to a Solr server.
 	 * 
 	 * @param docsForAtomicUpdates	A collection of SolrImputDocument objects.
+	 * @param solrServer			A HttpSolrServer object of the server where the documents should be indexed
 	 */
 	public void indexDocuments(Collection<SolrInputDocument> docsForAtomicUpdates, HttpSolrServer solrServer) {		
 		if (!docsForAtomicUpdates.isEmpty()) {

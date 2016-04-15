@@ -64,7 +64,13 @@ public class ChildsToParentsFromParents {
 	private Set<String> parentSYSs = new HashSet<String>();
 	private boolean print = false;
 
-	
+	/**
+	 * Constructor for indexing infos from child records to parent records
+	 * 
+	 * @param solrServer	Solr server we want to index to
+	 * @param timeStamp		Timestamp of moment the import process started
+	 * @param print			True if status messages should be printed to console
+	 */
 	public ChildsToParentsFromParents(HttpSolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.print = print;
