@@ -41,9 +41,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 import org.xml.sax.InputSource;
@@ -96,8 +93,6 @@ public class Index {
 	 * Starting the index process.
 	 */
 	private void startIndexing() {
-
-		setLogger();
 
 		try {
 			BufferedInputStream mabPropertiesInputStream = null;
@@ -567,19 +562,4 @@ public class Index {
 
 		return translateProperties;
 	}
-
-
-
-
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	//++++++++++++++++++++++++++++++++++ LOG4J ++++++++++++++++++++++++++++++++++//
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-	/**
-	 * Setting the Log4J logger.
-	 */
-	private void setLogger() {
-		BasicConfigurator.configure();
-		Logger.getRootLogger().setLevel(Level.WARN);
-	}
-
 }

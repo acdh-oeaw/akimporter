@@ -55,9 +55,6 @@ import org.apache.commons.net.MalformedServerReplyException;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
@@ -132,9 +129,6 @@ public class Main {
 		//System.out.println(aPath);
 		//System.exit(0);
 
-		// Log4J
-		BasicConfigurator.configure();
-		Logger.getRootLogger().setLevel(Level.WARN);
 		CommandLineParser clParser = new DefaultParser();
 
 		// Set the command line options:
