@@ -56,9 +56,6 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.status.StatusLogger;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -136,6 +133,9 @@ public class Main {
 
 		//System.out.println(aPath);
 		//System.exit(0);
+		
+		// Disable StatusLogger message of Log4J2:
+		StatusLogger.getLogger().setLevel(Level.OFF);
 
 		// Set the command line options:
 		CommandLineParser clParser = new DefaultParser();
