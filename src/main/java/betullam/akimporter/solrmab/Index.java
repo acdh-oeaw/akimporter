@@ -228,9 +228,7 @@ public class Index {
 		System.out.println(newTest);
 		System.out.println("\n-------------------------------------------\n");
 		*/
-		
-		System.out.println(pathToTranslationFiles);
-		
+				
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
 
 		try {
@@ -248,8 +246,10 @@ public class Index {
 				boolean translateValueContains = false;
 				boolean hasDefaultValue = false;
 				boolean hasRegex = false;
+				boolean hasRegexStrict = false;
 				String defaultValue = null;
 				String regexValue = null;
+				String regexStrictValue = null;
 				String strValues = mabProperties.getProperty(key);
 				
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
@@ -376,6 +376,7 @@ public class Index {
 				if (lstValuesClean.contains("regEx")) {
 					String regexValueString = null;
 					hasRegex = true;
+					hasRegexStrict = false;
 					int index = lstValuesClean.indexOf("regEx");
 					regexValueString =  lstValues.get(index); // Get whole string of regex value incl. square brackets, e. g. regEx[REGEX]
 					lstValues.remove(index); // Use index of clean list (without square brackets).
@@ -387,6 +388,23 @@ public class Index {
 						regexValue = (matcherRegexValue.find()) ? matcherRegexValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 					}
 				}
+				
+				if (lstValuesClean.contains("regExStrict")) {
+					String regexStrictValueString = null;
+					hasRegexStrict = true;
+					hasRegex = false;
+					int index = lstValuesClean.indexOf("regExStrict");
+					regexStrictValueString =  lstValues.get(index); // Get whole string of regex value incl. square brackets, e. g. regExStrict[REGEX]
+					lstValues.remove(index); // Use index of clean list (without square brackets).
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					if (regexStrictValueString != null) {
+						// Extract the regex value in the square brackets:
+						Pattern patternRegexStrictValue = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcherRegexStrictValue = patternRegexStrictValue.matcher(regexStrictValueString);
+						regexStrictValue = (matcherRegexStrictValue.find()) ? matcherRegexStrictValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
+					}
+				}
+				
 
 
 				// Get all multiValued fields and remove them after we finished:
@@ -482,7 +500,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue, hasRegex, regexValue);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue, hasRegex, regexValue, hasRegexStrict, regexStrictValue);				
 				matchingObjects.add(mo);
 			}
 

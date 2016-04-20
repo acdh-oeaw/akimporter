@@ -64,7 +64,7 @@ public class MatchingOperations {
 		newListOfRecords = new ArrayList<Record>();		
 
 		for (Record oldRecord : oldRecordSet) {	
-			
+
 			listOfNewSolrfieldLists = new ArrayList<List<Mabfield>>();
 			listOfNewFieldsForNewRecord = new ArrayList<Mabfield>();
 			newRecord = new Record();			
@@ -85,15 +85,15 @@ public class MatchingOperations {
 			for (Mabfield customTextField : customTextFields) {
 				listOfNewFieldsForNewRecord.add(customTextField);
 			}
-			
-			
+
+
 			// DeDuplication of none-multivalued SolrFields:
 			HashSet<Mabfield> dedupSolrSet = new HashSet<Mabfield>();
 			List<Mabfield> dedupSolrList = new ArrayList<Mabfield>();
 			List<String> fieldNamesInDedupSolrSet = new ArrayList<String>();
 			for (Mabfield solrfield : listOfNewFieldsForNewRecord) {
 				if (multiValuedFields.contains(solrfield.getFieldname()) == false) { // If its a single valued SolrField!
-					
+
 					// Make a list of all fieldvalues that are already added, so we can compare to it in the next step:
 					for (Mabfield mabfield : dedupSolrSet) {
 						fieldNamesInDedupSolrSet.add(mabfield.getFieldname());
@@ -103,24 +103,24 @@ public class MatchingOperations {
 					if (fieldNamesInDedupSolrSet.contains(solrfield.getFieldname()) == false) {
 						dedupSolrSet.add(solrfield);
 					}
-					
-					
+
+
 				} else { // Multi valued SolrField
 					dedupSolrSet.add(solrfield); // Add to a set to avoid duplicates in multivalued fields
 				}
-				
+
 			}
 
 			// Add Set<Mabfield> (deduplicated mulitvalued fields) to a List<Mabfield> which we have to use as type for "mabfields" variable
 			// in Record object, because when getting MAB-Codes from XML file, "mabfields" variable should be able to contain duplicates.
 			dedupSolrList.addAll(dedupSolrSet);
 			Collections.sort(dedupSolrList); // Sort by fieldName (better readibility in Solr admin console)
-						
+
 			// Set variables of new record object:
 			newRecord.setMabfields(dedupSolrList);
 			newRecord.setRecordID(oldRecord.getRecordID());
 			newRecord.setIndexTimestamp(oldRecord.getIndexTimestamp());
-			
+
 			newListOfRecords.add(newRecord);
 		}
 
@@ -137,7 +137,7 @@ public class MatchingOperations {
 	 * @return						A list of matched fields for indexing to Solr.
 	 */
 	public List<Mabfield> matchField(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {		
-		
+
 		String mabFieldnameXml = mabField.getFieldname();
 		listOfMatchedFields = new ArrayList<Mabfield>();
 
@@ -152,18 +152,20 @@ public class MatchingOperations {
 				listOfRelevantMatchingObjects.add(matchingObject);
 			}
 		}
-		
-		
+
+
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
-			
+
 			//Mabfield newMabField = null;
 			String solrFieldname = matchingObject.getSolrFieldname();
 			HashMap<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
 			boolean hasRegex = matchingObject.hasRegex();
 			String regexValue = matchingObject.getRegexValue();
-			
+			boolean hasRegexStrict = matchingObject.hasRegexStrict();
+			String regexStrictValue = matchingObject.getRegexStrictValue();
+
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains()) {
-				
+
 				boolean isTranslateValue = false;
 				boolean isTranslateValueContains = false;
 				if (matchingObject.isTranslateValue()) {
@@ -171,17 +173,17 @@ public class MatchingOperations {
 				} else if (matchingObject.isTranslateValueContains()) {
 					isTranslateValueContains = true;
 				}
-				
+
 				HashMap<String, String> translateProperties = matchingObject.getTranslateProperties();
 				String defaultValue = matchingObject.getDefaultValue();
-				
+
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
 					String fromCharacter = valueToMatchWith.getValue().get(0);
 					String toCharacter = valueToMatchWith.getValue().get(1);
-					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, hasRegex, regexValue);
-					
+					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, hasRegex, regexValue, hasRegexStrict, regexStrictValue);
+
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
@@ -234,7 +236,7 @@ public class MatchingOperations {
 					}
 				}
 			} else {
-				
+
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
@@ -251,18 +253,24 @@ public class MatchingOperations {
 						if (!regexedMabFieldValue.trim().isEmpty()) {
 							mabFieldValue = regexedMabFieldValue.trim();
 						}
-						/**
-						* We could return null with the following "else" condition if the regex does not match.
-						* But then nothing would be written to the index. If we don't set mabFieldValue to null,
-						* at least the normal, non-regexed value of the field will be indexed.
-						
-						else {
+					}
+
+					// Use regex strict if user has defined one:
+					if (hasRegexStrict && regexStrictValue != null) {
+						Pattern pattern = java.util.regex.Pattern.compile(regexStrictValue); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcher = pattern.matcher(mabFieldValue);
+						String regexedStrictMabFieldValue = "";
+						while (matcher.find()) {
+							regexedStrictMabFieldValue = regexedStrictMabFieldValue.concat(matcher.group());
+						}
+						if (!regexedStrictMabFieldValue.trim().isEmpty()) {
+							mabFieldValue = regexedStrictMabFieldValue.trim();
+						} else {
+							// Return null ("strict" regex)
 							mabFieldValue = null;
 						}
-						
-						*/
 					}
-					
+
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
@@ -449,11 +457,11 @@ public class MatchingOperations {
 	 * @param toCount				int: Index of last character to match
 	 * @return						String containing the translated value
 	 */
-	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean hasRegex, String regexValue) {
+	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue) {
 		String translateValue = null;
 		String matchedValueXml = null;
 		String fieldValueXml = mabField.getFieldvalue();
-		
+
 		// Use regex if user has defined one:
 		if (hasRegex && regexValue != null) {
 			Pattern pattern = java.util.regex.Pattern.compile(regexValue); // Get everything between square brackets and the brackets themselve (we will remove them later)
@@ -465,16 +473,24 @@ public class MatchingOperations {
 			if (!regexedMabFieldValue.trim().isEmpty()) {
 				fieldValueXml = regexedMabFieldValue.trim();
 			}
-			/**
-			* We could return null with the following "else" condition if the regex does not match.
-			* But then nothing would be written to the index. If we don't set mabFieldValue to null,
-			* at least the normal, non-regexed value of the field will be indexed.
-			
-			else {
-				mabFieldValue = null;
+		}
+
+		// Use regex strict if user has defined one:
+		if (hasRegexStrict && regexStrictValue != null) {
+			Pattern pattern = java.util.regex.Pattern.compile(regexStrictValue); // Get everything between square brackets and the brackets themselve (we will remove them later)
+			Matcher matcher = pattern.matcher(fieldValueXml);
+			String regexedStrictMabFieldValue = "";
+			while (matcher.find()) {
+				regexedStrictMabFieldValue = regexedStrictMabFieldValue.concat(matcher.group());
 			}
-			
-			*/
+			if (!regexedStrictMabFieldValue.trim().isEmpty()) {
+				fieldValueXml = regexedStrictMabFieldValue.trim();
+			} else {
+				// Return null ("strict" regex):
+				fieldValueXml = null;
+			}
+
+
 		}
 
 		if (fromCount.equals("all") && toCount.equals("all")) {
@@ -490,7 +506,7 @@ public class MatchingOperations {
 				matchedValueXml = fieldValueXml.substring(intFromCount, fieldValueXml.length());
 			}
 		}
-		
+
 		if (matchedValueXml != null) {
 			for (Entry<String, String> translateProperty : translateProperties.entrySet()) {
 				if (isTranslateValue && matchedValueXml.equals(translateProperty.getKey())) {
@@ -500,7 +516,7 @@ public class MatchingOperations {
 				}
 			}
 		}
-		
+
 		// Set default value if user specified one and if no other translate value was found
 		if (translateValue == null && translateDefaultValue != null) {
 			translateValue = translateDefaultValue;
