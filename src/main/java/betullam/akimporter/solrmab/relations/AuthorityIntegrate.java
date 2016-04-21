@@ -296,6 +296,11 @@ public class AuthorityIntegrate {
 		// Define a query for getting all documents. We will do a filter query further down because of performance
 		query.setQuery("*:*");
 
+		TODO:
+		Define fields in AkImporter.properties that should be searched for the current entity, e. g.:
+			Person[author_GndNo_str,author2_GndNo_str,author_additional_GndNo_str_mv]
+			Corporation[corporateAuthorGndNo_str, corporateAuthor2GndNo_str_mv]
+		
 		// Create filter query string for ID query:
 		String filterQueryId = "author_GndNo_str:\""+authId+"\" || author2_GndNo_str:\""+authId+"\" || author_additional_GndNo_str_mv:\""+authId+"\" || corporateAuthorGndNo_str:\""+authId+"\" || corporateAuthor2GndNo_str_mv:\""+authId+"\" || subjectGndNo_str:\""+authId+"\" ";
 		for (Object gndId035Obj : gndIds035) {
