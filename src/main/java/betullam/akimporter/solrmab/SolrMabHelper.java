@@ -1,7 +1,7 @@
 /**
  * Helper class for indexing data to Solr.
  *  
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,7 +46,7 @@ public class SolrMabHelper {
 	private String timeStamp = null;
 	private int NO_OF_ROWS = 500;
 	private int INDEX_RATE = 500;
-	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+	private Collection<SolrInputDocument> docsForAtomicUpdates;
 
 	public SolrMabHelper() {}
 
@@ -54,8 +55,16 @@ public class SolrMabHelper {
 	}
 
 
-	public void dedupSolrMultivaluedField(HttpSolrServer solrServer, String solrFieldName, boolean print, boolean optimize) {
-		SolrDocumentList queryResults = this.getSolrDocsByFieldname(solrServer, solrFieldName, true, null);
+	/**
+	 * De-duplicate multivalued Solr fields with atomic updates.
+	 * @param solrServer		HttpSolrServer: Solr server incl. core containing the fields to de-duplicate
+	 * @param solrFieldNames	List<String>: Solr fields to de-duplicate
+	 * @param print				boolean: true if status messages should be printed, false otherwise.
+	 * @param optimize			boolean: true if Solr server should be optimized, false otherwise.
+	 */
+	public void dedupSolrMultivaluedField(HttpSolrServer solrServer, List<String> solrFieldNames, boolean print, boolean optimize) {
+		docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+		SolrDocumentList queryResults = this.getSolrDocsByFieldnames(solrServer, solrFieldNames, true, null);
 
 		// Get the number of documents that were found
 		long noOfDocs = queryResults.getNumFound();
@@ -65,8 +74,6 @@ public class SolrMabHelper {
 			// Clear query results. We don't need them anymore.
 			queryResults.clear();
 			queryResults = null;
-
-			this.print(print, "Deduplicating field " + solrFieldName + " in " + noOfDocs + " documents ... ");
 
 			// Calculate the number of solr result pages we need to iterate over
 			long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -78,23 +85,23 @@ public class SolrMabHelper {
 			for (long l = 0; l < wholePages; l++) {
 				boolean isFirstPage = (l == 0) ? true : false;
 
-				SolrDocumentList solrDocs = this.getSolrDocsByFieldname(solrServer, solrFieldName, isFirstPage, lastDocId);
+				SolrDocumentList solrDocs = this.getSolrDocsByFieldnames(solrServer, solrFieldNames, isFirstPage, lastDocId);
 
 				// Integrate the data of the authority records to the bibliographic records				
-				lastDocId = addDedupUpdateToSolr(solrServer, solrDocs, solrFieldName);
+				lastDocId = this.addDedupUpdateToSolr(solrServer, solrDocs, solrFieldNames, print);
 			}
 
 			// Add documents on the last page:
 			if (fractionPages != 0) {
 				boolean isFirstPage = (wholePages <= 0) ? true : false;
 
-				SolrDocumentList solrDocs = this.getSolrDocsByFieldname(solrServer, solrFieldName, isFirstPage, lastDocId);
+				SolrDocumentList solrDocs = this.getSolrDocsByFieldnames(solrServer, solrFieldNames, isFirstPage, lastDocId);
 
 				// If there is no whole page but only a fraction page, the fraction page is the first page, because it's the only one
-				addDedupUpdateToSolr(solrServer, solrDocs, solrFieldName);
+				this.addDedupUpdateToSolr(solrServer, solrDocs, solrFieldNames, print);
 			}
 
-			this.print(print, "Done deduplication.\n");
+			this.print(print, "\nDone deduplication.");
 
 			// Commit the changes
 			try {
@@ -112,13 +119,19 @@ public class SolrMabHelper {
 				queryResults = null;
 			}
 		}
-
-
 	}
 
 	
-	private String addDedupUpdateToSolr(HttpSolrServer solrServer, SolrDocumentList documents, String solrFieldName) {
-		
+	/**
+	 * Adding de-duplicated values for multivalued fields to Solr
+	 * @param solrServer		HttpSolrServer: Solr server incl. core containing the fields to de-duplicate
+	 * @param documents			SolrDocumentList: List of documents containing the fields to de-duplicate
+	 * @param solrFieldNames	List<String>: Solr fields to de-duplicate
+	 * @param print				boolean: true if status messages should be printed, false otherwise.
+	 * @return
+	 */
+	private String addDedupUpdateToSolr(HttpSolrServer solrServer, SolrDocumentList documents, List<String> solrFieldNames, boolean print) {
+
 		// Variables:
 		String returnValue = null;
 		int counter = 0;
@@ -136,30 +149,42 @@ public class SolrMabHelper {
 					for (SolrDocument document : documents) {
 						counter = counter + 1;
 						String id = document.getFieldValue("id").toString();
-						Collection<Object> fieldValues = document.getFieldValues(solrFieldName);
 
-						if (fieldValues.size() > 0) {
+						// Prepare Solr record for atomic update
+						SolrInputDocument updateRecord = null;
+						updateRecord = new SolrInputDocument();
+						updateRecord.setField("id", id);
 
-							Set<String> dedupValues = new HashSet<String>();
+						for (String solrFieldName : solrFieldNames) {
+							if (!solrFieldName.equals("id")) {
+								
+								Collection<Object> fieldValues = null;
+								if (document.getFieldValues(solrFieldName) != null) {
+									fieldValues = document.getFieldValues(solrFieldName);
+								}
 
-							for (Object fieldValue : fieldValues) {
-								dedupValues.add(fieldValue.toString());
+								if (fieldValues != null && fieldValues.size() > 0) {
+
+									Set<String> dedupValues = new HashSet<String>();
+
+									for (Object fieldValue : fieldValues) {
+										dedupValues.add(fieldValue.toString());
+									}
+
+									// Set values for atomic update
+									Map<String, Set<String>> updateField = new HashMap<String, Set<String>>();
+									updateField.put("set", dedupValues);
+									updateRecord.setField(solrFieldName, updateField);
+
+									if (updateRecord != null) {
+										this.docsForAtomicUpdates.add(updateRecord);
+									}
+								}
 							}
-
-							// Prepare Solr record for atomic update
-							SolrInputDocument updateRecord = null;
-							updateRecord = new SolrInputDocument();
-							updateRecord.setField("id", id);
-
-							// Set values for atomic update
-							Map<String, Set<String>> updateField = new HashMap<String, Set<String>>();
-							updateField.put("set", dedupValues);
-							updateRecord.setField(solrFieldName, updateField);
-
-							this.docsForAtomicUpdates.add(updateRecord);
-
-							System.out.println("Deduplicateing field " + solrFieldName + " of record id " + id + ".");
 						}
+
+						this.print(print, "Deduplicating fields of record " + id +"                                                               \r");
+
 
 						// Add documents from the class variable which was set before to Solr
 						if (!docsForAtomicUpdates.isEmpty()) {
@@ -175,7 +200,7 @@ public class SolrMabHelper {
 								this.docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 							}
 						}
-						
+
 						// If the last document of the solr result page is reached, build a new query so that we can iterate over the next result page:
 						if (id.equals(newLastDocId)) {
 							returnValue = id;
@@ -201,9 +226,7 @@ public class SolrMabHelper {
 	 * @param lastDocId			String: Document ID of the last processed Solr document
 	 * @return					SolrDocumentList: A result set of the query as SolrDocumentList
 	 */
-	private SolrDocumentList getSolrDocsByFieldname(HttpSolrServer solrServer, String solrFieldName, boolean isFirstPage, String lastDocId) {
-		//SolrDocumentList documents = null;
-		//Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+	private SolrDocumentList getSolrDocsByFieldnames(HttpSolrServer solrServer, List<String> solrFieldNames, boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
 		SolrDocumentList queryResult = null;
@@ -220,25 +243,36 @@ public class SolrMabHelper {
 		// Define a query for getting all documents. We will do a filter query further down because of performance
 		query.setQuery("*:*");
 
+		// Create query string:
+		String queryString = "";
+		for (String solrFieldName : solrFieldNames) {
+			queryString += solrFieldName + ":* || "; // Join fields with the "OR" query operator
+		}
+		queryString = queryString.trim();
+		queryString = queryString.replaceFirst("(\\|\\|)$", "").trim(); // Remove the last "OR" query operator
+
+		
 		// Filter all records that were indexed with the current import process if applicable to avoid overhead.
 		if (this.timeStamp != null) {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries(solrFieldName+":*", "indexTimestamp_str:"+this.timeStamp, "id:*");
+				query.setFilterQueries(queryString.trim(), "indexTimestamp_str:"+this.timeStamp, "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries(solrFieldName+":*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries(queryString.trim(), "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
 			}
 		} else {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries(solrFieldName+":*", "id:*");
+				query.setFilterQueries(queryString.trim(), "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries(solrFieldName+":*", "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries(queryString.trim(), "id:[" + lastDocId + " TO *]");
 			}
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", solrFieldName);
+		solrFieldNames.add("id");
+		String[] arrFieldsToReturn = solrFieldNames.toArray(new String[0]);
+		query.setFields(arrFieldsToReturn);
 
 		try {
 			// Execute query and get results
@@ -248,61 +282,6 @@ public class SolrMabHelper {
 		}
 
 		return queryResult;
-
-		/*
-		try {
-			SolrDocumentList resultList = solrServer.query(query).getResults();
-			documents = (resultList.getNumFound() > 0 && resultList != null) ? resultList : null; // Get records
-
-			if (documents != null) {
-				for (SolrDocument document : documents) {
-					Collection<Object> values = document.getFieldValues(solrFieldName);
-					if (values.size() > 0) {
-						String id = document.getFieldValue("id").toString();
-						Set<String> dedupValues = new HashSet<String>();
-
-						for (Object value : values) {
-							dedupValues.add(value.toString());
-						}
-
-						// Prepare Solr record for atomic update:
-						SolrInputDocument updateRecord = null;
-						updateRecord = new SolrInputDocument();
-						updateRecord.setField("id", id);
-
-						// Set values for atomic update of parent record:
-						Map<String, Set<String>> updateField = new HashMap<String, Set<String>>();
-						updateField.put("set", dedupValues);
-						updateRecord.setField(solrFieldName, updateField);
-
-						docsForAtomicUpdates.add(updateRecord);
-
-						System.out.println("Dedup field " + solrFieldName + " of record id " + id);
-					}
-				}
-			}
-
-			if (!docsForAtomicUpdates.isEmpty()) {
-				try {
-					solrServer.add(docsForAtomicUpdates); // Add the collection of documents to Solr
-					solrServer.commit(); // Commit
-					if (optimize) {
-						solrServer.optimize();
-					}
-				} catch (SolrServerException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				} finally {
-					docsForAtomicUpdates.clear();
-					docsForAtomicUpdates = null;
-				}
-			}
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		}
-		 */
-
 	}
 
 	/**

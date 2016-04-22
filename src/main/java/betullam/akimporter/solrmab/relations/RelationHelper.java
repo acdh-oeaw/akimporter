@@ -314,7 +314,8 @@ public class RelationHelper {
 				query.setFilterQueries("entity_str:\""+entity+"\"", "existsInBiblio_str:true", "id:[" + lastDocId + " TO *]");
 			}
 		}
-
+		
+		
 		// Set fields that should be given back from the query
 		query.setFields("id", "gndId035_str_mv", "heading", "heading_additions_txt_mv", "use_for", "use_for_additions_txt_mv", "other_additions_txt_mv");
 
