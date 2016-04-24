@@ -26,9 +26,7 @@
 package main.java.betullam.akimporter.main;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
