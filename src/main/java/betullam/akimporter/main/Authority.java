@@ -71,8 +71,6 @@ public class Authority {
 		this.pathsToAuthFiles = this.pathToAuthFile.split(",");
 		this.useDefaultAuthProperties = useDefaultAuthProperties;
 		if (this.useDefaultAuthProperties) {
-			//this.pathToAuthProperties = "/betullam/akimporter/resources/authority.properties";
-			//this.pathToTranslationFiles = "/betullam/akimporter/resources";
 			this.pathToAuthProperties = "/authority.properties";
 			this.pathToTranslationFiles = "/";
 		} else {
@@ -93,6 +91,7 @@ public class Authority {
 		this.optimize = optimize;
 	}
 
+	
 	/**
 	 * Starting the index process for authority records.
 	 * If only the flag of existance should be set, the data itself will not be indexed.
@@ -107,9 +106,6 @@ public class Authority {
 		}
 
 		if (this.flagOnly) {
-			// TEST DEDUP - BEGIN
-			//this.smHelper.dedupSolrMultivaluedField(solrServerAuth, "gndId035_str_mv", true, false); // Dedup Solr field
-			// TEST DEDUP - END
 			
 			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
@@ -138,10 +134,6 @@ public class Authority {
 
 			if(isIndexingSuccessful) {
 				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-				
-				// TEST DEDUP - BEGIN
-				//this.smHelper.dedupSolrMultivaluedField(solrServerAuth, "gndId035_str_mv", true, false); // Dedup Solr field
-				// TEST DEDUP - END
 				
 				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
 				af.setFlagOfExistance();
@@ -187,16 +179,6 @@ public class Authority {
 			AuthorityIntegrate ai = new AuthorityIntegrate(solrServerBiblio, solrServerAuth, null, print);
 			ai.integrateAuthorityRecords(entity);
 			
-			// De-duplicate authority fields in biblio records:
-			List<String> fieldsForDedup = new ArrayList<String>();
-			fieldsForDedup.add("authUseForAdditionsPerson_txt_mv");
-			fieldsForDedup.add("authUseForPerson_txt_mv");
-			fieldsForDedup.add("authHeadingAdditionsPerson_txt_mv");
-			fieldsForDedup.add("authHeadingPerson_txt_mv");
-			fieldsForDedup.add("authOtherAdditionsPerson_txt_mv");
-			this.smHelper.dedupSolrMultivaluedField(solrServerBiblio, fieldsForDedup, true, false);
-			
-			
 			this.smHelper.print(this.print, "\nDone integrating authority records to bibliographic records.");
 			returnValue = true;
 		} else {
@@ -229,16 +211,6 @@ public class Authority {
 				// Integrate:
 				AuthorityIntegrate ai = new AuthorityIntegrate(solrServerBiblio, solrServerAuth, null, print);
 				ai.integrateAuthorityRecords(entity);
-				
-				// De-duplicate authority fields in biblio records:
-				List<String> fieldsForDedup = new ArrayList<String>();
-				fieldsForDedup.add("authUseForAdditionsPerson_txt_mv");
-				fieldsForDedup.add("authUseForPerson_txt_mv");
-				fieldsForDedup.add("authHeadingAdditionsPerson_txt_mv");
-				fieldsForDedup.add("authHeadingPerson_txt_mv");
-				fieldsForDedup.add("authOtherAdditionsPerson_txt_mv");
-				this.smHelper.dedupSolrMultivaluedField(solrServerBiblio, fieldsForDedup, true, false);
-				
 				
 				this.smHelper.print(this.print, "\nDone indexing and integrating authority records to bibliographic records.");
 				

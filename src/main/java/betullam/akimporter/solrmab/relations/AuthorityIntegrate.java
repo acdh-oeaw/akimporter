@@ -30,8 +30,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,14 +48,15 @@ import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 
 public class AuthorityIntegrate {
 
+
 	private RelationHelper relationHelper;
 	private SolrMabHelper smHelper = new SolrMabHelper();
 	private HttpSolrServer solrServerBiblio;
+	private HttpSolrServer solrServerAuth;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private boolean print = false;
 	private int NO_OF_ROWS = 500;
 	private int INDEX_RATE = 500;
-	private String timeStamp = null;
 
 	/**
 	 * Constructor for setting some variables.
@@ -65,6 +68,7 @@ public class AuthorityIntegrate {
 	 */
 	public AuthorityIntegrate(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean print) {
 		this.solrServerBiblio = solrServerBiblio;
+		this.solrServerAuth = solrServerAuthority;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServerBiblio, solrServerAuthority, timeStamp);
 	}
@@ -90,7 +94,9 @@ public class AuthorityIntegrate {
 
 			docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			String currentEntity = ent.trim();
-			SolrDocumentList queryResults = this.relationHelper.getAuthorityRecords(currentEntity, true, null);
+			
+			// Get bibliographic records that uses authority IDs
+			SolrDocumentList queryResults = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, true, null);
 
 			// Get the number of documents that were found
 			long noOfDocs = queryResults.getNumFound();
@@ -101,7 +107,7 @@ public class AuthorityIntegrate {
 				queryResults.clear();
 				queryResults = null;
 
-				this.smHelper.print(this.print, "\nGetting " + noOfDocs + " relevant " + ent + " authority records ... \n");
+				this.smHelper.print(this.print, "\nGetting " + noOfDocs + " records with " + ent + " GND IDs ... \n");
 
 				// Calculate the number of solr result pages we need to iterate over
 				long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -113,26 +119,28 @@ public class AuthorityIntegrate {
 				for (long l = 0; l < wholePages; l++) {
 					boolean isFirstPage = (l == 0) ? true : false;
 
-					SolrDocumentList authorityRecords = this.relationHelper.getAuthorityRecords(currentEntity, isFirstPage, lastDocId);
+					// Get bibliographic records that uses authority IDs
+					SolrDocumentList biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
 
 					// Integrate the data of the authority records to the bibliographic records				
-					lastDocId = addAuthInfoToBiblio(authorityRecords, currentEntity, currentEntitySolrFields);
+					lastDocId = addAuthInfoToBiblio(biblioRecords, currentEntity, currentEntitySolrFields);
 				}
 
 				// Add documents on the last page:
 				if (fractionPages != 0) {
 					boolean isFirstPage = (wholePages <= 0) ? true : false;
 
-					SolrDocumentList authorityRecords = this.relationHelper.getAuthorityRecords(currentEntity, isFirstPage, lastDocId);
+					// Get bibliographic records that uses authority IDs
+					SolrDocumentList biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
 
 					// If there is no whole page but only a fraction page, the fraction page is the first page, because it's the only one
-					addAuthInfoToBiblio(authorityRecords, currentEntity, currentEntitySolrFields);
+					addAuthInfoToBiblio(biblioRecords, currentEntity, currentEntitySolrFields);
 				}
 
-				this.smHelper.print(this.print, "\nDone\n");
+				this.smHelper.print(this.print, "\nDone");
 
-				// Commit the changes
 				try {
+					// Commit the changes to Solr
 					this.solrServerBiblio.commit();
 				} catch (SolrServerException e) {
 					e.printStackTrace();
@@ -150,22 +158,25 @@ public class AuthorityIntegrate {
 
 
 	/**
-	 * This function actually gets the bibliographic records to which the authority data should be integrated
-	 * and sets the atomic update record for Solr.
+	 * This function actually iterates over bibliographic records, gets the authority ID that is used in them and, based on these IDs,
+	 * queries the authority data that should be integrated to them. Then it sets the atomic update record for Solr.
 	 * 
-	 * @param authorityRecords	SolrDocumentList of authority records of a given entity
-	 * @param entity			String indicating the authority entity to integrate (e. g. Person, Congress, Corporation, etc.)
-	 * @return					String: doc ID of the last processed Solr document
+	 * @param biblioRecords				SolrDocumentList of bibliographic records to which the authority data should be integrated
+	 * @param entity					String indicating the authority entity to integrate (e. g. Person, Congress, Corporation, etc.)
+	 * @param currentEntitySolrFields	List<String> of the Solr fields that should be queried
+	 * @return							String: doc ID of the last processed Solr document
 	 */
-	private String addAuthInfoToBiblio(SolrDocumentList authorityRecords, String entity, List<String> currentEntitySolrFields) {
-		// Variable for return value:
+	private String addAuthInfoToBiblio(SolrDocumentList biblioRecords, String entity, List<String> currentEntitySolrFields) {
+		// Variable for return value
 		String returnValue = null;
-		int noOfAuthRecords = authorityRecords.size();
+
+		// Variables for counting
+		int noOfBibRecords = biblioRecords.size();
 		int counter = 0;
-		long noOfFoundAuthRecords = authorityRecords.getNumFound();
+		long noOfFoundBibRecords = biblioRecords.getNumFound();
 
 
-		if (noOfAuthRecords > 0) {
+		if (noOfBibRecords > 0) {
 
 			// Setting field names according to entity
 			String fieldNameHeading = "authHeading"+entity+"_txt_mv";
@@ -174,205 +185,187 @@ public class AuthorityIntegrate {
 			String fieldNameUseForAdditions = "authUseForAdditions"+entity+"_txt_mv";
 			String fieldNameOtherAdditions = "authOtherAdditions"+entity+"_txt_mv";
 
-			// Array with the fieldNames for setFields in Solr query
-			String[] fieldsToReturnFromBiblio = {"id", fieldNameHeading, fieldNameHeadingAdditions, fieldNameUseFor, fieldNameUseForAdditions, fieldNameOtherAdditions};
+			String newLastDocId = biblioRecords.get(biblioRecords.size()-1).getFieldValue("id").toString();
 
-			String newLastDocId = authorityRecords.get(authorityRecords.size()-1).getFieldValue("id").toString();
-			for(SolrDocument authorityRecord : authorityRecords) {
+			for(SolrDocument biblioRecord : biblioRecords) {
+				String recordId = biblioRecord.getFieldValue("id").toString();
 				counter = counter + 1;
+				
+				// Get fieldnames of fields with GND IDs
+				Collection<String> fieldNames = biblioRecord.getFieldNames();
 
-				String authId = authorityRecord.getFieldValue("id").toString();
-				Collection<Object> gndId035 = authorityRecord.getFieldValues("gndId035_str_mv");
-				String authHeading = authorityRecord.getFieldValue("heading").toString();
-				Collection<Object> authHeadingAdditions = (authorityRecord.getFieldValues("heading_additions_txt_mv") != null) ? authorityRecord.getFieldValues("heading_additions_txt_mv") : new ArrayList<Object>();
-				Collection<Object> authUseFor = (authorityRecord.getFieldValues("use_for") != null) ? authorityRecord.getFieldValues("use_for") : new ArrayList<Object>();
-				Collection<Object> authUseForAdditions = (authorityRecord.getFieldValues("use_for_additions_txt_mv") != null) ? authorityRecord.getFieldValues("use_for_additions_txt_mv") : new ArrayList<Object>();
-				Collection<Object> authOtherAdditions = (authorityRecord.getFieldValues("other_additions_txt_mv") != null) ? authorityRecord.getFieldValues("other_additions_txt_mv") : new ArrayList<Object>();
+				// Set all GND-IDs of the bibliographic record to a Set<String>
+				Set<String> recordGndIds = new HashSet<String>();
+				for (String fieldName : fieldNames) {
+					if (!fieldName.equals("id")) {
+						Collection<Object> gndIds = biblioRecord.getFieldValues(fieldName);
+						for (Object gndId : gndIds) {
+							if (gndId != null) {
+								recordGndIds.add(gndId.toString());
+							}
+						}
+					}
+				}
 
+				// Get all authority information for the given GND IDs that the bibliographic record contains
+				SolrDocumentList authRecordsForIntegration = getGndRecords(entity, recordGndIds);
 
-				SolrDocumentList bibRecordsForIntegration = getBiblioRecordsByAuthId(authId, gndId035, fieldsToReturnFromBiblio, currentEntitySolrFields);
+				if (authRecordsForIntegration != null && !authRecordsForIntegration.isEmpty()) {
+					
+					Set<String> headings = new HashSet<String>();
+					Set<String> headingsAdditions = new HashSet<String>();
+					Set<String> useFors = new HashSet<String>();
+					Set<String> useForsAdditions = new HashSet<String>();
+					Set<String> othersAdditions = new HashSet<String>();
 
-				for(SolrDocument bibRecord : bibRecordsForIntegration) {
-					// Get values from bibliographic record
-					//Collection<Object> bibHeadings = (bibRecord.getFieldValues(fieldNameHeading) != null) ? bibRecord.getFieldValues(fieldNameHeading) : new ArrayList<Object>();
-					//Collection<Object> bibHeadingAdditions = (bibRecord.getFieldValues(fieldNameHeadingAdditions) != null) ? bibRecord.getFieldValues(fieldNameHeadingAdditions) : new ArrayList<Object>();
-					//Collection<Object> bibUseFor = (bibRecord.getFieldValues(fieldNameUseFor) != null) ? bibRecord.getFieldValues(fieldNameUseFor) : new ArrayList<Object>();
-					//Collection<Object> bibUseForAdditions = (bibRecord.getFieldValues(fieldNameUseForAdditions) != null) ? bibRecord.getFieldValues(fieldNameUseForAdditions) : new ArrayList<Object>();
-					//Collection<Object> bibOtherAdditions = (bibRecord.getFieldValues(fieldNameOtherAdditions) != null) ? bibRecord.getFieldValues(fieldNameOtherAdditions) : new ArrayList<Object>();
+					// Get information of each authority record and add it to a Set<String> to avoid duplicates
+					for(SolrDocument authRecord : authRecordsForIntegration) {
+
+						String authHeading = (authRecord.getFieldValue("heading") != null) ? authRecord.getFieldValue("heading").toString() : null;
+						Collection<Object> authHeadingAdditions = (authRecord.getFieldValues("heading_additions_txt_mv") != null) ? authRecord.getFieldValues("heading_additions_txt_mv") : null;
+						Collection<Object> authUseFors = (authRecord.getFieldValues("use_for") != null) ? authRecord.getFieldValues("use_for") : null;
+						Collection<Object> authUseForAdditions = (authRecord.getFieldValues("use_for_additions_txt_mv") != null) ? authRecord.getFieldValues("use_for_additions_txt_mv") : null;
+						Collection<Object> authOtherAdditions= (authRecord.getFieldValues("other_additions_txt_mv") != null) ? authRecord.getFieldValues("other_additions_txt_mv") : null;
+
+						if (authHeading != null) {
+							headings.add(authHeading);
+						}
+						if (authHeadingAdditions != null && !authHeadingAdditions.isEmpty()) {
+							for (Object authHeadingAddition : authHeadingAdditions) {
+								headingsAdditions.add(authHeadingAddition.toString());
+							}
+						}
+						if (authUseFors != null && !authUseFors.isEmpty()) {
+							for (Object authUseFor : authUseFors) {
+								useFors.add(authUseFor.toString());
+							}
+						}
+						if (authUseForAdditions != null && !authUseForAdditions.isEmpty()) {
+							for (Object authUseForAddition : authUseForAdditions) {
+								useForsAdditions.add(authUseForAddition.toString());
+							}
+						}
+						if (authOtherAdditions != null && !authOtherAdditions.isEmpty()) {
+							for (Object authOtherAddition : authOtherAdditions) {
+								othersAdditions.add(authOtherAddition.toString());
+							}
+						}					
+					}
 
 					// SolrInputDocument for atomic update:
 					SolrInputDocument bibRecordAtomic = null;
-					
+
 					// Prepare bibliographic record for atomic update:
-					String bibId = bibRecord.getFieldValue("id").toString();
 					bibRecordAtomic = new SolrInputDocument();
-					bibRecordAtomic.setField("id", bibId);
+					bibRecordAtomic.setField("id", recordId);
 
-					// Heading
-					Map<String, String> headingField = new HashMap<String, String>();
-					headingField.put("add", authHeading);
-					bibRecordAtomic.setField(fieldNameHeading, headingField);
+					// Headings
+					if (!headings.isEmpty()) {
+						Map<String, Set<String>> headingField = new HashMap<String, Set<String>>();
+						headingField.put("set", headings);
+						bibRecordAtomic.setField(fieldNameHeading, headingField);
+					}
 
 					// Heading additions
-					Map<String, Collection<Object>> headingAdditionsField = new HashMap<String, Collection<Object>>();
-					headingAdditionsField.put("add", authHeadingAdditions);
-					bibRecordAtomic.setField(fieldNameHeadingAdditions, headingAdditionsField);
-					
+					if (!headingsAdditions.isEmpty()) {
+						Map<String, Set<String>> headingAdditionsField = new HashMap<String, Set<String>>();
+						headingAdditionsField.put("set", headingsAdditions);
+						bibRecordAtomic.setField(fieldNameHeadingAdditions, headingAdditionsField);
+					}
+
 					// Use-for
-					Map<String, Collection<Object>> useForField = new HashMap<String, Collection<Object>>();
-					useForField.put("add", authUseFor);
-					bibRecordAtomic.setField(fieldNameUseFor, useForField);
+					if (!useFors.isEmpty()) {
+						Map<String, Set<String>> useForField = new HashMap<String, Set<String>>();
+						useForField.put("set", useFors);
+						bibRecordAtomic.setField(fieldNameUseFor, useForField);
+					}
 
 					// Use-for additions
-					Map<String, Collection<Object>> useForAdditionsField = new HashMap<String, Collection<Object>>();
-					useForAdditionsField.put("add", authUseForAdditions);
-					bibRecordAtomic.setField(fieldNameUseForAdditions, useForAdditionsField);
+					if (!useForsAdditions.isEmpty()) {
+						Map<String, Set<String>> useForAdditionsField = new HashMap<String, Set<String>>();
+						useForAdditionsField.put("set", useForsAdditions);
+						bibRecordAtomic.setField(fieldNameUseForAdditions, useForAdditionsField);
+					}
 
 					// Other additions
-					Map<String, Collection<Object>> otherAdditionsField = new HashMap<String, Collection<Object>>();
-					otherAdditionsField.put("add", authOtherAdditions);
-					bibRecordAtomic.setField(fieldNameOtherAdditions, otherAdditionsField);
-					
-					// Add record for atomic update only if there is something to index. This is to avoid overhead.
-					if (!authHeading.isEmpty() || !authHeadingAdditions.isEmpty() || !authUseFor.isEmpty() || !authUseForAdditions.isEmpty() || !authOtherAdditions.isEmpty()) {
-						this.docsForAtomicUpdates.add(bibRecordAtomic);
+					if (!othersAdditions.isEmpty()) {
+						Map<String, Set<String>> otherAdditionsField = new HashMap<String, Set<String>>();
+						otherAdditionsField.put("set", othersAdditions);
+						bibRecordAtomic.setField(fieldNameOtherAdditions, otherAdditionsField);
 					}
-					
-					/*
-					// Heading
-					if (!bibHeadings.contains(authHeading)) {bibHeadings.add(authHeading);} // Add heading only if it does not already exist. This is to avoid duplicates.
-					Map<String, Collection<Object>> headingField = new HashMap<String, Collection<Object>>();
-					headingField.put("add", bibHeadings);
-					bibRecordAtomic.setField(fieldNameHeading, headingField);
 
-					// Heading additions
-					authHeadingAdditions.removeAll(bibHeadingAdditions); // Remove field from authority values that already exists in biblio values (getting distinct values)
-					bibHeadingAdditions.addAll(authHeadingAdditions); // Add distinct authority values to biblio values 
-					Map<String, Collection<Object>> headingAdditionsField = new HashMap<String, Collection<Object>>();
-					headingAdditionsField.put("add", bibHeadingAdditions);
-					bibRecordAtomic.setField(fieldNameHeadingAdditions, headingAdditionsField);
-					
-					// Use-for
-					authUseFor.removeAll(bibUseFor); // Remove field from authority values that already exists in biblio values (getting distinct values)
-					bibUseFor.addAll(authUseFor); // Add distinct authority values to biblio values 
-					Map<String, Collection<Object>> useForField = new HashMap<String, Collection<Object>>();
-					useForField.put("add", bibUseFor);
-					bibRecordAtomic.setField(fieldNameUseFor, useForField);
-
-					// Use-for additions
-					authUseForAdditions.removeAll(bibUseForAdditions); // Remove field from authority values that already exists in biblio values (getting distinct values)
-					bibUseForAdditions.addAll(authUseForAdditions); // Add distinct authority values to biblio values 
-					Map<String, Collection<Object>> useForAdditionsField = new HashMap<String, Collection<Object>>();
-					useForAdditionsField.put("add", bibUseForAdditions);
-					bibRecordAtomic.setField(fieldNameUseForAdditions, useForAdditionsField);
-
-					// Other additions
-					authOtherAdditions.removeAll(bibOtherAdditions); // Remove field from authority values that already exists in biblio values (getting distinct values)
-					bibOtherAdditions.addAll(authOtherAdditions); // Add distinct authority values to biblio values 
-					Map<String, Collection<Object>> otherAdditionsField = new HashMap<String, Collection<Object>>();
-					otherAdditionsField.put("add", bibOtherAdditions);
-					bibRecordAtomic.setField(fieldNameOtherAdditions, otherAdditionsField);
-					
 					// Add record for atomic update only if there is something to index. This is to avoid overhead.
-					if (!bibHeadings.isEmpty() || !bibHeadingAdditions.isEmpty() || !bibUseFor.isEmpty() || !bibUseForAdditions.isEmpty() || !bibOtherAdditions.isEmpty()) {
+					if (!headings.isEmpty() || !headingsAdditions.isEmpty() || !useFors.isEmpty() || !useForsAdditions.isEmpty() || !othersAdditions.isEmpty()) {
 						this.docsForAtomicUpdates.add(bibRecordAtomic);
-					}
-					*/
-					
-					this.smHelper.print(this.print, "Integrating authority data to bibliographic record " + bibId + ". Records to process: " + noOfFoundAuthRecords + "                                   \r");
-
-					
-
-
-					// Add documents from the class variable which was set before to Solr
-					if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr
-						this.relationHelper.indexDocuments(docsForAtomicUpdates, solrServerBiblio);
-						this.docsForAtomicUpdates.clear();
-						this.docsForAtomicUpdates = null;
-						this.docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
-
-					} else if (counter >= noOfAuthRecords) { // The remaining documents (if division with NO_OF_ROWS)
-						this.relationHelper.indexDocuments(docsForAtomicUpdates, solrServerBiblio);
-						this.docsForAtomicUpdates.clear();
-						this.docsForAtomicUpdates = null;
-						this.docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 					}
 				}
+				
+				this.smHelper.print(this.print, "Integrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords + "                                   \r");
 
+				// Add documents from the class variable which was set before to Solr
+				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr
+					this.relationHelper.indexDocuments(docsForAtomicUpdates, solrServerBiblio);
+					this.docsForAtomicUpdates.clear();
+					this.docsForAtomicUpdates = null;
+					this.docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
+
+				} else if (counter >= noOfBibRecords) { // The remaining documents (if division with NO_OF_ROWS)
+					this.relationHelper.indexDocuments(docsForAtomicUpdates, solrServerBiblio);
+					this.docsForAtomicUpdates.clear();
+					this.docsForAtomicUpdates = null;
+					this.docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
+				}
+				
 				// If the last document of the solr result page is reached, build a new query so that we can iterate over the next result page:
-				if (authId.equals(newLastDocId)) {
-					returnValue = authId;
+				if (recordId.equals(newLastDocId)) {
+					returnValue = recordId;
 				}
-
 			}
 		}
-
 
 		return returnValue;
 	}
 
 
-
 	/**
-	 * Gets all bibliographic records containing a given authority ID.
+	 * Getting GND authority records by multiple IDs that are used in MAB fields 001 or 035
 	 * 
-	 * @param authId	String indicating the authority ID to search for in the bibliographic records
-	 * @return			SolrDocumentList with bibliographic records containing the given authority ID
+	 * @param entity	String representing the entity of GND records to query
+	 * @param gndIds	List<String> representing IDs of GND records
+	 * @return			SolrDocumentList containing the query result with GND records
 	 */
-	private SolrDocumentList getBiblioRecordsByAuthId(String authId, Collection<Object> gndIds035, String[] fieldsToReturn, List<String> currentEntitySolrFields) {
-		// Set up variable
-		SolrDocumentList queryResult = null;
+	private SolrDocumentList getGndRecords(String entity, Set<String> gndIds) {
+		SolrDocumentList gndRecords = null;
 
-		// New Solr query
-		SolrQuery query = new SolrQuery();
-
-		// Set no of rows
-		// Setting to a high value. Ther should never be such a high number of results
-		// that we could get into trouble. TODO: But as a security measure, an appropriate
-		// deep paging function could be introduced at a later date.
-		query.setRows(50000);
-
-		// Add sorting
-		query.addSort(SolrQuery.SortClause.asc("id"));
-
-		// Define a query for getting all documents. We will do a filter query further down because of performance
-		query.setQuery("*:*");
-
-		// Create query string:
+		// Create query string
 		String queryString = "";
-		for (String currentEntitySolrField : currentEntitySolrFields) {
-			queryString += currentEntitySolrField + ":\""+authId+"\" || "; // Join fields with the "OR" query operator
+		for (String gndId : gndIds) {
+			queryString += "id:\""+gndId+"\" || gndId035_str_mv:\""+gndId+"\" || "; // Join fields with the "OR" query operator
 		}
-
-		for (String currentEntitySolrField : currentEntitySolrFields) {
-			for (Object gndId035Obj : gndIds035) {
-				if (gndId035Obj != null) {
-					String gndId035 = gndId035Obj.toString();
-					queryString += currentEntitySolrField + ":\""+gndId035+"\" || "; // Join fields with the "OR" query operator;
-				}
-			}
-		}
-
 		queryString = queryString.trim();
 		queryString = queryString.replaceFirst("(\\|\\|)$", "").trim(); // Remove the last "OR" query operator
 
-		if (this.timeStamp != null) {
-			query.setFilterQueries(queryString.trim(), "indexTimestamp_str:"+this.timeStamp, "id:*");
-		} else {
-			query.setFilterQueries(queryString.trim(), "id:*");
-		}
-		
+
+		// New Solr query
+		SolrQuery queryGndRecords = new SolrQuery();
+
+		// Define a query (empty query for all - we will use a filter query below)
+		queryGndRecords.setQuery("*:*");
+
+		// Set a filter query
+		queryGndRecords.setFilterQueries(queryString, "entity_str:\"" + entity + "\"", "existsInBiblio_str:true");
+
 		// Set fields that should be given back from the query
-		query.setFields(fieldsToReturn);
+		queryGndRecords.setFields("id", "heading", "heading_additions_txt_mv", "use_for", "use_for_additions_txt_mv", "other_additions_txt_mv");
+
 
 		try {
-			// Execute query and get results
-			queryResult = this.solrServerBiblio.query(query).getResults();
+			SolrDocumentList resultList = this.solrServerAuth.query(queryGndRecords).getResults();
+			gndRecords = (resultList.getNumFound() > 0 && resultList != null) ? resultList : null; // Get GND records
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
-		return queryResult;
 
-
+		return gndRecords;
 	}
 }

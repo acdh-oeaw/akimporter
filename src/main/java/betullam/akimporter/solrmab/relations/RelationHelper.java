@@ -228,10 +228,78 @@ public class RelationHelper {
 
 
 	/**
-	 * Getting an authority record (GND) by it's ID (fiels 001).
+	 * Getting all records that contains authority data (a GND-No) in the given Solr fields.
 	 * 
-	 * @param gndId		String representing an ID of an authority record.
-	 * @return			SolrDocument containing the authority record.
+	 * @param solrFields	List<String> of Solr fields that must be present in the document for that it is included to the query result.
+	 * @param isFirstPage	True if first page of Solr results
+	 * @param lastDocId		Doc Id of the last processed Solr document
+	 * @return				SolrDocumentList object
+	 */
+	public SolrDocumentList getRecordsWithGndByFields(List<String> solrFields, boolean isFirstPage, String lastDocId) {
+		// Set up variable
+		SolrDocumentList queryResult = null;
+
+		// New Solr query
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting (more efficient for deep paging)
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance
+		query.setQuery("*:*");
+
+
+		// Create query string:
+		String queryString = "";
+		for (String solrField : solrFields) {
+			queryString += solrField + ":* || "; // Join fields with the "OR" query operator
+		}
+		queryString = queryString.trim();
+		queryString = queryString.replaceFirst("(\\|\\|)$", "").trim(); // Remove the last "OR" query operator
+
+
+		// Filter all records that were indexed with the current import process
+		if (this.timeStamp != null) {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries(queryString, "indexTimestamp_str:"+this.timeStamp, "id:*");	
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries(queryString, "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+			}
+		} else {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries(queryString, "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries(queryString, "id:[" + lastDocId + " TO *]");
+			}
+		}
+
+		// Set fields that should be given back from the query
+		List<String> solrFieldsToReturn = new ArrayList<>(solrFields); // Copy immutable List<String> to a mutable List<String>
+		solrFieldsToReturn.add("id");
+		String[] returnSolrFields = solrFieldsToReturn.toArray(new String[0]);
+		query.setFields(returnSolrFields);
+
+		try {
+			// Execute query and get results
+			queryResult = this.solrServerBiblio.query(query).getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+		
+		return queryResult;
+	}
+
+
+	/**
+	 * Getting a GND authority record by an ID that is used in it's MAB field 001
+	 * 
+	 * @param gndId		String representing an ID of a GND record
+	 * @return			SolrDocument containing the query result with the GND record
 	 */
 	public SolrDocument getGndRecordById(String gndId) {
 		SolrDocument gndRecord = null;
@@ -249,14 +317,14 @@ public class RelationHelper {
 
 		return gndRecord;
 	}
-	
+
 	/**
-	 * Getting an authority record (GND) by it's IDs (fields 001 and 035).
+	 * Getting GND authority records by an ID that is used in it's MAB fields 001 or 035
 	 * 
-	 * @param gndId		String representing an ID of an authority record.
-	 * @return			SolrDocument containing the authority record.
+	 * @param gndId		String representing an ID of a GND record
+	 * @return			SolrDocumentList containing the query result with GND records
 	 */
-	public SolrDocumentList getGndRecordByIds(String gndId) {
+	public SolrDocumentList getGndRecordsById(String gndId) {
 		SolrDocumentList gndRecords = null;
 
 		SolrQuery queryGndRecord = new SolrQuery(); // New Solr query
@@ -272,6 +340,8 @@ public class RelationHelper {
 
 		return gndRecords;
 	}
+	
+	
 
 	/**
 	 * Getting all authority records of a given entity (e. g. Person) and with the flag of existance
@@ -314,8 +384,8 @@ public class RelationHelper {
 				query.setFilterQueries("entity_str:\""+entity+"\"", "existsInBiblio_str:true", "id:[" + lastDocId + " TO *]");
 			}
 		}
-		
-		
+
+
 		// Set fields that should be given back from the query
 		query.setFields("id", "gndId035_str_mv", "heading", "heading_additions_txt_mv", "use_for", "use_for_additions_txt_mv", "other_additions_txt_mv");
 
@@ -327,7 +397,7 @@ public class RelationHelper {
 		}
 		return queryResult;
 	}
-	
+
 
 
 

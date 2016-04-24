@@ -71,6 +71,7 @@ public class AuthorityFlag {
 		this.relationHelper = new RelationHelper(solrServerBiblio, solrServerAuthority, timeStamp);
 	}
 
+	
 	/**
 	 * Starting the process of setting the "flag of existence"
 	 */
@@ -120,9 +121,9 @@ public class AuthorityFlag {
 
 			// Delete wrong authority records (see explanation at method):
 			deleteAuhtorityWithoutHeading();
-
-			// Commit the changes
+			
 			try {
+				// Commit the changes
 				this.solrServerAuthority.commit();
 			} catch (SolrServerException e) {
 				e.printStackTrace();
@@ -141,9 +142,7 @@ public class AuthorityFlag {
 
 	/**
 	 * Set documents for atomic Solr update and index them.
-	 * USES FIELDS 001 AND 053
 	 */
-
 	private void addFlagToAuthorityRecord() {
 
 		int counter = 0;
@@ -154,7 +153,7 @@ public class AuthorityFlag {
 			for (String gndId : gndIds) {
 				counter = counter + 1;
 
-				SolrDocumentList gndRecords = this.relationHelper.getGndRecordByIds(gndId);
+				SolrDocumentList gndRecords = this.relationHelper.getGndRecordsById(gndId);
 				if (gndRecords != null) {
 					for(SolrDocument gndRecord : gndRecords) {
 
@@ -177,7 +176,6 @@ public class AuthorityFlag {
 				this.smHelper.print(this.print, "Setting flag in authority record " + gndId + ". Processing record no " + counter  + " of " + noOfGndIds + "                          \r");
 
 
-
 				// Add documents from the class variable which was set before to Solr
 				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr
 					relationHelper.indexDocuments(docsForAtomicUpdates, solrServerAuthority);
@@ -195,54 +193,6 @@ public class AuthorityFlag {
 		}
 	}
 
-
-	/**
-	 * Set documents for atomic Solr update and index them.
-	 * DOES NOT USE FIELD 035, ONLY 001
-	 */
-	/*
-	private void addFlagToAuthorityRecord() {
-
-		int counter = 0;
-		int noOfGndIds = gndIds.size();
-
-		if (noOfGndIds > 0) {
-
-			for (String gndId : gndIds) {
-				counter = counter + 1;
-
-				// Prepare GND record for atomic update:
-				SolrInputDocument gndRecord = null;
-				gndRecord = new SolrInputDocument();
-				gndRecord.setField("id", gndId);
-
-
-				// Set values for atomic update of parent record:
-				Map<String, String> existsInBiblio = new HashMap<String, String>();
-				existsInBiblio.put("set", "true");
-				gndRecord.setField("existsInBiblio_str", existsInBiblio);
-
-				this.smHelper.print(this.print, "Setting flag in authority record " + gndId + ". Processing record no " + counter  + " of " + noOfGndIds + "                          \r");
-
-				docsForAtomicUpdates.add(gndRecord);
-
-				// Add documents from the class variable which was set before to Solr
-				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr
-					relationHelper.indexDocuments(docsForAtomicUpdates, solrServerAuthority);
-					docsForAtomicUpdates.clear();
-					docsForAtomicUpdates = null;
-					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
-				} else if (counter >= noOfGndIds) { // The remainding documents (if division with NO_OF_ROWS 
-					relationHelper.indexDocuments(docsForAtomicUpdates, solrServerAuthority);
-					docsForAtomicUpdates.clear();
-					docsForAtomicUpdates = null;
-					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
-				}
-
-			}
-		}
-	}
-	 */
 
 	/**
 	 * Deletes authority records without heading. Due to the fact that there could be wrong authority ids in bibliographic records
@@ -307,26 +257,6 @@ public class AuthorityFlag {
 				}
 			}
 			if (subjectGndNo != null) {gndNos.add(subjectGndNo); }
-			/*
-			// With replacement of additions like (DE-588)
-			String replaceRegex = "(\\(.*?\\))|(GKD)"; // Replace unwanted characters in GND-ID (e. g. (DE-505), GKD, etc.)
-			Set<String> gndNos = new HashSet<String>();
-
-			if (authorGndNo != null) { gndNos.add(authorGndNo.replaceAll(replaceRegex, "")); }
-			if (author2GndNo != null) { gndNos.add(author2GndNo.replaceAll(replaceRegex, "")); }
-			if (authorAdditionalGndNos != null) {
-				for (String authorAdditionalGndNo : authorAdditionalGndNos) {
-					gndNos.add(authorAdditionalGndNo.replaceAll(replaceRegex, ""));
-				}
-			}
-			if (authorCorporateGndNo != null) {gndNos.add(authorCorporateGndNo.replaceAll(replaceRegex, "")); }
-			if (authorCorporate2GndNos != null) {
-				for (String authorCorporate2GndNo : authorCorporate2GndNos) {
-					gndNos.add(authorCorporate2GndNo.replaceAll(replaceRegex, ""));
-				}
-			}
-			if (subjectGndNo != null) {gndNos.add(subjectGndNo.replaceAll(replaceRegex, "")); }
-			*/
 
 			gndIds.addAll(gndNos);
 
@@ -334,14 +264,7 @@ public class AuthorityFlag {
 			if (docId.equals(newLastDocId)) {
 				returnValue = docId;
 			}
-
 		}
-
 		return returnValue;
 	}
 }
-
-
-
-
-

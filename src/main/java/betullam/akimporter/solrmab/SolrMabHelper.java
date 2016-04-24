@@ -270,8 +270,9 @@ public class SolrMabHelper {
 		}
 
 		// Set fields that should be given back from the query
-		solrFieldNames.add("id");
-		String[] arrFieldsToReturn = solrFieldNames.toArray(new String[0]);
+		List<String> solrFieldsToReturn = new ArrayList<>(solrFieldNames); // Copy immutable List<String> to a mutable List<String>
+		solrFieldsToReturn.add("id");
+		String[] arrFieldsToReturn = solrFieldsToReturn.toArray(new String[0]);
 		query.setFields(arrFieldsToReturn);
 
 		try {
