@@ -101,7 +101,6 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-
 	/**
 	 * Executed when encountering the start element of an XML tag.
 	 * 
@@ -227,9 +226,9 @@ public class MarcContentHandler implements ContentHandler {
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 
 				// Add to Solr-Index:
-				if (!newRecordSet.isEmpty()) {
+				//if (!newRecordSet.isEmpty()) {
 					this.solrAddRecordSet(sServer, newRecordSet);
-				}
+				//}
 
 
 				// Set all Objects to "null" to save memory

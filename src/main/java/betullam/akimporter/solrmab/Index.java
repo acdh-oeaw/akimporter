@@ -55,18 +55,18 @@ import main.java.betullam.akimporter.solrmab.indexing.MatchingObject;
 
 public class Index {
 
-	private HttpSolrServer solrServer;
-	private String mabXMLfile;
-	private String mabPropertiesFile;
-	private List<MatchingObject> listOfMatchingObjs; // Contents from mab.properties file
+	private HttpSolrServer solrServer = null;
+	private String mabXMLfile = null;
+	private String mabPropertiesFile = null;
+	private List<MatchingObject> listOfMatchingObjs = null; // Contents from mab.properties file
 	private boolean useDefaultMabProperties = true;
-	public String pathToTranslationFiles;
+	public String pathToTranslationFiles = null;
 	private boolean print = true;
 	private long startTime;
 	private long endTime;
 	boolean optimizeSolr = true;
 	private String timeStamp = null;
-	private SolrMabHelper smHelper;
+	private SolrMabHelper smHelper = null;
 	private boolean isIndexingSuccessful = false;
 
 	public static List<String> multiValuedFields = new ArrayList<String>();
@@ -111,6 +111,12 @@ public class Index {
 
 			startTime = System.currentTimeMillis();
 
+			
+			//System.out.println("mabPropertiesInputStream: " + mabPropertiesInputStream.toString());			
+			//System.out.println(IOUtils.toString(mabPropertiesInputStream, "UTF-8"));
+
+
+
 			// Get contents of mab.properties files and put them to MatchingObjects
 			listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
 
@@ -141,7 +147,7 @@ public class Index {
 			}
 			endTime = System.currentTimeMillis();
 			smHelper.print(print, "Done indexing to solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n");
-
+			
 			isIndexingSuccessful = true;
 
 		} catch (RemoteSolrException e) {
@@ -218,7 +224,7 @@ public class Index {
 		    	bracketCounter = bracketCounter - 1;
 		    }
 		}
-		
+
 	    // If there are not as many opening brackets as closing brackets, there is an error in the syntax
 		if (openBracketsCounter != closeBracketsCounter) {
 			System.err.println("Please check in our mab properties file if you forgot an opening [ or closing ] square bracket. "
@@ -227,9 +233,9 @@ public class Index {
 		}
 		System.out.println(newTest);
 		System.out.println("\n-------------------------------------------\n");
-		*/
+		 */
 
-		
+
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
 
 		try {
@@ -253,7 +259,7 @@ public class Index {
 				String regexValue = null;
 				String regexStrictValue = null;
 				String strValues = mabProperties.getProperty(key);
-				
+
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
 				// INFO:
 				// We can't use something like replaceAll or replaceFirst becaus in regEx rules, we could have nested brackets, e. g.
@@ -268,32 +274,32 @@ public class Index {
 				int bracketCounter = 0;
 				// Iterate over each character of a line in the properties file:
 				for (int i = 0; i < strValuesNoRegexBrackets.length(); i++){
-				    char c = strValuesNoRegexBrackets.charAt(i);
-				    String s = Character.toString(c);
-				    // Check if the current character is an opening bracket
-				    if (s.equals("[")) {
-				    	openBracketsCounter = openBracketsCounter + 1;
-				    	bracketCounter = bracketCounter + 1;
-				    }
-				    // Add characters to the new string only if not within an outer bracket (count value 0)
-				    if (bracketCounter <= 0) {
-				    	strValuesClean += s;
-				    }
-				    // Check if the current character is a closing bracket
-				    if (s.equals("]")) {
-				    	closeBracketsCounter = closeBracketsCounter + 1;
-				    	bracketCounter = bracketCounter - 1;
-				    }
+					char c = strValuesNoRegexBrackets.charAt(i);
+					String s = Character.toString(c);
+					// Check if the current character is an opening bracket
+					if (s.equals("[")) {
+						openBracketsCounter = openBracketsCounter + 1;
+						bracketCounter = bracketCounter + 1;
+					}
+					// Add characters to the new string only if not within an outer bracket (count value 0)
+					if (bracketCounter <= 0) {
+						strValuesClean += s;
+					}
+					// Check if the current character is a closing bracket
+					if (s.equals("]")) {
+						closeBracketsCounter = closeBracketsCounter + 1;
+						bracketCounter = bracketCounter - 1;
+					}
 				}
-				
-			    // If there are not as many opening brackets as closing brackets, there is an error in the syntax
+
+				// If there are not as many opening brackets as closing brackets, there is an error in the syntax
 				if (openBracketsCounter != closeBracketsCounter) {
 					System.err.println("Please check in our mab properties file if you forgot an opening [ or closing ] square bracket. "
 							+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it with a double backslash, e. g.: \\\\[");
 					System.exit(0);
 				}
-				
-				
+
+
 				HashMap<String, String> translateProperties = new HashMap<String, String>();
 				String filename = null;
 				HashMap<String, List<String>> mabFieldnames = new HashMap<String, List<String>>();
@@ -326,7 +332,7 @@ public class Index {
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains")) {
 					int index = 0;
 
-					
+
 					// Is translateValue
 					if (lstValuesClean.contains("translateValue")) {
 						translateValue = true;
@@ -390,7 +396,7 @@ public class Index {
 						regexValue = (matcherRegexValue.find()) ? matcherRegexValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 					}
 				}
-				
+
 				if (lstValuesClean.contains("regExStrict")) {
 					String regexStrictValueString = null;
 					hasRegexStrict = true;
@@ -406,7 +412,7 @@ public class Index {
 						regexStrictValue = (matcherRegexStrictValue.find()) ? matcherRegexStrictValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 					}
 				}
-				
+
 
 
 				// Get all multiValued fields and remove them after we finished:

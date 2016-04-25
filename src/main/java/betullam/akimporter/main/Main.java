@@ -37,6 +37,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
@@ -61,7 +62,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
+import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
+import main.java.betullam.akimporter.solrmab.indexing.Mabfield;
 import main.java.betullam.akimporter.updater.OaiUpdater;
 import main.java.betullam.akimporter.updater.Updater;
 
@@ -177,11 +180,9 @@ public class Main {
 			switch (selectedMainOption) {
 
 			case "k": { // FOR TESTING ONLY
-
-				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				//System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
-
 				
+				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				System.out.println("Start re-importing ongoing data updates ...");
 				// Start import process of ongoing updates (from "merged data" directory):				
 				ReImport reImport = new ReImport(print, optimize);
@@ -191,10 +192,18 @@ public class Main {
 						uSolr,
 						uDefaultMabProperties,
 						uCustomMabProperties
-						);
-
+				);
+				
+				// TODO: Do not use static variable in Index class for customTextFields!
+				//       As long as we do it, we will have to reset it after each "new Index()" call if we start a second one.
+				Index.customTextFields = new ArrayList<Mabfield>();
+				// To be sure to have no bugs, reset also other static variables
+				Index.multiValuedFields = new ArrayList<String>();
+				Index.translateFields = new HashMap<String, List<String>>();
+				
+				// Start authority integration
 				Authority auth = new Authority(
-						flag,
+						true,
 						aPath,
 						aDefaultMabProperties,
 						aCustomMabProperties,
@@ -205,7 +214,8 @@ public class Main {
 						optimize
 						);
 				auth.integrateAuthority(aIntegrateEntities);
-
+				
+				
 				break;
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
 

@@ -157,7 +157,6 @@ public class Authority {
 	 * @return bollean	Indicates if the index process was successful
 	 */
 	public boolean integrateAuthority(String entity) {
-
 		
 		boolean returnValue = false;
 
@@ -180,6 +179,7 @@ public class Authority {
 			this.smHelper.print(this.print, "\nDone integrating authority records to bibliographic records.");
 			returnValue = true;
 		} else {
+			
 			boolean isIndexingSuccessful = false;
 			for (String pathToAuthFile : this.pathsToAuthFiles) {
 				Index index = new Index (
