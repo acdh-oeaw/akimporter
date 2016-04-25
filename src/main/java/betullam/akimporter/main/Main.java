@@ -122,7 +122,7 @@ public class Main {
 
 
 
-	
+
 	/**
 	 * Main method of AkImporter.
 	 * This is the starting point for all following actions.
@@ -133,7 +133,7 @@ public class Main {
 
 		//System.out.println(aPath);
 		//System.exit(0);
-		
+
 		// Disable StatusLogger message of Log4J2:
 		StatusLogger.getLogger().setLevel(Level.OFF);
 
@@ -175,9 +175,42 @@ public class Main {
 
 			// Switch between main options
 			switch (selectedMainOption) {
+
 			case "k": { // FOR TESTING ONLY
-				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
+
+				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
+				//System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
+
+				
+				System.out.println("Start re-importing ongoing data updates ...");
+				// Start import process of ongoing updates (from "merged data" directory):				
+				ReImport reImport = new ReImport(print, optimize);
+				reImport.reImportOngoing(
+						uLocalPath,
+						iValidation,
+						uSolr,
+						uDefaultMabProperties,
+						uCustomMabProperties
+						);
+
+				Authority auth = new Authority(
+						flag,
+						aPath,
+						aDefaultMabProperties,
+						aCustomMabProperties,
+						aSolrAuth,
+						aSolrBibl,
+						null,
+						print,
+						optimize
+						);
+				auth.integrateAuthority(aIntegrateEntities);
+
 				break;
+				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
+
+
+
 			}
 
 			case "i": {
@@ -989,7 +1022,7 @@ public class Main {
 				break;
 			}
 		}
-		
+
 		if (!xmlFileExists) {
 			System.err.println("At least one file specified for \"authority.path\" in \"AkImporter.properties\" does not exist.");
 		} else {

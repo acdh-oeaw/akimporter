@@ -122,8 +122,8 @@ public class Updater {
 				if (this.useDefaultMabProperties) {
 					//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
 					//directoryOfTranslationFiles = "/betullam/akimporter/resources";
-					pathToMabPropertiesFile = "/mab.properties";
-					directoryOfTranslationFiles = "/";
+					pathToMabPropertiesFile = "/main/resources/mab.properties";
+					directoryOfTranslationFiles = "/main/resources";
 					this.smHelper.print(this.print, "\nUse default mab.properties file for indexing.");
 				} else {
 					directoryOfTranslationFiles = new File(this.pathToMabPropertiesFile).getParent();

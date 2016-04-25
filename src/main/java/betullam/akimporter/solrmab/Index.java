@@ -99,7 +99,7 @@ public class Index {
 
 			// Load .properties file:
 			if (useDefaultMabProperties) {
-				mabPropertiesInputStream = new BufferedInputStream(Main.class.getResourceAsStream(this.mabPropertiesFile));
+				mabPropertiesInputStream = new BufferedInputStream(Main.class.getResourceAsStream(this.mabPropertiesFile));				
 			} else {
 				mabPropertiesInputStream = new BufferedInputStream(new FileInputStream(this.mabPropertiesFile));
 			}
@@ -228,10 +228,12 @@ public class Index {
 		System.out.println(newTest);
 		System.out.println("\n-------------------------------------------\n");
 		*/
-				
+
+		
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
 
 		try {
+
 			Properties mabProperties = new Properties();
 
 			// Load contents of properties-file:
@@ -561,7 +563,7 @@ public class Index {
 			// Get .properties file and load contents:
 			if (useDefaultMabProperties) {
 				//translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/betullam/akimporter/resources/" + filename));
-				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/" + filename));
+				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
 
 			} else {
 				translationStream = new BufferedInputStream(new FileInputStream(translationFile));

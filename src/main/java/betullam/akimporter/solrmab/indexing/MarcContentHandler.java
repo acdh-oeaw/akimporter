@@ -85,8 +85,8 @@ public class MarcContentHandler implements ContentHandler {
 		this.print = print;
 	}
 
-	
-	
+
+
 	/**
 	 * Executed when encountering the start element of the XML file.
 	 */
@@ -95,13 +95,13 @@ public class MarcContentHandler implements ContentHandler {
 
 		// For tracking the elapsed time:
 		startTime = System.currentTimeMillis();
-		
+
 		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
 		allRecords = new ArrayList<Record>();
 	}
 
-	
-	
+
+
 	/**
 	 * Executed when encountering the start element of an XML tag.
 	 * 
@@ -162,7 +162,7 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-	
+
 	/**
 	 * Executed when encountering the end element of an XML tag.
 	 * 
@@ -177,7 +177,7 @@ public class MarcContentHandler implements ContentHandler {
 			String controlfieldText = nodeContent.toString();
 			controlfield.setFieldvalue(controlfieldText);
 			allFields.add(controlfield);
-			
+
 			if (isSYS == true) {
 				recordSYS = controlfieldText;
 			}
@@ -211,9 +211,9 @@ public class MarcContentHandler implements ContentHandler {
 			record.setRecordID(recordID);
 			record.setRecordSYS(recordSYS);
 			record.setIndexTimestamp(timeStamp);
-			
+
 			allRecords.add(record);
-			
+
 			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
 
 			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
@@ -227,7 +227,10 @@ public class MarcContentHandler implements ContentHandler {
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 
 				// Add to Solr-Index:
-				this.solrAddRecordSet(sServer, newRecordSet);
+				if (!newRecordSet.isEmpty()) {
+					this.solrAddRecordSet(sServer, newRecordSet);
+				}
+
 
 				// Set all Objects to "null" to save memory
 				allRecords.clear();
@@ -240,7 +243,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
-	
+
 	/**
 	 * Executed when encountering the end element of the XML file.
 	 */
@@ -253,10 +256,10 @@ public class MarcContentHandler implements ContentHandler {
 
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
-		
+
 		// Add to Solr-Index:
 		this.solrAddRecordSet(sServer, newRecordSet);
-		
+
 		// Clear Objects to save memory
 		allRecords.clear();
 		allRecords = null;
@@ -296,7 +299,7 @@ public class MarcContentHandler implements ContentHandler {
 
 					String fieldName = mf.getFieldname();
 					String fieldValue = mf.getFieldvalue();
-					
+
 					// Add the fieldname and fieldvalue to the document:
 					doc.addField(fieldName, fieldValue);
 				}
@@ -308,7 +311,7 @@ public class MarcContentHandler implements ContentHandler {
 				docs.add(doc);
 			}
 
-			if (docs.isEmpty() == false) {
+			if (!docs.isEmpty()) {
 
 				// Now add the collection of documents to Solr:
 				sServer.add(docs);
@@ -325,7 +328,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
-	
+
 	/**
 	 * Unused methods of ContentHandler class.
 	 * We just define them without any content.
@@ -348,7 +351,7 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void startPrefixMapping(String arg0, String arg1) throws SAXException {}
 
-	
+
 	/**
 	 * Prints the specified text to the console if "print" is true.
 	 * 

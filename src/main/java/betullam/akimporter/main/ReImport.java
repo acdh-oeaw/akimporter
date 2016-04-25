@@ -119,8 +119,8 @@ public class ReImport {
 		if (useDefaultMabProperties) {
 			//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
 			//directoryOfTranslationFiles = "/betullam/akimporter/resources";
-			pathToMabPropertiesFile = "/mab.properties";
-			directoryOfTranslationFiles = "/";
+			pathToMabPropertiesFile = "/main/resources/mab.properties";
+			directoryOfTranslationFiles = "/main/resources";
 			propertiesFileInfo = "Using default mab.properties file";
 		} else {
 			propertiesFileInfo = "Using custom .properties file: " + pathToMabPropertiesFile;
@@ -260,8 +260,8 @@ public class ReImport {
 				useDefaultMabProperties = true;
 				//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
 				//directoryOfTranslationFiles = "/betullam/akimporter/resources";
-				pathToMabPropertiesFile = "/mab.properties";
-				directoryOfTranslationFiles = "/";
+				pathToMabPropertiesFile = "/main/resources/mab.properties";
+				directoryOfTranslationFiles = "/main/resources";
 				propertiesFileInfo = "Use default mab.properties file";
 			} else {
 				useDefaultMabProperties = false;

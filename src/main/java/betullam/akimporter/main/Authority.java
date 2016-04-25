@@ -69,8 +69,8 @@ public class Authority {
 		this.pathsToAuthFiles = this.pathToAuthFile.split(",");
 		this.useDefaultAuthProperties = useDefaultAuthProperties;
 		if (this.useDefaultAuthProperties) {
-			this.pathToAuthProperties = "/authority.properties";
-			this.pathToTranslationFiles = "/";
+			this.pathToAuthProperties = "/main/resources/authority.properties";
+			this.pathToTranslationFiles = "/main/resources";
 		} else {
 			this.pathToAuthProperties = pathToCustomAuthProperties;
 			this.pathToTranslationFiles = new File(this.pathToAuthProperties).getParent();
