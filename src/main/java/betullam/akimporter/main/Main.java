@@ -182,6 +182,7 @@ public class Main {
 			case "k": { // FOR TESTING ONLY
 				//System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
 				
+				
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				System.out.println("Start re-importing ongoing data updates ...");
 				// Start import process of ongoing updates (from "merged data" directory):				
