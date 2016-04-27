@@ -55,8 +55,10 @@ public class AuthorityMerge {
 	private HttpSolrServer solrServerAuth;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private boolean print = false;
+	private boolean isAuthUpdate = false;
 	private int NO_OF_ROWS = 500;
 	private int INDEX_RATE = 500;
+	private Set<String> currentGndIds = null;
 
 	/**
 	 * Constructor for setting some variables.
@@ -66,11 +68,15 @@ public class AuthorityMerge {
 	 * @param timeStamp				String: timestamp of integration time
 	 * @param print					boolean that indicates if status messages should be print
 	 */
-	public AuthorityMerge(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean print) {
+	public AuthorityMerge(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean isAuthUpdate, boolean print) {
 		this.solrServerBiblio = solrServerBiblio;
 		this.solrServerAuth = solrServerAuthority;
+		this.isAuthUpdate = isAuthUpdate;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServerBiblio, solrServerAuthority, timeStamp);
+		if (isAuthUpdate) {
+			currentGndIds = this.relationHelper.getIdsAnd035OfCurrentlyIndexedAuthRecords();
+		}
 	}
 
 
@@ -94,9 +100,14 @@ public class AuthorityMerge {
 
 			docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			String currentEntity = ent.trim();
+			SolrDocumentList queryResults = null;
 			
 			// Get bibliographic records that uses authority IDs
-			SolrDocumentList queryResults = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, true, null);
+			if (isAuthUpdate) {
+				queryResults = this.relationHelper.getRecordsByGndIdsAndFields(currentGndIds, currentEntitySolrFields);
+			} else {
+				queryResults = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, true, null);
+			}
 
 			// Get the number of documents that were found
 			long noOfDocs = queryResults.getNumFound();

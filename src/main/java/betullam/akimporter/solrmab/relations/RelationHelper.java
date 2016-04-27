@@ -290,8 +290,95 @@ public class RelationHelper {
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
-		
+
 		return queryResult;
+	}
+
+
+
+	public SolrDocumentList getRecordsByGndIds(Set<String> authIds) {
+
+		// Set variables
+		SolrDocumentList biblioRecords = new SolrDocumentList();
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance (filter query users filter cache)
+		query.setQuery("*:*");
+
+		// Set fields that should be given back from the query
+		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv", "subjectGndNo_str");
+
+		for (String authId : authIds) {
+			query.setFilterQueries("author_GndNo_str:\""+authId+"\" || author2_GndNo_str:\""+authId+"\" || author_additional_GndNo_str_mv:\""+authId+"\" || corporateAuthorGndNo_str:\""+authId+"\" || corporateAuthor2GndNo_str_mv:\""+authId+"\" || subjectGndNo_str:\""+authId+"\"", "id:*");	
+			try {
+				// Execute query and get results
+				SolrDocumentList queryResult = this.solrServerBiblio.query(query).getResults();
+				if (queryResult != null && !queryResult.isEmpty()) {
+					biblioRecords.addAll(queryResult);
+				}
+			} catch (SolrServerException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return biblioRecords;
+	}
+
+
+	public SolrDocumentList getRecordsByGndIdsAndFields(Set<String> authIds, List<String> solrFields) {
+
+		// Set variables
+		SolrDocumentList biblioRecords = new SolrDocumentList();
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		// The query should not give back a lot of records, so we use Integer.MAX_VALUE. But in the future we should use a better strategy.
+		// TODO: Change to deep pageing query in case we get back too much documents (performance).
+		query.setRows(Integer.MAX_VALUE);
+
+		// Add sorting
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance (filter query users filter cache)
+		query.setQuery("*:*");
+
+
+		// Set fields that should be given back from the query
+		List<String> lstSolrFieldsToReturn = new ArrayList<>(solrFields); // Copy immutable List<String> to a mutable List<String>
+		lstSolrFieldsToReturn.add("id");
+		String[] arrSolrFieldsToReturn = lstSolrFieldsToReturn.toArray(new String[0]);
+		query.setFields(arrSolrFieldsToReturn);
+
+		// Create query string:
+		String queryString = "";
+		for (String solrField : solrFields) {
+			for (String authId : authIds) {
+				queryString += solrField + ":\""+authId+"\" || "; // Join fields with the "OR" query operator
+			}
+		}
+		queryString = queryString.trim();
+		queryString = queryString.replaceFirst("(\\|\\|)$", "").trim(); // Remove the last "OR" query operator
+
+		// Set filter query
+		query.setFilterQueries(queryString, "id:*");
+		
+		try {
+			// Execute query and get results
+			SolrDocumentList queryResult = this.solrServerBiblio.query(query).getResults();
+			if (queryResult != null && !queryResult.isEmpty()) {
+				biblioRecords.addAll(queryResult);
+			}
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		return biblioRecords;
 	}
 
 
@@ -324,7 +411,7 @@ public class RelationHelper {
 	 * @param gndId		String representing an ID of a GND record
 	 * @return			SolrDocumentList containing the query result with GND records
 	 */
-	public SolrDocumentList getGndRecordsById(String gndId) {
+	public SolrDocumentList getGndRecordsByIdAnd035(String gndId) {
 		SolrDocumentList gndRecords = null;
 
 		SolrQuery queryGndRecord = new SolrQuery(); // New Solr query
@@ -340,8 +427,8 @@ public class RelationHelper {
 
 		return gndRecords;
 	}
-	
-	
+
+
 
 	/**
 	 * Getting all authority records of a given entity (e. g. Person) and with the flag of existance
@@ -350,7 +437,7 @@ public class RelationHelper {
 	 * @param lastDocId		Doc Id of the last processed Solr document
 	 * @return				SolrDocumentList
 	 */
-	public SolrDocumentList getAuthorityRecords(String entity, boolean isFirstPage, String lastDocId) {
+	public SolrDocumentList getAuthorityRecordsByEntity(String entity, boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
 		SolrDocumentList queryResult = null;
@@ -399,6 +486,56 @@ public class RelationHelper {
 	}
 
 
+
+	public Set<String> getIdsAnd035OfCurrentlyIndexedAuthRecords() {
+
+		// Set up variables
+		Set<String> distinctAuthIds = new HashSet<String>();
+		SolrDocumentList currentlyIndexedAuthRecords = null;
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		// The query should not give back a lot of records, so we use Integer.MAX_VALUE. But in the future we should use a better strategy.
+		// TODO: Change to deep pageing query in case we get back too much documents (performance).
+		query.setRows(Integer.MAX_VALUE);
+
+		// Add sorting
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance
+		query.setQuery("*:*");
+
+		// Filter all records that were indexed with the current import process (timeStamp)
+		query.setFilterQueries("indexTimestamp_str:"+this.timeStamp, "id:*");
+
+		// Set fields that should be given back from the query
+		query.setFields("id", "gndId035_str_mv");
+
+		try {
+			// Execute query and get results
+			currentlyIndexedAuthRecords = this.solrServerAuth.query(query).getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		if (!currentlyIndexedAuthRecords.isEmpty() && currentlyIndexedAuthRecords != null) {
+			for (SolrDocument authRecord : currentlyIndexedAuthRecords) {
+				// Get all IDs of the authority document
+				String authId = authRecord.getFieldValue("id").toString();
+				Collection<Object> gndIds035 = (authRecord.getFieldValues("gndId035_str_mv") != null && !authRecord.getFieldValues("gndId035_str_mv").isEmpty()) ? authRecord.getFieldValues("gndId035_str_mv") : null;
+
+				// Add authority IDs to a Set<String> to get a deduplicated list of authority IDs 
+				distinctAuthIds.add(authId);
+				if (gndIds035 != null) {
+					for (Object gndId035 : gndIds035) {
+						distinctAuthIds.add(gndId035.toString());
+					}
+				}
+			}
+		}
+
+		return distinctAuthIds;
+	}
 
 
 	/**

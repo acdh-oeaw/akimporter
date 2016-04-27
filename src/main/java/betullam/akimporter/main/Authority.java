@@ -124,7 +124,7 @@ public class Authority {
 		if (this.flagOnly) {
 
 			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
+			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, false, print);
 			af.setFlagOfExistance();
 			
 			this.smHelper.print(this.print, "\nDone setting flag of existance to authority records.");
@@ -158,7 +158,7 @@ public class Authority {
 			if(isIndexingSuccessful) {
 				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
 
-				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
+				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, false, print);
 				af.setFlagOfExistance();
 				
 				if (merge) {
@@ -180,7 +180,7 @@ public class Authority {
 
 	private void mergeAuthToBib(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuth, String timeStamp, String entities) {
 		// Merge (integrate):
-		AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, print);
+		AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, false, print);
 		ai.mergeAuthorityToBiblio(entities);
 	}
 

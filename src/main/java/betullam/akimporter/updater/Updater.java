@@ -136,7 +136,7 @@ public class Updater {
 
 				if (authFlagOnly) {
 					smHelper.print(print, "\nStart setting flags of existance to authority records ... ");
-					AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false);
+					AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false, false);
 					af.setFlagOfExistance();
 					smHelper.print(print, "Done");
 				}
@@ -146,11 +146,11 @@ public class Updater {
 					// If -f is not set, we should set flag of existance to authority anyway!
 					if (!authFlagOnly) {
 						smHelper.print(print, "\nStart setting flags of existance to authority records ... ");
-						AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false);
+						AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false, false);
 						af.setFlagOfExistance();
 						smHelper.print(print, "Done");
 					}
-					AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, false);
+					AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, false, false);
 					ai.mergeAuthorityToBiblio(entities);
 					smHelper.print(print, "Done");
 				}

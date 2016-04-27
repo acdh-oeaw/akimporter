@@ -52,10 +52,12 @@ public class AuthorityFlag {
 	private SolrMabHelper smHelper = new SolrMabHelper();
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private HttpSolrServer solrServerAuthority;
+	private boolean isAuthUpdate = false;
 	private boolean print = false;
 	private int NO_OF_ROWS = 500;
 	private int INDEX_RATE = 500;
 	Set<String> gndIds = new HashSet<String>();
+	Set<String> currentGndIds = new HashSet<String>();
 	//private String timeStamp = null;
 
 	/**
@@ -66,13 +68,14 @@ public class AuthorityFlag {
 	 * @param timeStamp					Current unix time stamp as a String or null
 	 * @param print						boolean indicating whether to print status messages or not
 	 */
-	public AuthorityFlag(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean print) {
+	public AuthorityFlag(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean isAuthUpdate, boolean print) {
 		this.solrServerAuthority = solrServerAuthority;
+		this.isAuthUpdate = isAuthUpdate;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServerBiblio, solrServerAuthority, timeStamp);
-		/*if (timeStamp != null && !timeStamp.isEmpty()) {
-			this.timeStamp = timeStamp;
-		}*/
+		if (isAuthUpdate) {
+			currentGndIds = this.relationHelper.getIdsAnd035OfCurrentlyIndexedAuthRecords();
+		}
 	}
 
 	
@@ -80,7 +83,12 @@ public class AuthorityFlag {
 	 * Starting the process of setting the "flag of existence"
 	 */
 	public void setFlagOfExistance() {
-		SolrDocumentList queryResults = this.relationHelper.getRecordsWithGnd(true, null);
+		SolrDocumentList queryResults = null;
+		if (this.isAuthUpdate) {
+			queryResults = this.relationHelper.getRecordsByGndIds(this.currentGndIds);
+		} else {
+			queryResults = this.relationHelper.getRecordsWithGnd(true, null);
+		}
 
 		// Get the number of documents that were found
 		long noOfDocs = queryResults.getNumFound();
@@ -157,7 +165,7 @@ public class AuthorityFlag {
 			for (String gndId : gndIds) {
 				counter = counter + 1;
 
-				SolrDocumentList gndRecords = this.relationHelper.getGndRecordsById(gndId);
+				SolrDocumentList gndRecords = this.relationHelper.getGndRecordsByIdAnd035(gndId);
 				if (gndRecords != null) {
 					for(SolrDocument gndRecord : gndRecords) {
 
@@ -230,45 +238,58 @@ public class AuthorityFlag {
 		// Variable for return value:
 		String returnValue = null;
 
-		SolrDocumentList resultDocList = relationHelper.getRecordsWithGnd(isFirstPage, lastDocId);
-		String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
+		//SolrDocumentList resultDocList = relationHelper.getRecordsWithGnd(isFirstPage, lastDocId);
+		SolrDocumentList resultDocList = null;
+		
+		if (this.isAuthUpdate) {
+			resultDocList = this.relationHelper.getRecordsByGndIds(this.currentGndIds);
+		} else {
+			resultDocList = this.relationHelper.getRecordsWithGnd(true, null);
+		}
+		
+		if (resultDocList != null) {
+			String newLastDocId = resultDocList.get(resultDocList.size()-1).getFieldValue("id").toString();
 
-		for (SolrDocument recordWithAuth : resultDocList) {
+			for (SolrDocument recordWithAuth : resultDocList) {
 
-			String docId = (recordWithAuth.getFieldValue("id") != null) ? recordWithAuth.getFieldValue("id").toString() : null;
+				String docId = (recordWithAuth.getFieldValue("id") != null) ? recordWithAuth.getFieldValue("id").toString() : null;
 
-			String authorGndNo = (recordWithAuth.getFieldValue("author_GndNo_str") != null) ? recordWithAuth.getFieldValue("author_GndNo_str").toString() : null;
-			String author2GndNo = (recordWithAuth.getFieldValue("author2_GndNo_str") != null) ? recordWithAuth.getFieldValue("author2_GndNo_str").toString() : null;
-			String[] authorAdditionalGndNos = (recordWithAuth.getFieldValues("author_additional_GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("author_additional_GndNo_str_mv").toArray(new String[0]) : null;
-			String authorCorporateGndNo = (recordWithAuth.getFieldValue("corporateAuthorGndNo_str") != null) ? recordWithAuth.getFieldValue("corporateAuthorGndNo_str").toString() : null;
-			String[] authorCorporate2GndNos = (recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv").toArray(new String[0]) : null;				
-			String subjectGndNo = (recordWithAuth.getFieldValue("subjectGndNo_str") != null) ? recordWithAuth.getFieldValue("subjectGndNo_str").toString() : null;
+				String authorGndNo = (recordWithAuth.getFieldValue("author_GndNo_str") != null) ? recordWithAuth.getFieldValue("author_GndNo_str").toString() : null;
+				String author2GndNo = (recordWithAuth.getFieldValue("author2_GndNo_str") != null) ? recordWithAuth.getFieldValue("author2_GndNo_str").toString() : null;
+				String[] authorAdditionalGndNos = (recordWithAuth.getFieldValues("author_additional_GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("author_additional_GndNo_str_mv").toArray(new String[0]) : null;
+				String authorCorporateGndNo = (recordWithAuth.getFieldValue("corporateAuthorGndNo_str") != null) ? recordWithAuth.getFieldValue("corporateAuthorGndNo_str").toString() : null;
+				String[] authorCorporate2GndNos = (recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv").toArray(new String[0]) : null;				
+				String subjectGndNo = (recordWithAuth.getFieldValue("subjectGndNo_str") != null) ? recordWithAuth.getFieldValue("subjectGndNo_str").toString() : null;
 
-			// Add all possible GND Numbers to a List<String> so that we can iterate over it later on
-			Set<String> gndNos = new HashSet<String>();
+				// Add all possible GND Numbers to a List<String> so that we can iterate over it later on
+				Set<String> gndNos = new HashSet<String>();
 
-			if (authorGndNo != null) { gndNos.add(authorGndNo); }
-			if (author2GndNo != null) { gndNos.add(author2GndNo); }
-			if (authorAdditionalGndNos != null) {
-				for (String authorAdditionalGndNo : authorAdditionalGndNos) {
-					gndNos.add(authorAdditionalGndNo);
+				if (authorGndNo != null) { gndNos.add(authorGndNo); }
+				if (author2GndNo != null) { gndNos.add(author2GndNo); }
+				if (authorAdditionalGndNos != null) {
+					for (String authorAdditionalGndNo : authorAdditionalGndNos) {
+						gndNos.add(authorAdditionalGndNo);
+					}
 				}
-			}
-			if (authorCorporateGndNo != null) {gndNos.add(authorCorporateGndNo); }
-			if (authorCorporate2GndNos != null) {
-				for (String authorCorporate2GndNo : authorCorporate2GndNos) {
-					gndNos.add(authorCorporate2GndNo);
+				if (authorCorporateGndNo != null) {gndNos.add(authorCorporateGndNo); }
+				if (authorCorporate2GndNos != null) {
+					for (String authorCorporate2GndNo : authorCorporate2GndNos) {
+						gndNos.add(authorCorporate2GndNo);
+					}
 				}
-			}
-			if (subjectGndNo != null) {gndNos.add(subjectGndNo); }
+				if (subjectGndNo != null) {gndNos.add(subjectGndNo); }
 
-			gndIds.addAll(gndNos);
+				gndIds.addAll(gndNos);
 
-			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
-			if (docId.equals(newLastDocId)) {
-				returnValue = docId;
+				// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
+				if (docId.equals(newLastDocId)) {
+					returnValue = docId;
+				}
 			}
 		}
+		
+		
+		
 		return returnValue;
 	}
 }

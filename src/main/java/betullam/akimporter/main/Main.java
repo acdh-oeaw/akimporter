@@ -565,7 +565,6 @@ public class Main {
 								aSolrAuth,
 								aSolrBibl,
 								aMergeEntities,
-								flag,
 								merge,
 								print,
 								optimize
