@@ -303,7 +303,7 @@ public class MarcContentHandler implements ContentHandler {
 					doc.addField(fieldName, fieldValue);
 				}
 
-				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process - see betullam.akimporter.main.Main):
+				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
 				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
 
 				// Add the document to the collection of documents:
