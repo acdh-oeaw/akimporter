@@ -82,15 +82,17 @@ public class Consolidate {
 		XmlSplitter xmls = new XmlSplitter(null);
 		String pathToSplittedFilesDir = xmls.getDestinationDirectory().getAbsolutePath();
 
-		// Split XML. Older records will be overwritten by newer records:
+		// Split XMLs. Older records will be overwritten by newer records:
 		for (File fileForSplitting : filesForSplitting) {
-			this.smHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + " ...                                             \r");
+			this.smHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
 			Map<String, String> condAttrs = new HashMap<String, String>();
 			condAttrs.put("tag", "SYS");
 			xmls.split(fileForSplitting.getAbsolutePath(), "record", 0, "controlfield", condAttrs);
 		}
+		
 
 		// Merge XML:
+		System.out.println("\nStart merging splitted files into a new consolidated file. This could take a while ...");
 		XmlMerger xmlm = new XmlMerger(); // Start merging
 		boolean isMergingSuccessful = xmlm.mergeElementNodes(pathToSplittedFilesDir, this.pathToConsolidatedFile, "collection", "record", 0);
 
