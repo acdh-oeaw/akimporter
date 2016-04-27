@@ -87,6 +87,7 @@ public class Main {
 	static boolean print = false;
 	static boolean test = false;
 	static boolean flag = false;
+	static boolean merge = false;
 	static boolean isUpdateSuccessful = false;
 
 	// CLI options
@@ -121,7 +122,7 @@ public class Main {
 	static String aUpdateOaiUrl = importerProperties.getProperty("authority.update.oaiUrl");
 	static String aUpdateFormat = importerProperties.getProperty("authority.update.format");
 	static String aUpdateOaiSet = importerProperties.getProperty("authority.update.set");
-	static String aIntegrateEntities = importerProperties.getProperty("authority.integrate.entities");
+	static String aMergeEntities = importerProperties.getProperty("authority.merge.entities");
 
 
 
@@ -175,14 +176,17 @@ public class Main {
 				flag = true;
 			}
 
+			if (cmd.hasOption("m")) {
+				merge = true;
+			}
 
 			// Switch between main options
 			switch (selectedMainOption) {
 
 			case "k": { // FOR TESTING ONLY
 				//System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
-				
-				
+
+
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				System.out.println("Start re-importing ongoing data updates ...");
 				// Start import process of ongoing updates (from "merged data" directory):				
@@ -193,18 +197,20 @@ public class Main {
 						uSolr,
 						uDefaultMabProperties,
 						uCustomMabProperties
-				);
-				
+						);
+
 				// TODO: Do not use static variable in Index class for customTextFields!
 				//       As long as we do it, we will have to reset it after each "new Index()" call if we start a second one.
 				Index.customTextFields = new ArrayList<Mabfield>();
 				// To be sure to have no bugs, reset also other static variables
 				Index.multiValuedFields = new ArrayList<String>();
 				Index.translateFields = new HashMap<String, List<String>>();
-				
+
 				// Start authority integration
 				Authority auth = new Authority(
-						true,
+						flag,
+						merge,
+						aMergeEntities,
 						aPath,
 						aDefaultMabProperties,
 						aCustomMabProperties,
@@ -214,9 +220,9 @@ public class Main {
 						print,
 						optimize
 						);
-				auth.integrateAuthority(aIntegrateEntities);
-				
-				
+				auth.indexAuthority();
+
+
 				break;
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
 
@@ -430,13 +436,22 @@ public class Main {
 				if (startImport.equals("Y")) {
 					if(checkAuthorityProperties()) {
 						if (test) {
-							// If test option is specified, just tell the user if the properties are OK, but do not start the process
-							System.out.println("Properties are OK");
+							// If test option is specified, tell the user if the properties are OK, but do not start the process
+							if (merge) {
+								boolean mergeEntitiesOk = (aMergeEntities != null && !aMergeEntities.isEmpty()) ? true : false;
+								if (mergeEntitiesOk) {
+									System.out.println("Properties are OK");
+								}
+							} else {
+								System.out.println("Properties are OK");
+							}
 							break;
 						} else {
 							// Start import process for authority records:
 							Authority auth = new Authority(
 									flag,
+									merge,
+									aMergeEntities,
 									aPath,
 									aDefaultMabProperties,
 									aCustomMabProperties,
@@ -460,13 +475,22 @@ public class Main {
 			case "A": {
 				if(checkAuthorityProperties()) {
 					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the process
-						System.out.println("Properties are OK");
+						// If test option is specified, tell the user if the properties are OK, but do not start the process
+						if (merge) {
+							boolean mergeEntitiesOk = (aMergeEntities != null && !aMergeEntities.isEmpty()) ? true : false;
+							if (mergeEntitiesOk) {
+								System.out.println("Properties are OK");
+							}
+						} else {
+							System.out.println("Properties are OK");
+						}
 						break;
 					} else {
 						// Start import process for authority records:
 						Authority auth = new Authority(
 								flag,
+								merge,
+								aMergeEntities,
 								aPath,
 								aDefaultMabProperties,
 								aCustomMabProperties,
@@ -477,16 +501,16 @@ public class Main {
 								optimize
 								);
 						auth.indexAuthority();
-
 					}
 				}
 
 				break;
 			}
 
-			case "I": {
+			/*
+			case "m": {
 
-				boolean integrateEntitiesOk = (aIntegrateEntities != null && !aIntegrateEntities.isEmpty()) ? true : false;
+				boolean integrateEntitiesOk = (aMergeEntities != null && !aMergeEntities.isEmpty()) ? true : false;
 				if(checkAuthorityProperties() && integrateEntitiesOk) {
 					if (test) {
 						// If test option is specified, just tell the user if the properties are OK, but do not start the process
@@ -496,6 +520,7 @@ public class Main {
 						// Start import process for authority records:
 						Authority auth = new Authority(
 								flag,
+								merge,
 								aPath,
 								aDefaultMabProperties,
 								aCustomMabProperties,
@@ -505,7 +530,7 @@ public class Main {
 								print,
 								optimize
 								);
-						auth.integrateAuthority(aIntegrateEntities);
+						auth.integrateAuthority(aMergeEntities);
 					}
 				}
 
@@ -515,7 +540,7 @@ public class Main {
 
 				break;
 			}
-
+			*/
 			case "e": {
 				if(checkAuthorityUpdateProperties()) {
 					if (test) {
@@ -535,7 +560,9 @@ public class Main {
 								aCustomMabProperties,
 								aSolrAuth,
 								aSolrBibl,
+								aMergeEntities,
 								flag,
+								merge,
 								print,
 								optimize
 								);						
@@ -1281,7 +1308,7 @@ public class Main {
 				.longOpt("authority-silent")
 				.desc("Index authority data without confirming the settings")
 				.build();
-
+		/*
 		// I (authority-integrate)
 		Option oAuthorityIntegrate = Option
 				.builder("I")
@@ -1289,7 +1316,7 @@ public class Main {
 				.longOpt("authority-integrate")
 				.desc("Index authority data and integrate them to bibliographic data")
 				.build();
-
+		 */
 		// e (ernten [harvest] and update authority properties from OAI interface)
 		Option oErnten = Option
 				.builder("e")
@@ -1349,6 +1376,13 @@ public class Main {
 				.desc("Set only flag of existance to authority records instead of indexing them. The flag tells us if the authority record is used in at least one bibliographich record. Can be used with -a and -A\nExample: java -jar AkImporter.jar -a -f")
 				.build();
 
+		// m (authority-merge)
+		Option oAuthorityMerge = Option
+				.builder("m")
+				.required(true)
+				.longOpt("authority-merge")
+				.desc("Merge (integrate) authority data to bibliographic data. Can be used with -a, -A (with or without -f).\nExample: java -jar AkImporter.jar -a -f -m")
+				.build();
 
 
 		optionGroup.addOption(oAkTest);
@@ -1361,7 +1395,7 @@ public class Main {
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
-		optionGroup.addOption(oAuthorityIntegrate);
+		//optionGroup.addOption(oAuthorityMerge);
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
@@ -1371,6 +1405,7 @@ public class Main {
 		options.addOption(oOptimize);
 		options.addOption(oTestParameter);
 		options.addOption(oFlagAuthority);
+		options.addOption(oAuthorityMerge);
 
 	}
 

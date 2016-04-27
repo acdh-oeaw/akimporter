@@ -46,7 +46,7 @@ import org.apache.solr.common.SolrInputDocument;
 
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 
-public class AuthorityIntegrate {
+public class AuthorityMerge {
 
 
 	private RelationHelper relationHelper;
@@ -66,7 +66,7 @@ public class AuthorityIntegrate {
 	 * @param timeStamp				String: timestamp of integration time
 	 * @param print					boolean that indicates if status messages should be print
 	 */
-	public AuthorityIntegrate(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean print) {
+	public AuthorityMerge(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuthority, String timeStamp, boolean print) {
 		this.solrServerBiblio = solrServerBiblio;
 		this.solrServerAuth = solrServerAuthority;
 		this.print = print;
@@ -79,7 +79,7 @@ public class AuthorityIntegrate {
 	 * 
 	 * @param entity	String indicating the authority entity to integrate (e. g. Person, Congress, Corporation, etc.)
 	 */
-	public void integrateAuthorityRecords(String entity) {
+	public void mergeAuthorityToBiblio(String entity) {
 		String[] entities = entity.split(",");
 
 		for (String ent : entities) {

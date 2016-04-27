@@ -33,11 +33,13 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
-import main.java.betullam.akimporter.solrmab.relations.AuthorityIntegrate;
+import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
 public class Authority {
 
 	private boolean flagOnly;
+	private boolean merge;
+	private String entities;
 	private String pathToAuthFile = null;
 	private String[] pathsToAuthFiles = null;
 	private boolean useDefaultAuthProperties = true;
@@ -63,8 +65,10 @@ public class Authority {
 	 * @param print							boolean indicating whether to print status messages or not
 	 * @param optimize						boolean indicating whether to optimize the solr index not
 	 */
-	public Authority(boolean flagOnly, String pathToAuthFile, boolean useDefaultAuthProperties, String pathToCustomAuthProperties, String solrServerAuth, String solrServerBiblio, String timeStamp, boolean print, boolean optimize) {
+	public Authority(boolean flagOnly, boolean merge, String entities, String pathToAuthFile, boolean useDefaultAuthProperties, String pathToCustomAuthProperties, String solrServerAuth, String solrServerBiblio, String timeStamp, boolean print, boolean optimize) {
 		this.flagOnly = flagOnly;
+		this.merge = merge;
+		this.entities = entities;
 		this.pathToAuthFile = pathToAuthFile;
 		this.pathsToAuthFiles = this.pathToAuthFile.split(",");
 		this.useDefaultAuthProperties = useDefaultAuthProperties;
@@ -89,7 +93,7 @@ public class Authority {
 		this.optimize = optimize;
 	}
 
-	
+
 	/**
 	 * Starting the index process for authority records.
 	 * If only the flag of existance should be set, the data itself will not be indexed.
@@ -104,11 +108,15 @@ public class Authority {
 		}
 
 		if (this.flagOnly) {
-			
+
 			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
 			af.setFlagOfExistance();
 			this.smHelper.print(this.print, "\nDone setting flag of existance to authority records.");
+			if (merge) {
+				this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
+				this.smHelper.print(this.print, "\nDone merging authority records to bibliographic records.");
+			}
 			returnValue = true;
 		} else {
 			boolean isIndexingSuccessful = false;
@@ -122,8 +130,8 @@ public class Authority {
 						this.timeStamp,
 						this.optimize,
 						this.print
-				);
-				
+						);
+
 				isIndexingSuccessful = index.isIndexingSuccessful();
 				if (!isIndexingSuccessful) {
 					break;
@@ -132,22 +140,33 @@ public class Authority {
 
 			if(isIndexingSuccessful) {
 				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-				
+
 				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
 				af.setFlagOfExistance();
+				
+				if (merge) {
+					this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
+				}
+				
 				this.smHelper.print(this.print, "\nDone indexing authority records.");
 				returnValue = true;
 			} else {
 				System.err.println("Error indexing authority records!");
 				returnValue = false;
 			}
-			
+
 		}
 
 		return returnValue;
 	}
-	
-	
+
+
+	private void mergeAuthToBib(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuth, String timeStamp, String entities) {
+		// Integrate:
+		AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, print);
+		ai.mergeAuthorityToBiblio(entities);
+	}
+
 	/**
 	 * Integrates the authority data to the bibliographic data.
 	 * If only the flagOnly is true (see class constructor)the data itself will not be indexed. Then, only the
@@ -156,8 +175,9 @@ public class Authority {
 	 * @param entity	The entity of GND records that should be integrated (e. g. Person, Corporation, etc.)
 	 * @return bollean	Indicates if the index process was successful
 	 */
+	/*
 	public boolean integrateAuthority(String entity) {
-		
+
 		boolean returnValue = false;
 
 		HttpSolrServer solrServerAuth = new HttpSolrServer(this.solrServerAuth);
@@ -167,19 +187,19 @@ public class Authority {
 
 		if (this.flagOnly) {
 			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-			
+
 			// Set flag of existance
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
 			af.setFlagOfExistance();
-			
+
 			// Integrate:
-			AuthorityIntegrate ai = new AuthorityIntegrate(solrServerBiblio, solrServerAuth, null, print);
-			ai.integrateAuthorityRecords(entity);
-			
+			AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, null, print);
+			ai.mergeAuthorityToBiblio(entity);
+
 			this.smHelper.print(this.print, "\nDone integrating authority records to bibliographic records.");
 			returnValue = true;
 		} else {
-			
+
 			boolean isIndexingSuccessful = false;
 			for (String pathToAuthFile : this.pathsToAuthFiles) {
 				Index index = new Index (
@@ -192,26 +212,26 @@ public class Authority {
 						this.optimize,
 						this.print
 				);
-				
+
 				isIndexingSuccessful = index.isIndexingSuccessful();
 				if (!isIndexingSuccessful) {
 					break;
 				}
 			}
-			
+
 			if(isIndexingSuccessful) {
 				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-				
+
 				// Set flag of existance
 				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
 				af.setFlagOfExistance();
-				
+
 				// Integrate:
-				AuthorityIntegrate ai = new AuthorityIntegrate(solrServerBiblio, solrServerAuth, null, print);
-				ai.integrateAuthorityRecords(entity);
-				
+				AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, null, print);
+				ai.mergeAuthorityToBiblio(entity);
+
 				this.smHelper.print(this.print, "\nDone indexing and integrating authority records to bibliographic records.");
-				
+
 				returnValue = true;
 			} else {
 				System.err.println("Error indexing authority records!");
@@ -220,6 +240,7 @@ public class Authority {
 		}
 
 		return returnValue;
-		
+
 	}
+	 */
 }
