@@ -84,7 +84,7 @@ public class Consolidate {
 
 		// Split XML. Older records will be overwritten by newer records:
 		for (File fileForSplitting : filesForSplitting) {
-			this.smHelper.print(this.print, "\nSplitting file " + fileForSplitting.getAbsolutePath() + " ...");
+			this.smHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + " ...                                             \r");
 			Map<String, String> condAttrs = new HashMap<String, String>();
 			condAttrs.put("tag", "SYS");
 			xmls.split(fileForSplitting.getAbsolutePath(), "record", 0, "controlfield", condAttrs);
@@ -100,8 +100,6 @@ public class Consolidate {
 			System.err.println("\nError while consolidating! Cancelled process.\n");
 			return;
 		}
-
-
 	}
 
 
