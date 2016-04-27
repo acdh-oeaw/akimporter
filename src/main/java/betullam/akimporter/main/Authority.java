@@ -100,6 +100,20 @@ public class Authority {
 	 * @return	true if the index process was sucessful, false otherwise
 	 */
 	public boolean indexAuthority() {
+		
+		// Possible combinations:
+		//
+		// With indexing:
+		//   -A:      Index authority records and set flag of existance.
+		//   -A -m:   Index authority records, set flag of existance and merge them to the corresponding bibliographic records.
+		//
+		// Without indexing:
+		//   -A -f:      Set ONLY flag of existance for authority records that already exists in authority index. No indexing here!
+		//   -A -f -m:   Set flag of existance for authority records that already exists in authority index AND merge them to the
+		//               corresponding bibliographic records. No indexing here!
+
+
+
 		boolean returnValue = false;
 
 		HttpSolrServer solrServerAuth = new HttpSolrServer(this.solrServerAuth);
@@ -112,11 +126,14 @@ public class Authority {
 			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
 			af.setFlagOfExistance();
+			
 			this.smHelper.print(this.print, "\nDone setting flag of existance to authority records.");
-			if (merge) {
+			
+			if (this.merge) {
 				this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
 				this.smHelper.print(this.print, "\nDone merging authority records to bibliographic records.");
 			}
+			
 			returnValue = true;
 		} else {
 			boolean isIndexingSuccessful = false;
@@ -162,85 +179,9 @@ public class Authority {
 
 
 	private void mergeAuthToBib(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuth, String timeStamp, String entities) {
-		// Integrate:
+		// Merge (integrate):
 		AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, print);
 		ai.mergeAuthorityToBiblio(entities);
 	}
 
-	/**
-	 * Integrates the authority data to the bibliographic data.
-	 * If only the flagOnly is true (see class constructor)the data itself will not be indexed. Then, only the
-	 * flag of existance will be set and the data integration will be performed.
-	 * 
-	 * @param entity	The entity of GND records that should be integrated (e. g. Person, Corporation, etc.)
-	 * @return bollean	Indicates if the index process was successful
-	 */
-	/*
-	public boolean integrateAuthority(String entity) {
-
-		boolean returnValue = false;
-
-		HttpSolrServer solrServerAuth = new HttpSolrServer(this.solrServerAuth);
-		if (this.timeStamp == null) {
-			this.timeStamp = String.valueOf(new Date().getTime());
-		}
-
-		if (this.flagOnly) {
-			HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-
-			// Set flag of existance
-			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
-			af.setFlagOfExistance();
-
-			// Integrate:
-			AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, null, print);
-			ai.mergeAuthorityToBiblio(entity);
-
-			this.smHelper.print(this.print, "\nDone integrating authority records to bibliographic records.");
-			returnValue = true;
-		} else {
-
-			boolean isIndexingSuccessful = false;
-			for (String pathToAuthFile : this.pathsToAuthFiles) {
-				Index index = new Index (
-						pathToAuthFile.trim(),
-						solrServerAuth,
-						this.useDefaultAuthProperties,
-						this.pathToAuthProperties,
-						this.pathToTranslationFiles,
-						this.timeStamp,
-						this.optimize,
-						this.print
-				);
-
-				isIndexingSuccessful = index.isIndexingSuccessful();
-				if (!isIndexingSuccessful) {
-					break;
-				}
-			}
-
-			if(isIndexingSuccessful) {
-				HttpSolrServer solrServerBiblio = new HttpSolrServer(this.solrServerBiblio);
-
-				// Set flag of existance
-				AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, print);
-				af.setFlagOfExistance();
-
-				// Integrate:
-				AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, null, print);
-				ai.mergeAuthorityToBiblio(entity);
-
-				this.smHelper.print(this.print, "\nDone indexing and integrating authority records to bibliographic records.");
-
-				returnValue = true;
-			} else {
-				System.err.println("Error indexing authority records!");
-				returnValue = false;
-			}
-		}
-
-		return returnValue;
-
-	}
-	 */
 }

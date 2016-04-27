@@ -206,7 +206,7 @@ public class Main {
 				Index.multiValuedFields = new ArrayList<String>();
 				Index.translateFields = new HashMap<String, List<String>>();
 
-				// Start authority integration
+				// Start authority merge
 				Authority auth = new Authority(
 						flag,
 						merge,
@@ -409,8 +409,12 @@ public class Main {
 								uFtpUser,
 								uFtpPass,
 								uSolr,
+								aSolrAuth,
 								uDefaultMabProperties,
 								uCustomMabProperties,
+								aMergeEntities,
+								flag,
+								merge,
 								optimize,
 								print
 								);
@@ -1308,15 +1312,7 @@ public class Main {
 				.longOpt("authority-silent")
 				.desc("Index authority data without confirming the settings")
 				.build();
-		/*
-		// I (authority-integrate)
-		Option oAuthorityIntegrate = Option
-				.builder("I")
-				.required(true)
-				.longOpt("authority-integrate")
-				.desc("Index authority data and integrate them to bibliographic data")
-				.build();
-		 */
+
 		// e (ernten [harvest] and update authority properties from OAI interface)
 		Option oErnten = Option
 				.builder("e")
@@ -1379,9 +1375,9 @@ public class Main {
 		// m (authority-merge)
 		Option oAuthorityMerge = Option
 				.builder("m")
-				.required(true)
+				.required(false)
 				.longOpt("authority-merge")
-				.desc("Merge (integrate) authority data to bibliographic data. Can be used with -a, -A (with or without -f).\nExample: java -jar AkImporter.jar -a -f -m")
+				.desc("Sets flag of existance to authority and merges authority data into bibliographic data. Can be used with -a, -A, -u.\nExample: java -jar AkImporter.jar -a -m")
 				.build();
 
 

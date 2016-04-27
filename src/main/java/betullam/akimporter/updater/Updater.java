@@ -36,26 +36,11 @@ import betullam.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
+import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
 public class Updater {
-	
-	private HttpSolrServer solrServer;
-	boolean isUpdateSuccessful = false;
-	String timeStamp;
-	String localPathOriginal;
-	String localPathExtracted;
-	String localPathMerged;
-	String pathToMabXmlFile;
-	boolean useDefaultMabProperties;
-	String pathToMabPropertiesFile;
-	String directoryOfTranslationFiles;
-	boolean hasValidationPassed;
-	boolean isIndexingSuccessful;
-	boolean print = false;
-	boolean optimize = false;
-	private SolrMabHelper smHelper;
 
-	
 	/**
 	 * Handling the update process of ongoing data deliveries.
 	 * 
@@ -72,112 +57,132 @@ public class Updater {
 	 * @param print					true if status messages should be printed to console.
 	 * @return						true if update process was successful.
 	 */ 
-	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrAddress, boolean defaultMabProperties, String pathToCustomMabProps, boolean optimize, boolean print) {
+	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrServerAddrBiblio, String solrServerAddrAuth, boolean defaultMabProperties, String pathToCustomMabProps, String entities, boolean authFlagOnly, boolean authMerge, boolean optimize, boolean print) {
 
-		this.solrServer = new HttpSolrServer(solrAddress);
-		this.timeStamp = String.valueOf(new Date().getTime());
-		this.optimize = optimize;
-		this.print = print;
-		this.useDefaultMabProperties = (defaultMabProperties) ? true : false;
-		this.pathToMabPropertiesFile = (defaultMabProperties) ? null : pathToCustomMabProps;
-		this.smHelper = new SolrMabHelper(solrServer);
-		
-		this.smHelper.print(this.print, "\n-------------------------------------------");
-		
-		localPathOriginal = stripFileSeperatorFromPath(localPath) + File.separator + "original" + File.separator + timeStamp;
-		localPathExtracted = stripFileSeperatorFromPath(localPath) + File.separator + "extracted" + File.separator + timeStamp;
-		localPathMerged = stripFileSeperatorFromPath(localPath) + File.separator + "merged" + File.separator + timeStamp;
+		// Setting variables:
+		boolean isUpdateSuccessful = false;
+		HttpSolrServer solrServerBiblio = (solrServerAddrBiblio != null && !solrServerAddrBiblio.isEmpty()) ? new HttpSolrServer(solrServerAddrBiblio) : null;
+		HttpSolrServer solrServerAuth = (solrServerAddrAuth != null && !solrServerAddrAuth.isEmpty()) ? new HttpSolrServer(solrServerAddrAuth) : null;
+		String timeStamp = String.valueOf(new Date().getTime());
+		boolean useDefaultMabProperties = (defaultMabProperties) ? true : false;
+		String pathToMabPropertiesFile = (defaultMabProperties) ? null : pathToCustomMabProps;
+		SolrMabHelper smHelper = new SolrMabHelper(solrServerBiblio);
+		String localPathOriginal = stripFileSeperatorFromPath(localPath) + File.separator + "original" + File.separator + timeStamp;
+		String localPathExtracted = stripFileSeperatorFromPath(localPath) + File.separator + "extracted" + File.separator + timeStamp;
+		String localPathMerged = stripFileSeperatorFromPath(localPath) + File.separator + "merged" + File.separator + timeStamp;
 		mkDirIfNoExists(localPathOriginal);
 		mkDirIfNoExists(localPathExtracted);
 		mkDirIfNoExists(localPathMerged);
-		
-		this.smHelper.print(this.print, "\nUpdate starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(timeStamp))));
-		
+
+
+		smHelper.print(print, "\n-------------------------------------------");
+		smHelper.print(print, "\nUpdate starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(timeStamp))));
+
 		FtpDownload ftpDownload = new FtpDownload();
-		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, this.print);
-		
+		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, print);
+
 		if (isDownloadSuccessful) {
-			
+
 			// Extract downloaded .tar.gz file(s):
-			this.smHelper.print(this.print, "Extracting downloaded files to "+localPathExtracted+" ... ");
+			smHelper.print(print, "Extracting downloaded files to "+localPathExtracted+" ... ");
 			ExtractTarGz etg = new ExtractTarGz();
 			etg.extractTarGz(localPathOriginal, timeStamp, localPathExtracted);
-			this.smHelper.print(this.print, "Done");
-			
+			smHelper.print(print, "Done");
+
 			// Merge extracted files from downloaded .tar.gz file(se):
-			this.smHelper.print(this.print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
-			pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
+			smHelper.print(print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
+			String pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
 			xmlm.mergeElementNodes(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
-			this.smHelper.print(this.print, "Done");
-			
+			smHelper.print(print, "Done");
+
 			// Validate merged XML file:
-			this.smHelper.print(this.print, "\nValidating merged file ... ");
+			smHelper.print(print, "\nValidating merged file ... ");
 			XmlValidator bxh = new XmlValidator();
-			hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
-			this.smHelper.print(this.print, "Done");
-			
+			boolean hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
+			smHelper.print(print, "Done");
+
 			// Index XML file:
 			if (hasValidationPassed) {
-				if (this.useDefaultMabProperties) {
-					//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
-					//directoryOfTranslationFiles = "/betullam/akimporter/resources";
+				String directoryOfTranslationFiles = null;
+				if (useDefaultMabProperties) {
 					pathToMabPropertiesFile = "/main/resources/mab.properties";
 					directoryOfTranslationFiles = "/main/resources";
-					this.smHelper.print(this.print, "\nUse default mab.properties file for indexing.");
+					smHelper.print(print, "\nUse default mab.properties file for indexing.");
 				} else {
-					directoryOfTranslationFiles = new File(this.pathToMabPropertiesFile).getParent();
-					this.smHelper.print(this.print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
+					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
+					smHelper.print(print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
 				}
-				
-				this.smHelper.print(this.print, "\nStart indexing ... ");
-				
+
+				smHelper.print(print, "\nStart indexing ... ");
+
 				// Index metadata so Solr
-				Index index = new Index(pathToMabXmlFile, this.solrServer, this.useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, false);
+				Index index = new Index(pathToMabXmlFile, solrServerBiblio, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, timeStamp, false, false);
 				boolean isIndexingSuccessful = index.isIndexingSuccessful();
 
 				if (isIndexingSuccessful) {
-					this.smHelper.print(this.print, "Done");
-				}
-				
-				this.smHelper.print(this.print, "\nStart linking parent and child records ... ");
-				
-				// Connect child and parent volumes:
-				Relate relate = new Relate(this.solrServer, this.timeStamp, false, false);
-				boolean isRelateSuccessful = relate.isRelateSuccessful();
-				
-				if (isRelateSuccessful) {
-					this.smHelper.print(this.print, "Done");
-				}
-				
-				if (this.optimize) {
-					this.smHelper.print(this.print, "\nOptimizing Solr Server ... ");
-					this.smHelper.solrOptimize();
-					this.smHelper.print(this.print, "Done");
+					smHelper.print(print, "Done");
 				}
 
-				
+				smHelper.print(print, "\nStart linking parent and child records ... ");
+
+				// Connect child and parent volumes:
+				Relate relate = new Relate(solrServerBiblio, timeStamp, false, false);
+				boolean isRelateSuccessful = relate.isRelateSuccessful();
+
+				if (isRelateSuccessful) {
+					smHelper.print(print, "Done");
+				}
+
+				if (authFlagOnly) {
+					smHelper.print(print, "\nStart setting flags of existance to authority records ... ");
+					AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false);
+					af.setFlagOfExistance();
+					smHelper.print(print, "Done");
+				}
+
+				if (authMerge) {
+					smHelper.print(print, "\nStart merging authority records to bibliographic records ... ");
+					// If -f is not set, we should set flag of existance to authority anyway!
+					if (!authFlagOnly) {
+						smHelper.print(print, "\nStart setting flags of existance to authority records ... ");
+						AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false);
+						af.setFlagOfExistance();
+						smHelper.print(print, "Done");
+					}
+					AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, false);
+					ai.mergeAuthorityToBiblio(entities);
+					smHelper.print(print, "Done");
+				}
+
+				if (optimize) {
+					smHelper.print(print, "\nOptimizing Solr Server ... ");
+					smHelper.solrOptimize();
+					smHelper.print(print, "Done");
+				}
+
+
 				if (isIndexingSuccessful && isRelateSuccessful) {
-					this.smHelper.print(this.print, "\nEVERYTHING WAS SUCCESSFUL!");
+					smHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL!");
 					isUpdateSuccessful = true;
 				} else {
-					this.smHelper.print(this.print, "\nError while importing!\n");
+					smHelper.print(print, "\nError while importing!\n");
 					isUpdateSuccessful = false;
 				}
-				 
+
 			} else {
 				isUpdateSuccessful = false;
 			}
-			
+
 		} else {
 			isUpdateSuccessful = false;
 		}
-		
-		this.smHelper.print(this.print, "\n-------------------------------------------");
+
+		smHelper.print(print, "\n-------------------------------------------");
 		return isUpdateSuccessful;
-		
+
 	}
-	
+
 	/**
 	 * Remove last file separator character of a String representing a path to a directory
 	 *  
@@ -190,7 +195,7 @@ public class Updater {
 		}
 		return path;
 	}
-	
+
 	/**
 	 * Creates a directory if it does not exist.
 	 * 

@@ -56,6 +56,7 @@ public class AuthorityFlag {
 	private int NO_OF_ROWS = 500;
 	private int INDEX_RATE = 500;
 	Set<String> gndIds = new HashSet<String>();
+	//private String timeStamp = null;
 
 	/**
 	 * Constructor for setting some variables.
@@ -69,6 +70,9 @@ public class AuthorityFlag {
 		this.solrServerAuthority = solrServerAuthority;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServerBiblio, solrServerAuthority, timeStamp);
+		/*if (timeStamp != null && !timeStamp.isEmpty()) {
+			this.timeStamp = timeStamp;
+		}*/
 	}
 
 	
@@ -173,7 +177,7 @@ public class AuthorityFlag {
 					}
 				}
 
-				this.smHelper.print(this.print, "Setting flag in authority record " + gndId + ". Processing record no " + counter  + " of " + noOfGndIds + "                          \r");
+				this.smHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                                         \r");
 
 
 				// Add documents from the class variable which was set before to Solr
