@@ -92,7 +92,7 @@ public class AuthorityFlag {
 
 		// Get the number of documents that were found
 		long noOfDocs = queryResults.getNumFound();
-
+		
 		// If there are some records, go on. If not, do nothing.
 		if (queryResults != null && noOfDocs > 0) {
 
@@ -244,7 +244,7 @@ public class AuthorityFlag {
 		if (this.isAuthUpdate) {
 			resultDocList = this.relationHelper.getRecordsByGndIds(this.currentGndIds);
 		} else {
-			resultDocList = this.relationHelper.getRecordsWithGnd(true, null);
+			resultDocList = this.relationHelper.getRecordsWithGnd(isFirstPage, lastDocId);
 		}
 		
 		if (resultDocList != null) {
