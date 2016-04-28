@@ -296,6 +296,64 @@ public class RelationHelper {
 
 
 
+	public SolrDocumentList getRecordsByGndIdsAndFields(Set<String> authIds, List<String> solrFields, boolean isFirstPage, String lastDocId) {
+
+		// Set variables
+		SolrDocumentList biblioRecords = new SolrDocumentList();
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance (filter query users filter cache)
+		query.setQuery("*:*");
+
+
+		// Create query string:
+		String queryString = "";
+		for (String solrField : solrFields) {
+			for (String authId : authIds) {
+				queryString += solrField + ":\""+authId+"\" || "; // Join fields with the "OR" query operator
+			}
+		}
+		queryString = queryString.trim();
+		queryString = queryString.replaceFirst("(\\|\\|)$", "").trim(); // Remove the last "OR" query operator
+
+
+		// Set filter query
+		// We do not work with timeStamp here because we will need all bibliographich records that are using
+		// the specified authority ID, no matter when they were indexed. 
+		if (isFirstPage) { // No range filter on first page
+			query.setFilterQueries(queryString, "id:*");
+		} else { // After the first query, we need to use ranges to get the appropriate results
+			query.setStart(1);
+			query.setFilterQueries(queryString, "id:[" + lastDocId + " TO *]");
+		}
+
+		
+		// Set fields that should be given back from the query
+		List<String> lstSolrFieldsToReturn = new ArrayList<>(solrFields); // Copy immutable List<String> to a mutable List<String>
+		lstSolrFieldsToReturn.add("id");
+		String[] arrSolrFieldsToReturn = lstSolrFieldsToReturn.toArray(new String[0]);
+		query.setFields(arrSolrFieldsToReturn);
+
+		
+		try {
+			// Execute query and get results
+			SolrDocumentList queryResult = this.solrServerBiblio.query(query).getResults();
+			if (queryResult != null && !queryResult.isEmpty()) {
+				biblioRecords.addAll(queryResult);
+			}
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+
+		return biblioRecords;
+	}
+
 	public SolrDocumentList getRecordsByGndIds(Set<String> authIds) {
 
 		// Set variables
@@ -325,57 +383,6 @@ public class RelationHelper {
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			}
-		}
-
-		return biblioRecords;
-	}
-
-
-	public SolrDocumentList getRecordsByGndIdsAndFields(Set<String> authIds, List<String> solrFields) {
-
-		// Set variables
-		SolrDocumentList biblioRecords = new SolrDocumentList();
-		SolrQuery query = new SolrQuery();
-
-		// Set no of rows
-		// The query should not give back a lot of records, so we use Integer.MAX_VALUE. But in the future we should use a better strategy.
-		// TODO: Change to deep pageing query in case we get back too much documents (performance).
-		query.setRows(Integer.MAX_VALUE);
-
-		// Add sorting
-		query.addSort(SolrQuery.SortClause.asc("id"));
-
-		// Define a query for getting all documents. We will do a filter query further down because of performance (filter query users filter cache)
-		query.setQuery("*:*");
-
-
-		// Set fields that should be given back from the query
-		List<String> lstSolrFieldsToReturn = new ArrayList<>(solrFields); // Copy immutable List<String> to a mutable List<String>
-		lstSolrFieldsToReturn.add("id");
-		String[] arrSolrFieldsToReturn = lstSolrFieldsToReturn.toArray(new String[0]);
-		query.setFields(arrSolrFieldsToReturn);
-
-		// Create query string:
-		String queryString = "";
-		for (String solrField : solrFields) {
-			for (String authId : authIds) {
-				queryString += solrField + ":\""+authId+"\" || "; // Join fields with the "OR" query operator
-			}
-		}
-		queryString = queryString.trim();
-		queryString = queryString.replaceFirst("(\\|\\|)$", "").trim(); // Remove the last "OR" query operator
-
-		// Set filter query
-		query.setFilterQueries(queryString, "id:*");
-		
-		try {
-			// Execute query and get results
-			SolrDocumentList queryResult = this.solrServerBiblio.query(query).getResults();
-			if (queryResult != null && !queryResult.isEmpty()) {
-				biblioRecords.addAll(queryResult);
-			}
-		} catch (SolrServerException e) {
-			e.printStackTrace();
 		}
 
 		return biblioRecords;

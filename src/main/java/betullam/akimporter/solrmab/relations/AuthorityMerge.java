@@ -104,7 +104,7 @@ public class AuthorityMerge {
 			
 			// Get bibliographic records that uses authority IDs
 			if (isAuthUpdate) {
-				queryResults = this.relationHelper.getRecordsByGndIdsAndFields(currentGndIds, currentEntitySolrFields);
+				queryResults = this.relationHelper.getRecordsByGndIdsAndFields(currentGndIds, currentEntitySolrFields, true, null);
 			} else {
 				queryResults = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, true, null);
 			}
@@ -131,8 +131,14 @@ public class AuthorityMerge {
 					boolean isFirstPage = (l == 0) ? true : false;
 
 					// Get bibliographic records that uses authority IDs
-					SolrDocumentList biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
-
+					//SolrDocumentList biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
+					SolrDocumentList biblioRecords = null;
+					if (isAuthUpdate) {
+						biblioRecords = this.relationHelper.getRecordsByGndIdsAndFields(currentGndIds, currentEntitySolrFields, isFirstPage, lastDocId);
+					} else {
+						biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
+					}
+					
 					// Integrate the data of the authority records to the bibliographic records				
 					lastDocId = addAuthInfoToBiblio(biblioRecords, currentEntity, currentEntitySolrFields);
 				}
@@ -142,8 +148,14 @@ public class AuthorityMerge {
 					boolean isFirstPage = (wholePages <= 0) ? true : false;
 
 					// Get bibliographic records that uses authority IDs
-					SolrDocumentList biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
-
+					//SolrDocumentList biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
+					SolrDocumentList biblioRecords = null;
+					if (isAuthUpdate) {
+						biblioRecords = this.relationHelper.getRecordsByGndIdsAndFields(currentGndIds, currentEntitySolrFields, isFirstPage, lastDocId);
+					} else {
+						biblioRecords = this.relationHelper.getRecordsWithGndByFields(currentEntitySolrFields, isFirstPage, lastDocId);
+					}
+					
 					// If there is no whole page but only a fraction page, the fraction page is the first page, because it's the only one
 					addAuthInfoToBiblio(biblioRecords, currentEntity, currentEntitySolrFields);
 				}
