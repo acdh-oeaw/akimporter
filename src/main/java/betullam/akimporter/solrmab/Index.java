@@ -143,10 +143,10 @@ public class Index {
 			if (optimizeSolr) {
 				this.smHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
 				this.smHelper.solrOptimize();
-				this.smHelper.print(print, "Done optimizing Solr index.\n\n");
+				this.smHelper.print(print, "Done optimizing Solr index.\n");
 			}
 			endTime = System.currentTimeMillis();
-			smHelper.print(print, "Done indexing to solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n");
+			smHelper.print(print, "Done indexing to Solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n\n");
 			
 			isIndexingSuccessful = true;
 
