@@ -37,7 +37,6 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
@@ -62,9 +61,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
-import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
-import main.java.betullam.akimporter.solrmab.indexing.Mabfield;
 import main.java.betullam.akimporter.updater.OaiUpdater;
 import main.java.betullam.akimporter.updater.Updater;
 
@@ -135,9 +132,6 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		//System.out.println(aPath);
-		//System.exit(0);
-
 		// Disable StatusLogger message of Log4J2:
 		StatusLogger.getLogger().setLevel(Level.OFF);
 
@@ -176,6 +170,7 @@ public class Main {
 				flag = true;
 			}
 
+			// Merge authority data?
 			if (cmd.hasOption("m")) {
 				merge = true;
 			}
@@ -184,9 +179,9 @@ public class Main {
 			switch (selectedMainOption) {
 
 			case "k": { // FOR TESTING ONLY
-				//System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
+				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
 
-
+				/*
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				System.out.println("Start re-importing ongoing data updates ...");
 				// Start import process of ongoing updates (from "merged data" directory):				
@@ -221,13 +216,10 @@ public class Main {
 						optimize
 						);
 				auth.indexAuthority();
-
-
-				break;
+				*/
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
-
-
-
+	
+				break;
 			}
 
 			case "i": {
@@ -511,40 +503,6 @@ public class Main {
 				break;
 			}
 
-			/*
-			case "m": {
-
-				boolean integrateEntitiesOk = (aMergeEntities != null && !aMergeEntities.isEmpty()) ? true : false;
-				if(checkAuthorityProperties() && integrateEntitiesOk) {
-					if (test) {
-						// If test option is specified, just tell the user if the properties are OK, but do not start the process
-						System.out.println("Properties are OK");
-						break;
-					} else {
-						// Start import process for authority records:
-						Authority auth = new Authority(
-								flag,
-								merge,
-								aPath,
-								aDefaultMabProperties,
-								aCustomMabProperties,
-								aSolrAuth,
-								aSolrBibl,
-								null,
-								print,
-								optimize
-								);
-						auth.integrateAuthority(aMergeEntities);
-					}
-				}
-
-				if (!integrateEntitiesOk) {
-					System.err.println("Setting \"authority.integrate.entities\" does not exist or is empty in AkImporter.properties.");
-				}
-
-				break;
-			}
-			*/
 			case "e": {
 				if(checkAuthorityUpdateProperties()) {
 					if (test) {
@@ -624,7 +582,7 @@ public class Main {
 	 * @param	question			A question you want the user to answer as a String.
 	 * @param	possibleAnswers		A comma-separated String with possible answers: "fileExists", "directoryExists", "propertiesExists", "newFile", "solrPing" or null (see above explanation).
 	 * @param	scanner				A Scanner(System.in) object.
-	 * @return	String:				The value the user specified
+	 * @return	String				The value the user specified
 	 */
 	public static String getUserInput(String question, String possibleAnswers, Scanner scanner) {
 		boolean isValidAnswer = false;
@@ -1390,7 +1348,6 @@ public class Main {
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
-		//optionGroup.addOption(oAuthorityMerge);
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
@@ -1401,7 +1358,6 @@ public class Main {
 		options.addOption(oTestParameter);
 		options.addOption(oFlagAuthority);
 		options.addOption(oAuthorityMerge);
-
 	}
 
 
