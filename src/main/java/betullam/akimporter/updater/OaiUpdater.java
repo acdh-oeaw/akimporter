@@ -194,7 +194,7 @@ public class OaiUpdater {
 					Document doc = getOaiUpdated(oaiUrl, format, set, from, until, resumptionToken);
 					if (doc != null) {
 						resumptionToken = getResumptionToken(doc);
-						String fileName = this.timeStamp + "_" + counter + ".xml";
+						String fileName = this.timeStamp + "_" + String.format("%06d", counter) + ".xml";
 						writeXmlToFile(doc, oaiPathOriginal, fileName);
 					}
 				} while (resumptionToken != null);
