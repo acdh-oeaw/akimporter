@@ -118,7 +118,6 @@ public class Import {
 	/**
 	 * Actually starts the importing process.
 	 * 
-	 * @param	none
 	 * @return	void
 	 */
 	private void startImporting() {
@@ -241,8 +240,6 @@ public class Import {
 				}
 				if (useDefaultMabPropertiesFile.equals("D")) {
 					useDefaultMabProperties = true;
-					//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
-					//directoryOfTranslationFiles = "/betullam/akimporter/resources";
 					pathToMabPropertiesFile = "/main/resources/mab.properties";
 					directoryOfTranslationFiles = "/main/resources";
 					propertiesFileInfo = "Use default mab.properties file";
