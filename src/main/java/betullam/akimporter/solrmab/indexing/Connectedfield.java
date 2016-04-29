@@ -81,4 +81,65 @@ public class Connectedfield {
 				+ ", connectedSubfields=" + connectedSubfields + ", defaultValueIfMissing=" + defaultValueIfMissing
 				+ "]";
 	}
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((connectedSubfields == null) ? 0 : connectedSubfields.hashCode());
+		result = prime * result + ((datafieldName == null) ? 0 : datafieldName.hashCode());
+		result = prime * result + ((defaultValueIfMissing == null) ? 0 : defaultValueIfMissing.hashCode());
+		result = prime * result + ((masterSubfield == null) ? 0 : masterSubfield.hashCode());
+		return result;
+	}
+
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof Connectedfield)) {
+			return false;
+		}
+		Connectedfield other = (Connectedfield) obj;
+		if (connectedSubfields == null) {
+			if (other.connectedSubfields != null) {
+				return false;
+			}
+		} else if (!connectedSubfields.equals(other.connectedSubfields)) {
+			return false;
+		}
+		if (datafieldName == null) {
+			if (other.datafieldName != null) {
+				return false;
+			}
+		} else if (!datafieldName.equals(other.datafieldName)) {
+			return false;
+		}
+		if (defaultValueIfMissing == null) {
+			if (other.defaultValueIfMissing != null) {
+				return false;
+			}
+		} else if (!defaultValueIfMissing.equals(other.defaultValueIfMissing)) {
+			return false;
+		}
+		if (masterSubfield == null) {
+			if (other.masterSubfield != null) {
+				return false;
+			}
+		} else if (!masterSubfield.equals(other.masterSubfield)) {
+			return false;
+		}
+		return true;
+	}
+
+
+	
+	
+	
 }

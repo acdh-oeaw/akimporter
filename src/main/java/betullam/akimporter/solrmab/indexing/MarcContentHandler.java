@@ -29,8 +29,10 @@ package main.java.betullam.akimporter.solrmab.indexing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -70,7 +72,7 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
-	private List<Connectedfield> connectedFields = new ArrayList<Connectedfield>();
+	private HashSet<Connectedfield> connectedFields = new HashSet<Connectedfield>();
 	private boolean isConnectedField = false;
 	Connectedfield currentConnectedField = null;
 	List<String> existingConnectedSubfields = null;
@@ -93,19 +95,32 @@ public class MarcContentHandler implements ContentHandler {
 
 		// Get list of connected fields. We need to check them while parsing the XML.
 		for (MatchingObject mo : listOfMatchingObjs) {
-			List<String> connectedSubfields = mo.getConnectedSubfields();
-			if (connectedSubfields != null) {
+			String masterSubfield = mo.getConnectedSubfield();
+			if (masterSubfield != null) {
 				if (mo.isMultiValued()) {
-					
+					//String datafieldName = null;
+					List<String> connectedSubfields = new ArrayList<String>();
 					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
 						String strDatafield = mabfieldName.getKey().toString();
 						String datafieldName = strDatafield.substring(0,3); // Get e. g. "655" out of "655$e*$u"
-						String masterSubfield = strDatafield.substring(strDatafield.length() - 1); // Get last character, e. g. "u" out of "655$e*$u"
-						connectedFields.add(new Connectedfield(datafieldName, masterSubfield, connectedSubfields, mo.getDefaultValue()));
+						String connectedSubfieldCode = strDatafield.substring(strDatafield.length() - 1); // Get last character, e. g. "u" out of "655$e*$u"
+						connectedSubfields.add(connectedSubfieldCode);
+						
+						GO ON HERE:
+						// No duplicates in connectedFields.
+						// Only works if connectedSubfields is null!
+						Connectedfield cf = new Connectedfield(datafieldName, masterSubfield, connectedSubfields, mo.getDefaultValue());
+						connectedFields.add(cf);
 					}
 				}
 			}
 		}
+		
+		for (Connectedfield cf : connectedFields) {
+			System.out.println(cf.toString());
+			System.out.println(cf.hashCode());
+		}
+		//System.exit(0);
 		
 	}
 
@@ -202,6 +217,7 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Get all dependent subfields that exists within the current datafield of the XML record
 				if (requiredConnectedSubfields.contains(subfieldCode)) {
+					System.out.println(subfieldCode);
 					existingConnectedSubfields.add(subfieldCode);
 				}
 			}

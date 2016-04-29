@@ -39,7 +39,7 @@ public class MatchingObject {
 	private HashMap<String, String> translateProperties;
 	private boolean hasDefaultValue;
 	private String defaultValue;
-	private List<String> connectedSubfields;
+	private String connectedSubfield;
 	private boolean hasRegex;
 	private String regexValue;
 	private boolean hasRegexStrict;
@@ -49,7 +49,7 @@ public class MatchingObject {
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, List<String> connectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean allowDuplicates) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean translateValue, boolean translateValueContains, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, String connectedSubfield, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean allowDuplicates) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
@@ -59,7 +59,7 @@ public class MatchingObject {
 		this.setTranslateProperties(translateProperties);
 		this.setHasDefaultValue(hasDefaultValue);
 		this.setDefaultValue(defaultValue);
-		this.setConnectedSubfields(connectedSubfields);
+		this.setConnectedSubfield(connectedSubfield);
 		this.setHasRegex(hasRegex);
 		this.setRegexValue(regexValue);
 		this.setHasRegexStrict(hasRegexStrict);
@@ -139,12 +139,12 @@ public class MatchingObject {
 		this.defaultValue = defaultValue;
 	}
 	
-	public List<String> getConnectedSubfields() {
-		return connectedSubfields;
+	public String getConnectedSubfield() {
+		return connectedSubfield;
 	}
 
-	public void setConnectedSubfields(List<String> connectedSubfields) {
-		this.connectedSubfields = connectedSubfields;
+	public void setConnectedSubfield(String connectedSubfield) {
+		this.connectedSubfield = connectedSubfield;
 	}
 
 	public boolean hasRegex() {
@@ -194,7 +194,7 @@ public class MatchingObject {
 				+ multiValued + ", customText=" + customText + ", translateValue=" + translateValue
 				+ ", translateValueContains=" + translateValueContains + ", translateProperties=" + translateProperties
 				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + ", connectedSubfields="
-				+ connectedSubfields + ", hasRegex=" + hasRegex + ", regexValue=" + regexValue + ", hasRegexStrict="
+				+ connectedSubfield + ", hasRegex=" + hasRegex + ", regexValue=" + regexValue + ", hasRegexStrict="
 				+ hasRegexStrict + ", regexStrictValue=" + regexStrictValue + ", allowDuplicates=" + allowDuplicates
 				+ "]";
 	}
