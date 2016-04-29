@@ -111,12 +111,6 @@ public class Index {
 
 			startTime = System.currentTimeMillis();
 
-			
-			//System.out.println("mabPropertiesInputStream: " + mabPropertiesInputStream.toString());			
-			//System.out.println(IOUtils.toString(mabPropertiesInputStream, "UTF-8"));
-
-
-
 			// Get contents of mab.properties files and put them to MatchingObjects
 			listOfMatchingObjs = getMatchingObjects(mabPropertiesInputStream, pathToTranslationFiles);
 
@@ -196,45 +190,6 @@ public class Index {
 	 * @return							The rules of defined in mab.properties file represented as a list of MatchingObjects
 	 */
 	private List<MatchingObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
-
-		/*
-		System.out.println("\n\n-------------------------------------------");
-		String test = "123$**$a, contains[test], regEx[[\\d],te\\[st], test, regEx[[\\]\\[est]]";
-		test = test.replace("\\[", "").replace("\\]", "");
-		String newTest = "";
-		int openBracketsCounter = 0;
-		int closeBracketsCounter = 0;
-		int bracketCounter = 0;
-		// Iterate over each character of a line in the properties file:
-		for (int i = 0; i < test.length(); i++){
-		    char c = test.charAt(i);
-		    String s = Character.toString(c);
-		    // Check if the current character is an opening bracket
-		    if (s.equals("[")) {
-		    	openBracketsCounter = openBracketsCounter + 1;
-		    	bracketCounter = bracketCounter + 1;
-		    }
-		    // Add characters to the new string only if not within an opening bracket
-		    if (bracketCounter <= 0) {
-		    	newTest += s;
-		    }
-		    // Check if the current character is a closing bracket
-		    if (s.equals("]")) {
-		    	closeBracketsCounter = closeBracketsCounter + 1;
-		    	bracketCounter = bracketCounter - 1;
-		    }
-		}
-
-	    // If there are not as many opening brackets as closing brackets, there is an error in the syntax
-		if (openBracketsCounter != closeBracketsCounter) {
-			System.err.println("Please check in our mab properties file if you forgot an opening [ or closing ] square bracket. "
-					+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it with a double backslash, e. g.: \\\\[");
-			System.exit(0);
-		}
-		System.out.println(newTest);
-		System.out.println("\n-------------------------------------------\n");
-		 */
-
 
 		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
 
@@ -591,9 +546,7 @@ public class Index {
 		try {
 			// Get .properties file and load contents:
 			if (useDefaultMabProperties) {
-				//translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/betullam/akimporter/resources/" + filename));
 				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
-
 			} else {
 				translationStream = new BufferedInputStream(new FileInputStream(translationFile));
 			}
