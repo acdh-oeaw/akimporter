@@ -55,7 +55,8 @@ public class ReImport {
 	/**
 	 * Constructor for starting a re-import of already imported data.
 	 *  
-	 * @param	print	boolean: Print status messages to console?
+	 * @param print		boolean: Print status messages to console?
+	 * @param optimize	boolean: optimize Solr?
 	 */
 	public ReImport(boolean print, boolean optimize) {
 		this.print = print;
@@ -113,12 +114,9 @@ public class ReImport {
 
 		// Variables
 		String propertiesFileInfo = null;
-		//boolean useDefaultMabProperties = true;
 		String directoryOfTranslationFiles = null;
 
 		if (useDefaultMabProperties) {
-			//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
-			//directoryOfTranslationFiles = "/betullam/akimporter/resources";
 			pathToMabPropertiesFile = "/main/resources/mab.properties";
 			directoryOfTranslationFiles = "/main/resources";
 			propertiesFileInfo = "Using default mab.properties file";
@@ -258,8 +256,6 @@ public class ReImport {
 
 			if (useDefaultMabPropertiesFile.equals("D")) {
 				useDefaultMabProperties = true;
-				//pathToMabPropertiesFile = "/betullam/akimporter/resources/mab.properties";
-				//directoryOfTranslationFiles = "/betullam/akimporter/resources";
 				pathToMabPropertiesFile = "/main/resources/mab.properties";
 				directoryOfTranslationFiles = "/main/resources";
 				propertiesFileInfo = "Use default mab.properties file";
@@ -369,7 +365,5 @@ public class ReImport {
 		}
 		return path;
 	}
-
-
 
 }
