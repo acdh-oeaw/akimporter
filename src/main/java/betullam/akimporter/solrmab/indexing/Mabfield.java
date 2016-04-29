@@ -1,7 +1,7 @@
 /**
  * Mabfield class
  *
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -30,6 +30,7 @@ public class Mabfield implements Comparable<Mabfield> {
 
 	private String fieldname;
 	private String fieldvalue;
+	private boolean allowDuplicates = false;
 
 	public Mabfield() {}
 
@@ -53,6 +54,14 @@ public class Mabfield implements Comparable<Mabfield> {
 
 	public void setFieldvalue(String fieldvalue) {
 		this.fieldvalue = fieldvalue;
+	}
+	
+	public boolean isAllowDuplicates() {
+		return allowDuplicates;
+	}
+
+	public void setAllowDuplicates(boolean allowDuplicates) {
+		this.allowDuplicates = allowDuplicates;
 	}
 
 	@Override

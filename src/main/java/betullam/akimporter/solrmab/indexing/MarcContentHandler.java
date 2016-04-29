@@ -3,7 +3,7 @@
  * This is where some of the data processing is done to
  * get the values in shape before indexing them to Solr.
  *
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -69,6 +70,12 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
+	private List<Connectedfield> connectedFields = new ArrayList<Connectedfield>();
+	private boolean isConnectedField = false;
+	Connectedfield currentConnectedField = null;
+	List<String> existingConnectedSubfields = null;
+
+
 	/**
 	 * Constructor of MarcContentHandler.
 	 * This is the starting point of reading and processing the XML file(s) containing MARC records.
@@ -83,6 +90,23 @@ public class MarcContentHandler implements ContentHandler {
 		this.sServer = solrServer;
 		this.timeStamp = timeStamp;
 		this.print = print;
+
+		// Get list of connected fields. We need to check them while parsing the XML.
+		for (MatchingObject mo : listOfMatchingObjs) {
+			List<String> connectedSubfields = mo.getConnectedSubfields();
+			if (connectedSubfields != null) {
+				if (mo.isMultiValued()) {
+					
+					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+						String strDatafield = mabfieldName.getKey().toString();
+						String datafieldName = strDatafield.substring(0,3); // Get e. g. "655" out of "655$e*$u"
+						String masterSubfield = strDatafield.substring(strDatafield.length() - 1); // Get last character, e. g. "u" out of "655$e*$u"
+						connectedFields.add(new Connectedfield(datafieldName, masterSubfield, connectedSubfields, mo.getDefaultValue()));
+					}
+				}
+			}
+		}
+		
 	}
 
 
@@ -142,6 +166,20 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldInd1 = (datafieldInd1 != null && !datafieldInd1.isEmpty()) ? datafieldInd1 : "*";
 			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
 			is001Datafield = (datafieldTag.equals("001")) ? true : false;
+
+			
+			// Check if datafield is a connected field
+			for (Connectedfield connectedField : connectedFields) {
+				if (connectedField.getDatafieldName().equals(datafieldTag)) {
+					existingConnectedSubfields = new ArrayList<String>(); // (Re)-Set variable to an empty List
+					currentConnectedField = connectedField;
+					isConnectedField = true;
+				} else {
+					isConnectedField = false;
+				}
+			}
+
+
 		}
 
 		if(localName.equals("subfield")) {
@@ -155,6 +193,19 @@ public class MarcContentHandler implements ContentHandler {
 			//        Result: mabfield name = 100$**$r, mabfield value = AC123456789
 			datafield = new Mabfield();
 			datafield.setFieldname(datafieldName);
+
+			
+			// Check if datafield of current subfield is a connected field
+			if (isConnectedField) {
+				// Get dependent subfield that are defined by the user for this datafield
+				List<String> requiredConnectedSubfields = currentConnectedField.getConnectedSubfields();
+
+				// Get all dependent subfields that exists within the current datafield of the XML record
+				if (requiredConnectedSubfields.contains(subfieldCode)) {
+					existingConnectedSubfields.add(subfieldCode);
+				}
+			}
+			
 		}
 
 
@@ -197,14 +248,28 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 		if(localName.equals("datafield")) {
-			// Do nothing
+			
+			// Check if datafield is a connected field
+			if (isConnectedField) {
+				// Check if at least on connected field exists. If not, add a default value
+				if (existingConnectedSubfields.isEmpty()) {
+					// Get one required subfield code so that we can set it as subfield to a new datafield object.
+					String missingSubfieldCode = currentConnectedField.getConnectedSubfields().get(0); // Get the first value
+										
+					String mabfieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + missingSubfieldCode;
+					allFields.add(new Mabfield(mabfieldName, "DefaultValue"));
+
+				}
+				isConnectedField = false; // (Re)-Set isTwinField to false for a fresh start.
+			}
+			
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
 		// leader-, controlfield- and datafield-objects to the record-object and add the
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
-
+			
 			counter = counter + 1;
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
@@ -227,7 +292,7 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Add to Solr-Index:
 				//if (!newRecordSet.isEmpty()) {
-					this.solrAddRecordSet(sServer, newRecordSet);
+				this.solrAddRecordSet(sServer, newRecordSet);
 				//}
 
 
