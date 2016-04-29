@@ -58,7 +58,6 @@ public class AuthorityFlag {
 	private int INDEX_RATE = 500;
 	Set<String> gndIds = new HashSet<String>();
 	Set<String> currentGndIds = new HashSet<String>();
-	//private String timeStamp = null;
 
 	/**
 	 * Constructor for setting some variables.
@@ -287,8 +286,6 @@ public class AuthorityFlag {
 				}
 			}
 		}
-		
-		
 		
 		return returnValue;
 	}
