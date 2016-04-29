@@ -75,15 +75,10 @@ public class Connectedfield {
 		this.defaultValueIfMissing = defaultValueIfMissing;
 	}
 
-
 	@Override
 	public String toString() {
 		return "Connectedfield [datafieldName=" + datafieldName + ", masterSubfield=" + masterSubfield
-				+ ", dependentSubfields=" + connectedSubfields + ", defaultValueIfMissing=" + defaultValueIfMissing
+				+ ", connectedSubfields=" + connectedSubfields + ", defaultValueIfMissing=" + defaultValueIfMissing
 				+ "]";
 	}
-	
-	
-	
-
 }
