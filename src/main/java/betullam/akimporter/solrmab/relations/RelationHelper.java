@@ -296,6 +296,15 @@ public class RelationHelper {
 
 
 
+	/**
+	 * Get bibliographich records that contains at least one of the given authority IDs in at least
+	 * one of the given Solr fields.
+	 * @param authIds		Set<String>: Authority IDs that the bibliographic record must contain
+	 * @param solrFields	List<String>: Solr filds to search for the authority IDs
+	 * @param isFirstPage	boolean: True if first page of Solr results
+	 * @param lastDocId		String: Doc Id of the last processed Solr document
+	 * @return				SolrDocumentList: Query result of Solr.
+	 */
 	public SolrDocumentList getRecordsByGndIdsAndFields(Set<String> authIds, List<String> solrFields, boolean isFirstPage, String lastDocId) {
 
 		// Set variables
@@ -354,6 +363,11 @@ public class RelationHelper {
 		return biblioRecords;
 	}
 
+	/**
+	 * Get bibliographic records that contains at least one of the given authority IDs.
+	 * @param authIds	Set<String>: Authority IDs that the bibliographic record must contain
+	 * @return			SolrDocumentList: Query result of Solr.
+	 */
 	public SolrDocumentList getRecordsByGndIds(Set<String> authIds) {
 
 		// Set variables
@@ -494,6 +508,10 @@ public class RelationHelper {
 
 
 
+	/**
+	 * Get all possible IDs of the currently indexed authority records
+	 * @return	Set<String> of all possible IDs
+	 */
 	public Set<String> getIdsAnd035OfCurrentlyIndexedAuthRecords() {
 
 		// Set up variables
