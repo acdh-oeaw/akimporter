@@ -52,10 +52,13 @@ public class Authority {
 	private boolean optimize = false;
 	private SolrMabHelper smHelper = new SolrMabHelper();
 
+
 	/**
 	 * Constructor for setting some variables.
 	 * 
-	 * @param flagOnly						boolean indicating if the authority data should be indexed or if only the flag of existance should be set.
+	 * @param flagOnly						boolean: true if only the flag of existance should be set to authority data
+	 * @param merge							boolean: true if authority data should be merged into bibliographic data.
+	 * @param entities						String indicating authority entities (Person, Corporation, etc.)
 	 * @param pathToAuthFile				String indicating the path to an authority file (e. g. /path/to/persons.xml)
 	 * @param useDefaultAuthProperties		boolean indicating if the default authority properties for indexing should be used
 	 * @param pathToCustomAuthProperties	String indicating the path to a custom .properties file (e. g. /path/to/custom_authority.properties)
@@ -111,8 +114,6 @@ public class Authority {
 		//   -A -f:      Set ONLY flag of existance for authority records that already exists in authority index. No indexing here!
 		//   -A -f -m:   Set flag of existance for authority records that already exists in authority index AND merge them to the
 		//               corresponding bibliographic records. No indexing here!
-
-
 
 		boolean returnValue = false;
 
@@ -178,8 +179,15 @@ public class Authority {
 	}
 
 
+	/**
+	 * Merge authority data to bibliographic records.
+	 * 
+	 * @param solrServerBiblio				HttpSolrServer: the Solr bibliographic index
+	 * @param solrServerAuth				HttpSolrServer: the Solr authority index
+	 * @param timeStamp						String: Current unix time stamp as a String or null
+	 * @param entities						String: authority entities (Person, Corporation, etc.)
+	 */
 	private void mergeAuthToBib(HttpSolrServer solrServerBiblio, HttpSolrServer solrServerAuth, String timeStamp, String entities) {
-		// Merge (integrate):
 		AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, false, print);
 		ai.mergeAuthorityToBiblio(entities);
 	}
