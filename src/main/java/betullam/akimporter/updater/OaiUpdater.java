@@ -117,13 +117,7 @@ public class OaiUpdater {
 
 		if (isAuthorityUpdateSuccessful) {
 
-			// TODO: Merge authority data to bibliographic data:
-			// 1. Get all IDs of bibliographic records using the authority IDs that were just updated
-			// 2. Start AuthorityFlag and AuthorityMerge for these bibliographic records
-			// TEST merge - Begin
 			if (merge) {
-				//Set<String> currentyIndexedAuthRecordIds = getCurrentlyIndexedAuthRecordIds(solrServerAuth, this.timeStamp);
-				//SolrDocumentList biblioRecordsForFlagAndMerge = getBiblioRecordsWithGnd(solrServerBiblio, currentyIndexedAuthRecordIds);
 				HttpSolrServer sServerAuth = new HttpSolrServer(solrServerAuth);
 				HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
 				
@@ -134,9 +128,7 @@ public class OaiUpdater {
 				// Merge authority records to bibliographic records:
 				AuthorityMerge am = new AuthorityMerge(sServerBiblio, sServerAuth, this.timeStamp, true, print);
 				am.mergeAuthorityToBiblio(entities);
-				
 			}
-			// TEST merge - End
 
 			smHelper.print(print, "\nDONE UPDATING AUTHORITY DATA. EVERYTHING WAS SUCCESSFUL");
 		} else {
@@ -428,95 +420,4 @@ public class OaiUpdater {
 		}
 	}
 
-	
-	/*
-	private static Set<String> getCurrentlyIndexedAuthRecordIds(String solrServerAuthAddr, String timeStamp) {
-
-		// Set up variables
-		Set<String> distinctAuthIds = new HashSet<String>();
-		SolrDocumentList currentlyIndexedAuthRecords = null;
-		SolrQuery query = new SolrQuery();
-		HttpSolrServer solrServerAuth = new HttpSolrServer(solrServerAuthAddr);
-
-		// Set no of rows
-		// The query should not give back a lot of records, so we use Integer.MAX_VALUE. But in the future we should use a better strategy.
-		// TODO: Change to deep pageing query in case we get back too much documents (performance).
-		query.setRows(Integer.MAX_VALUE);
-
-		// Add sorting
-		query.addSort(SolrQuery.SortClause.asc("id"));
-
-		// Define a query for getting all documents. We will do a filter query further down because of performance
-		query.setQuery("*:*");
-
-		// Filter all records that were indexed with the current import process (timeStamp)
-		query.setFilterQueries("indexTimestamp_str:"+timeStamp, "id:*");
-
-		// Set fields that should be given back from the query
-		query.setFields("id", "gndId035_str_mv");
-
-		try {
-			// Execute query and get results
-			currentlyIndexedAuthRecords = solrServerAuth.query(query).getResults();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		}
-
-		if (!currentlyIndexedAuthRecords.isEmpty() && currentlyIndexedAuthRecords != null) {
-			for (SolrDocument authRecord : currentlyIndexedAuthRecords) {
-				// Get all IDs of the authority document
-				String authId = authRecord.getFieldValue("id").toString();
-				Collection<Object> gndIds035 = (authRecord.getFieldValues("gndId035_str_mv") != null && !authRecord.getFieldValues("gndId035_str_mv").isEmpty()) ? authRecord.getFieldValues("gndId035_str_mv") : null;
-
-				// Add authority IDs to a Set<String> to get a deduplicated list of authority IDs 
-				distinctAuthIds.add(authId);
-				if (gndIds035 != null) {
-					for (Object gndId035 : gndIds035) {
-						distinctAuthIds.add(gndId035.toString());
-					}
-				}
-			}
-		}
-
-		return distinctAuthIds;
-	}
-
-
-	private SolrDocumentList getBiblioRecordsWithGnd(String solrServerBiblioAddr, Set<String> authIds) {
-		
-		// Set variables
-		HttpSolrServer solrServerBiblio = new HttpSolrServer(solrServerBiblioAddr);
-		SolrDocumentList biblioRecords = new SolrDocumentList();
-		SolrQuery query = new SolrQuery();
-
-		// Set no of rows
-		// The query should not give back a lot of records, so we use Integer.MAX_VALUE. But in the future we should use a better strategy.
-		// TODO: Change to deep pageing query in case we get back too much documents (performance).
-		query.setRows(Integer.MAX_VALUE);
-
-		// Add sorting
-		query.addSort(SolrQuery.SortClause.asc("id"));
-
-		// Define a query for getting all documents. We will do a filter query further down because of performance (filter query users filter cache)
-		query.setQuery("*:*");
-
-		// Set fields that should be given back from the query
-		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv", "subjectGndNo_str");
-
-		for (String authId : authIds) {
-			query.setFilterQueries("author_GndNo_str:\""+authId+"\" || author2_GndNo_str:\""+authId+"\" || author_additional_GndNo_str_mv:\""+authId+"\" || corporateAuthorGndNo_str:\""+authId+"\" || corporateAuthor2GndNo_str_mv:\""+authId+"\" || subjectGndNo_str:\""+authId+"\"", "id:*");	
-			try {
-				// Execute query and get results
-				SolrDocumentList queryResult = solrServerBiblio.query(query).getResults();
-				if (queryResult != null && !queryResult.isEmpty()) {
-					biblioRecords.addAll(queryResult);
-				}
-			} catch (SolrServerException e) {
-				e.printStackTrace();
-			}
-		}
-
-		return biblioRecords;
-	}
-	*/
 }
