@@ -211,7 +211,8 @@ public class Index {
 				boolean hasRegex = false;
 				boolean hasRegexStrict = false;
 				String defaultValue = null;
-				String connectedMasterSubfield = null;
+				List<String> connectedSubfields = null;
+				boolean hasConnectedSubfields = false;
 				String regexValue = null;
 				String regexStrictValue = null;
 				String strValues = mabProperties.getProperty(key);
@@ -336,36 +337,19 @@ public class Index {
 					}
 				}
 				
-				/*
 				if (lstValuesClean.contains("connectedSubfields")) {
 					String connectedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("connectedSubfields");
-					connectedSubfieldsString =  lstValues.get(index); // Get whole string of defaultValue incl. square brackets, e. g. connectedSubfields[a:b:c]
+					connectedSubfieldsString =  lstValues.get(index); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
-
+					hasConnectedSubfields = true;
 					if (connectedSubfieldsString != null) {
 						// Extract the text in the square brackets:
 						Pattern patternConnectedSubfields = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
 						Matcher matcherConnectedSubfields = patternConnectedSubfields.matcher(connectedSubfieldsString);
 						String strConnectedSubfields = (matcherConnectedSubfields.find()) ? matcherConnectedSubfields.group().replace("[", "").replace("]", "").trim() : null;
 						connectedSubfields = Arrays.asList(strConnectedSubfields.split("\\s*:\\s*"));
-					}
-				}
-				*/
-				if (lstValuesClean.contains("connectedSubfield")) {
-					String connectedSubfieldsString = null;
-					int index = lstValuesClean.indexOf("connectedSubfield");
-					connectedSubfieldsString =  lstValues.get(index); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
-					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
-					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
-
-					if (connectedSubfieldsString != null) {
-						// Extract the text in the square brackets:
-						Pattern patternConnectedSubfields = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
-						Matcher matcherConnectedSubfields = patternConnectedSubfields.matcher(connectedSubfieldsString);
-						connectedMasterSubfield = (matcherConnectedSubfields.find()) ? matcherConnectedSubfields.group().replace("[", "").replace("]", "").trim() : null;
-						//connectedSubfields = Arrays.asList(strConnectedSubfields.split("\\s*:\\s*"));
 					}
 				}
 
@@ -501,7 +485,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue, connectedMasterSubfield, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
 				matchingObjects.add(mo);
 			}
 

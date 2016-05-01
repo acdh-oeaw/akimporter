@@ -29,10 +29,11 @@ package main.java.betullam.akimporter.solrmab.indexing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -72,10 +73,15 @@ public class MarcContentHandler implements ContentHandler {
 	String datafieldInd2;
 	String subfieldCode;
 
+	// Variables for connected fields:
 	private HashSet<Connectedfield> connectedFields = new HashSet<Connectedfield>();
-	private boolean isConnectedField = false;
+	private boolean datafieldContainsConnectedFields = false;
 	Connectedfield currentConnectedField = null;
-	List<String> existingConnectedSubfields = null;
+	List<String> currentConnectedSubfields = null;
+	private boolean connectedValueRequired = false;
+	String connectedSubfieldText = null;
+	List<String> currentMasterSubfields = new ArrayList<String>();
+	Map<String, String> currentMasterSubfieldsValues = new HashMap<String, String>();
 
 
 	/**
@@ -95,33 +101,28 @@ public class MarcContentHandler implements ContentHandler {
 
 		// Get list of connected fields. We need to check them while parsing the XML.
 		for (MatchingObject mo : listOfMatchingObjs) {
-			String masterSubfield = mo.getConnectedSubfield();
-			if (masterSubfield != null) {
-				if (mo.isMultiValued()) {
-					//String datafieldName = null;
-					List<String> connectedSubfields = new ArrayList<String>();
-					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
-						String strDatafield = mabfieldName.getKey().toString();
-						String datafieldName = strDatafield.substring(0,3); // Get e. g. "655" out of "655$e*$u"
-						String connectedSubfieldCode = strDatafield.substring(strDatafield.length() - 1); // Get last character, e. g. "u" out of "655$e*$u"
-						connectedSubfields.add(connectedSubfieldCode);
-						
-						GO ON HERE:
-						// No duplicates in connectedFields.
-						// Only works if connectedSubfields is null!
-						Connectedfield cf = new Connectedfield(datafieldName, masterSubfield, connectedSubfields, mo.getDefaultValue());
-						connectedFields.add(cf);
-					}
+			if (mo.hasConnectedSubfields()) {
+
+				Map<String, String> connectedMasterFields = new HashMap<String, String>();
+				String connectedDefaultValue = null;
+				List<String> mutableList = new ArrayList<String>();
+				mutableList.addAll(mo.getConnectedSubfields()); // Create CHANGEABLE/MUTABLE List:
+				int lastListElement = (mutableList.size()-1); // Get index of last List element
+
+				// Get all master fields:
+				for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+					String completeFieldname = mabfieldName.getKey().toString();
+					String connectedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
+					String connectedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
+					connectedMasterFields.put(connectedMasterSubfield, connectedMasterDatafield);
 				}
+
+				connectedDefaultValue = mutableList.get(lastListElement); // Last value is always the default value to use
+				mutableList.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
+
+				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));
 			}
 		}
-		
-		for (Connectedfield cf : connectedFields) {
-			System.out.println(cf.toString());
-			System.out.println(cf.hashCode());
-		}
-		//System.exit(0);
-		
 	}
 
 
@@ -182,18 +183,19 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
 			is001Datafield = (datafieldTag.equals("001")) ? true : false;
 
-			
-			// Check if datafield is a connected field
+
 			for (Connectedfield connectedField : connectedFields) {
-				if (connectedField.getDatafieldName().equals(datafieldTag)) {
-					existingConnectedSubfields = new ArrayList<String>(); // (Re)-Set variable to an empty List
-					currentConnectedField = connectedField;
-					isConnectedField = true;
-				} else {
-					isConnectedField = false;
+
+				for (Entry<String, String> masterField : connectedField.getConnectedMasterFields().entrySet()) {
+					String masterDatafield = masterField.getValue().toString(); // E. g.: 655
+					if (masterDatafield.equals(datafieldTag)) {
+						datafieldContainsConnectedFields = true;
+						currentMasterSubfields.add(masterField.getKey().toString()); // E. g.: u
+						currentConnectedField = connectedField;
+						currentConnectedSubfields = currentConnectedField.getConnectedSubfields();
+					}
 				}
 			}
-
 
 		}
 
@@ -208,22 +210,7 @@ public class MarcContentHandler implements ContentHandler {
 			//        Result: mabfield name = 100$**$r, mabfield value = AC123456789
 			datafield = new Mabfield();
 			datafield.setFieldname(datafieldName);
-
-			
-			// Check if datafield of current subfield is a connected field
-			if (isConnectedField) {
-				// Get dependent subfield that are defined by the user for this datafield
-				List<String> requiredConnectedSubfields = currentConnectedField.getConnectedSubfields();
-
-				// Get all dependent subfields that exists within the current datafield of the XML record
-				if (requiredConnectedSubfields.contains(subfieldCode)) {
-					System.out.println(subfieldCode);
-					existingConnectedSubfields.add(subfieldCode);
-				}
-			}
-			
 		}
-
 
 	}
 
@@ -254,9 +241,32 @@ public class MarcContentHandler implements ContentHandler {
 
 
 		if(localName.equals("subfield")) {
+
 			String subfieldText = nodeContent.toString();
-			datafield.setFieldvalue(subfieldText);
-			allFields.add(datafield);
+
+			// If there could be a connected subfield within the datafield, but we don't know for yet if it really exists.
+			// For that, we have to wait for the end of the datafield tag in endElement().
+			if (datafieldContainsConnectedFields) { 
+				if (currentMasterSubfields.contains(subfieldCode)) { // If it is one of the connected master subfields
+					connectedValueRequired = true;
+					currentMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be more master subfields)
+				} else { // Default operation
+					// Do the default operation
+					datafield.setFieldvalue(subfieldText);
+					allFields.add(datafield);
+					
+					// If it is one of the connected subfields, add its text value to an intermediate variable
+					if (currentConnectedSubfields.contains(subfieldCode)) {
+						// Add text only if we don't have one already
+						if (connectedSubfieldText == null || connectedSubfieldText.isEmpty()) {
+							connectedSubfieldText = subfieldText;
+						}
+					}
+				}
+			} else { // Default operation - no connected value
+				datafield.setFieldvalue(subfieldText);
+				allFields.add(datafield);
+			}
 
 			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
@@ -264,28 +274,47 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 		if(localName.equals("datafield")) {
-			
-			// Check if datafield is a connected field
-			if (isConnectedField) {
-				// Check if at least on connected field exists. If not, add a default value
-				if (existingConnectedSubfields.isEmpty()) {
-					// Get one required subfield code so that we can set it as subfield to a new datafield object.
-					String missingSubfieldCode = currentConnectedField.getConnectedSubfields().get(0); // Get the first value
-										
-					String mabfieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + missingSubfieldCode;
-					allFields.add(new Mabfield(mabfieldName, "DefaultValue"));
 
-				}
-				isConnectedField = false; // (Re)-Set isTwinField to false for a fresh start.
-			}
 			
+			// Set the connected datafields:
+			if (datafieldContainsConnectedFields && connectedValueRequired) {
+				
+				for (Entry<String, String> currentMasterSubfieldsEntry : currentMasterSubfieldsValues.entrySet()) {
+					String currentMasterSubfieldCode = currentMasterSubfieldsEntry.getKey();
+					String currentMasterSubfieldText = currentMasterSubfieldsEntry.getValue();
+					
+					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentMasterSubfieldCode;
+					Mabfield connectedDatafield = new Mabfield();
+					connectedDatafield.setFieldname(datafieldName);
+					connectedDatafield.setFieldvalue(currentMasterSubfieldText);
+					
+					String connectedValue = "ERROR";
+					if (connectedSubfieldText != null && !connectedSubfieldText.isEmpty()) {
+						connectedValue = connectedSubfieldText;
+					} else {
+						connectedValue = currentConnectedField.getConnectedDefaultValue();
+					}
+					connectedDatafield.setConnectedValue(connectedValue);
+					allFields.add(connectedDatafield);
+					connectedDatafield = null;
+				}
+			}
+
+			// Reset values:
+			datafieldContainsConnectedFields = false;
+			connectedValueRequired = false;
+			currentConnectedField = null;
+			currentConnectedSubfields = null;
+			connectedSubfieldText = null;
+			currentMasterSubfields = new ArrayList<String>();
+			currentMasterSubfieldsValues = new HashMap<String, String>();
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
 		// leader-, controlfield- and datafield-objects to the record-object and add the
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
-			
+
 			counter = counter + 1;
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
@@ -307,10 +336,7 @@ public class MarcContentHandler implements ContentHandler {
 				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 
 				// Add to Solr-Index:
-				//if (!newRecordSet.isEmpty()) {
 				this.solrAddRecordSet(sServer, newRecordSet);
-				//}
-
 
 				// Set all Objects to "null" to save memory
 				allRecords.clear();
@@ -379,9 +405,15 @@ public class MarcContentHandler implements ContentHandler {
 
 					String fieldName = mf.getFieldname();
 					String fieldValue = mf.getFieldvalue();
+					String connValue = mf.getConnectedValue();
 
 					// Add the fieldname and fieldvalue to the document:
 					doc.addField(fieldName, fieldValue);
+					
+					// Add the connected value to the document if one exists:
+					if (connValue != null) {
+						doc.addField(fieldName, connValue);
+					}
 				}
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):

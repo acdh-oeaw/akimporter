@@ -30,6 +30,7 @@ public class Mabfield implements Comparable<Mabfield> {
 
 	private String fieldname;
 	private String fieldvalue;
+	private String connectedValue;
 	private boolean allowDuplicates = false;
 
 	public Mabfield() {}
@@ -56,6 +57,14 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.fieldvalue = fieldvalue;
 	}
 	
+	public String getConnectedValue() {
+		return connectedValue;
+	}
+
+	public void setConnectedValue(String connectedValue) {
+		this.connectedValue = connectedValue;
+	}
+
 	public boolean isAllowDuplicates() {
 		return allowDuplicates;
 	}
@@ -64,9 +73,11 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.allowDuplicates = allowDuplicates;
 	}
 
+
 	@Override
 	public String toString() {
-		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + "]";
+		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + ", connectedValue=" + connectedValue
+				+ ", allowDuplicates=" + allowDuplicates + "]";
 	}
 
 	@Override

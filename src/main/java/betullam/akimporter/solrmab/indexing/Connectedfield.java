@@ -24,76 +24,62 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Connectedfield {
 
-	private String datafieldName;
-	private String masterSubfield;
-	private List<String> connectedSubfields = new ArrayList<String>();
-	private String defaultValueIfMissing;
+	private Map<String, String> connectedMasterFields; // First String = Master subfield code, Second String = Master datafield code 
+	private List<String> connectedSubfields; // Subfields that should contain a value
+	private String connectedDefaultValue; // Default value if none of the given subfields in connectedSubfields exists
 	
 	
-	public Connectedfield(String datafieldName, String masterSubfield, List<String> connectedSubfields, String defaultValueIfMissing) {
-		this.datafieldName = datafieldName;
-		this.masterSubfield = masterSubfield;
+	public Connectedfield(Map<String, String> connectedMasterFields, List<String> connectedSubfields, String connectedDefaultValue) {
+		this.connectedMasterFields = connectedMasterFields;
 		this.connectedSubfields = connectedSubfields;
-		this.defaultValueIfMissing = defaultValueIfMissing;
+		this.connectedDefaultValue = connectedDefaultValue;
 	}
 
 	
-	public String getDatafieldName() {
-		return datafieldName;
+	public Map<String, String> getConnectedMasterFields() {
+		return connectedMasterFields;
 	}
 
-	public void setDatafieldName(String datafieldName) {
-		this.datafieldName = datafieldName;
-	}
-
-	public String getMasterSubfield() {
-		return masterSubfield;
-	}
-
-	public void setMasterSubfield(String masterSubfield) {
-		this.masterSubfield = masterSubfield;
+	public void setConnectedMasterFields(Map<String, String> connectedMasterFields) {
+		this.connectedMasterFields = connectedMasterFields;
 	}
 
 	public List<String> getConnectedSubfields() {
 		return connectedSubfields;
 	}
 
-	public void setConnectedSubfields(List<String> dependentSubfields) {
-		this.connectedSubfields = dependentSubfields;
+	public void setConnectedSubfields(List<String> connectedSubfields) {
+		this.connectedSubfields = connectedSubfields;
 	}
 
-	public String getDefaultValueIfMissing() {
-		return defaultValueIfMissing;
+	public String getConnectedDefaultValue() {
+		return connectedDefaultValue;
 	}
 
-	public void setDefaultValueIfMissing(String defaultValueIfMissing) {
-		this.defaultValueIfMissing = defaultValueIfMissing;
+	public void setConnectedDefaultValue(String connectedDefaultValue) {
+		this.connectedDefaultValue = connectedDefaultValue;
 	}
 
 	@Override
 	public String toString() {
-		return "Connectedfield [datafieldName=" + datafieldName + ", masterSubfield=" + masterSubfield
-				+ ", connectedSubfields=" + connectedSubfields + ", defaultValueIfMissing=" + defaultValueIfMissing
-				+ "]";
+		return "Connectedfield [connectedMasterFields=" + connectedMasterFields + ", connectedSubfields="
+				+ connectedSubfields + ", connectedDefaultValue=" + connectedDefaultValue + "]";
 	}
-
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((connectedDefaultValue == null) ? 0 : connectedDefaultValue.hashCode());
+		result = prime * result + ((connectedMasterFields == null) ? 0 : connectedMasterFields.hashCode());
 		result = prime * result + ((connectedSubfields == null) ? 0 : connectedSubfields.hashCode());
-		result = prime * result + ((datafieldName == null) ? 0 : datafieldName.hashCode());
-		result = prime * result + ((defaultValueIfMissing == null) ? 0 : defaultValueIfMissing.hashCode());
-		result = prime * result + ((masterSubfield == null) ? 0 : masterSubfield.hashCode());
 		return result;
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {
@@ -107,6 +93,20 @@ public class Connectedfield {
 			return false;
 		}
 		Connectedfield other = (Connectedfield) obj;
+		if (connectedDefaultValue == null) {
+			if (other.connectedDefaultValue != null) {
+				return false;
+			}
+		} else if (!connectedDefaultValue.equals(other.connectedDefaultValue)) {
+			return false;
+		}
+		if (connectedMasterFields == null) {
+			if (other.connectedMasterFields != null) {
+				return false;
+			}
+		} else if (!connectedMasterFields.equals(other.connectedMasterFields)) {
+			return false;
+		}
 		if (connectedSubfields == null) {
 			if (other.connectedSubfields != null) {
 				return false;
@@ -114,32 +114,6 @@ public class Connectedfield {
 		} else if (!connectedSubfields.equals(other.connectedSubfields)) {
 			return false;
 		}
-		if (datafieldName == null) {
-			if (other.datafieldName != null) {
-				return false;
-			}
-		} else if (!datafieldName.equals(other.datafieldName)) {
-			return false;
-		}
-		if (defaultValueIfMissing == null) {
-			if (other.defaultValueIfMissing != null) {
-				return false;
-			}
-		} else if (!defaultValueIfMissing.equals(other.defaultValueIfMissing)) {
-			return false;
-		}
-		if (masterSubfield == null) {
-			if (other.masterSubfield != null) {
-				return false;
-			}
-		} else if (!masterSubfield.equals(other.masterSubfield)) {
-			return false;
-		}
 		return true;
 	}
-
-
-	
-	
-	
 }

@@ -116,7 +116,7 @@ public class MatchingOperations {
 
 			// Add Set<Mabfield> (deduplicated mulitvalued fields) to a List<Mabfield> which we have to use as type for "mabfields" variable
 			// in Record object, because when getting MAB-Codes from XML file, "mabfields" variable should be able to contain duplicates.
-			dedupSolrList.addAll(dedupSolrSet);
+			dedupSolrList.addAll(dedupSolrSet);			
 			Collections.sort(dedupSolrList); // Sort by fieldName (better readibility in Solr admin console)
 
 			// Set variables of new record object:
@@ -126,6 +126,7 @@ public class MatchingOperations {
 
 			newListOfRecords.add(newRecord);
 		}
+
 
 		return newListOfRecords;
 	}
@@ -156,6 +157,11 @@ public class MatchingOperations {
 			}
 		}
 
+		// Connected subfields
+		String connectedSubfieldValue = null;
+		if (mabField.getConnectedValue() != null && !mabField.getConnectedValue().isEmpty()) {
+			connectedSubfieldValue = mabField.getConnectedValue();
+		}
 
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
 
@@ -191,49 +197,49 @@ public class MatchingOperations {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 						if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 						if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 						if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 						if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 						if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
 						if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					} else { 
 						if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					}
@@ -277,41 +283,41 @@ public class MatchingOperations {
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
-							addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+							addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 						}
 					} else if (mabFieldnameProps.length() == 8) {
 
 						if (mabFieldnameProps.substring(3).equals("$**$*")) { // Match against all indicators and subfields. E. g. 100$**$* matches 100$a1$b, 100$b3$z, 100$z*$-, etc.
 							if (allFields(mabFieldnameXml, mabFieldnameProps) == true) {	
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 							if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 							if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 							if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 							if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 							if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
 							if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						} else { 
 							if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
 							}
 						}
 					}
@@ -527,16 +533,19 @@ public class MatchingOperations {
 
 		return translateValue;
 	}
-	
+
 	/**
 	 * Add values to a Mabfield object.
 	 * @param solrFieldname		String: Name of the solr field
 	 * @param solrFieldvalue	String: Value of the solr field
 	 * @param allowDuplicates	boolean: Indicate if duplicate values are allowed in Solr multivalued fields (default is false).
 	 */
-	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates) {
+	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, String connectedSubfieldValue) {
 		Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);
 		mf.setAllowDuplicates(allowDuplicates);
+		if (connectedSubfieldValue != null) {
+			mf.setConnectedValue(connectedSubfieldValue);
+		}
 		listOfMatchedFields.add(mf);
 	}
 
