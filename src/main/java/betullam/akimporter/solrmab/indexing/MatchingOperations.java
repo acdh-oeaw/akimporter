@@ -505,15 +505,23 @@ public class MatchingOperations {
 		if (fromCount.equals("all") && toCount.equals("all")) {
 			matchedValueXml = fieldValueXml.substring(0, fieldValueXml.length());
 		} else {
-			int intFromCount = Integer.valueOf(fromCount); // Beginning Index of value to match
-			intFromCount = (intFromCount-1);
-			int intToCount = Integer.valueOf(toCount); // Ending Index of value to match
-
-			if (intToCount <= fieldValueXml.length()) {
-				matchedValueXml = fieldValueXml.substring(intFromCount, intToCount);
-			} else if (intFromCount <= fieldValueXml.length() && intToCount >= fieldValueXml.length()) {
-				matchedValueXml = fieldValueXml.substring(intFromCount, fieldValueXml.length());
+			
+			try {
+				int intFromCount = Integer.valueOf(fromCount); // Beginning Index of value to match
+				intFromCount = (intFromCount-1);
+				int intToCount = Integer.valueOf(toCount); // Ending Index of value to match
+				
+				if (intToCount <= fieldValueXml.length()) {
+					matchedValueXml = fieldValueXml.substring(intFromCount, intToCount);
+				} else if (intFromCount <= fieldValueXml.length() && intToCount >= fieldValueXml.length()) {
+					matchedValueXml = fieldValueXml.substring(intFromCount, fieldValueXml.length());
+				}
+			} catch (NumberFormatException nfe) {
+				System.err.println("ERROR: Please make sure that you defined [n-n] or [all] for MAB field \"" + mabField.getFieldname() + "\" in your mab.properties for Solr field \"" + solrFieldname +"\". This is normally necessary for translate values.\n");
+				System.exit(1);
 			}
+
+			
 		}
 
 		if (matchedValueXml != null) {
