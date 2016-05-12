@@ -36,6 +36,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
@@ -69,7 +71,8 @@ import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
 public class OaiUpdater {
 
-	String timeStamp;
+	//String indexTimeStamp;
+	long indexTimestamp;
 	SolrMabHelper smHelper = new SolrMabHelper();
 
 	/**
@@ -89,14 +92,18 @@ public class OaiUpdater {
 	 */
 	public void oaiUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
 
+		smHelper.print(print, "\n-------------------------------------------");
+		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		
 		boolean isAuthorityUpdateSuccessful = false;
-		this.timeStamp = String.valueOf(new Date().getTime());
+		this.indexTimestamp = new Date().getTime();
+		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
-		// Download and merge XML files from OAI interface:
-		String mergedAuthFileName = oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, print);
+		// First start of downloading and mergeing XML files from OAI interface:
+		String mergedAuthFileName = oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, 0, print);
 
 		if (mergedAuthFileName != null) {
-			smHelper.print(print, "\nIndexing new authority data ...  ");
+			smHelper.print(print, "\nIndexing new authority data ... ");
 			// Index authority data from merged XML file:
 			Authority auth = new Authority(
 					false,
@@ -107,7 +114,7 @@ public class OaiUpdater {
 					customAuthProps,
 					solrServerAuth,
 					solrServerBiblio,
-					this.timeStamp,
+					strIndexTimestamp,
 					false,
 					optimize
 					);
@@ -120,19 +127,19 @@ public class OaiUpdater {
 			if (merge) {
 				HttpSolrServer sServerAuth = new HttpSolrServer(solrServerAuth);
 				HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
-				
+
 				// Set flag of existance to authority records:
-				AuthorityFlag af = new AuthorityFlag(sServerBiblio, sServerAuth, this.timeStamp, true, print);
+				AuthorityFlag af = new AuthorityFlag(sServerBiblio, sServerAuth, strIndexTimestamp, true, print);
 				af.setFlagOfExistance();
-				
+
 				// Merge authority records to bibliographic records:
-				AuthorityMerge am = new AuthorityMerge(sServerBiblio, sServerAuth, this.timeStamp, true, print);
+				AuthorityMerge am = new AuthorityMerge(sServerBiblio, sServerAuth, strIndexTimestamp, true, print);
 				am.mergeAuthorityToBiblio(entities);
 			}
 
-			smHelper.print(print, "\nDONE UPDATING AUTHORITY DATA. EVERYTHING WAS SUCCESSFUL");
+			smHelper.print(print, "\nDone updating from OAI interface.\nEVERYTHING WAS SUCCESSFUL!");
 		} else {
-			System.err.println("\nERROR WHILE UPDATING AUTHORITY DATA!");
+			System.err.print("\nERROR WHILE UPDATING AUTHORITY DATA!");
 		}
 
 	}
@@ -146,31 +153,48 @@ public class OaiUpdater {
 	 * @param set					String representing the set of the OAI interface you want to harvest
 	 * @param destinationPath		String representing a path to a local directory where the downloaded data should be stored (e. g. /home/username/oai_data)
 	 * @param oaiDatefile			String representing a path to a .properties file with at least a "from" date/time in format YYYY-MM-DDTHH:MM:SSZ. It could also contain an "until" date/time. Example: /path/to/oai_date-time_file.properties
+	 * @param downloadTimestamp		long: Timestamp of start of current downloading task
+	 * @param counter				int: Counter for naming files of downloaded OAI result pages (created by resumptionToken)
 	 * @param print					boolean indicating whether to print status messages or not
 	 * @return						String representing the path to a file with the downloaded data
 	 */
-	private String oaiDownload(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean print) {
-
+	private String oaiDownload(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, long downloadTimestamp, int counter, boolean print) {
+		
 		String mergedFileName = null;
-
-		String currentDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date(Long.valueOf(this.timeStamp)));
+		String downloadDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date(downloadTimestamp)); // Use download time of the first run as "until" time
+		
+		// Get "from" and "until" date/time from .properties file
 		Properties oaiDateTime = getOaiDateTime(oaiDatefile);
+		String from = oaiDateTime.getProperty("from"); // Should be something like 2016-01-13T14:00:00Z
+		String until = oaiDateTime.getProperty("until", downloadDateTime);
 
-		String from = oaiDateTime.getProperty("from");
-		String until = oaiDateTime.getProperty("until", currentDateTime);
+		// Get "from" timestamp using the date in the .properties file:
+		long fromTimeStamp = 0;
+		try {
+			DateFormat fromDateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+			Date date = fromDateTimeFormat.parse(from);
+			fromTimeStamp = date.getTime();
+		} catch (ParseException e) {
+			System.err.print("\nERROR: Parse error! Check if from date in .properties file is in format yyyy-MM-ddTHH:mm:ssZ.");
+			e.printStackTrace();
+		} catch (Exception e) {
+			System.err.print("\nERROR");
+			e.printStackTrace();
+		}
+
+		// Get difference between "from" and "until"
+		long timeSpan = downloadTimestamp - fromTimeStamp;
 
 		try {
 			int httpResponseCode = getHttpResponseCode(new URL(oaiUrl+"?verb=ListRecords&metadataPrefix="+format+"&set="+set+"&from="+from+"&until="+until));
 
 			if (httpResponseCode == 200) {
 
-				smHelper.print(print, "\n-------------------------------------------");
-				smHelper.print(print, "\nOAI harvest starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.timeStamp))));
 				smHelper.print(print, "\nHarvesting date range: " + from + " - " + until);
 
 				// Set variables
-				String oaiPathOriginal = stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.timeStamp;
-				String oaiPathMerged = stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.timeStamp;
+				String oaiPathOriginal = stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
+				String oaiPathMerged = stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
 
 				// Create directories if they do not exist
 				mkDirIfNoExists(oaiPathOriginal);
@@ -178,42 +202,65 @@ public class OaiUpdater {
 
 				// Download updates from OAI interface and save them to a file. If there is a resumptionToken ("pages"),
 				// then download all resumptions and save each to a sepearate file:
-				smHelper.print(print, "\nDownloading XML data ...  ");
+				smHelper.print(print, "\nDownloading XML data ... ");
 				String resumptionToken = null;
-				int counter = 0;
 				do {
 					counter++;
+
 					Document doc = getOaiUpdated(oaiUrl, format, set, from, until, resumptionToken);
 					if (doc != null) {
 						resumptionToken = getResumptionToken(doc);
-						String fileName = this.timeStamp + "_" + String.format("%06d", counter) + ".xml";
+						String fileName = this.indexTimestamp + "_" + String.format("%08d", counter) + ".xml";
 						writeXmlToFile(doc, oaiPathOriginal, fileName);
+					} else {
+						String urlCalled = "";
+						if (resumptionToken == null) {
+							urlCalled = oaiUrl+"?verb=ListRecords&metadataPrefix="+format+"&set="+set+"&from="+from+"&until="+until;
+						} else {
+							urlCalled = oaiUrl+"?verb=ListRecords&resumptionToken="+resumptionToken;
+						}
+						System.err.print("\nReturned XML document from OAI interface is null! URL called to get this document was: " + urlCalled);
+						resumptionToken = null;
 					}
 				} while (resumptionToken != null);
 				smHelper.print(print, "Done");
-
-				smHelper.print(print, "\nMerging downloaded XML data ...  ");
-
-				// Merge all downloaded updates into one file:
-				mergedFileName = oaiPathMerged + File.separator + this.timeStamp + ".xml";
-				boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName);
-				if (isMergeSuccessful) {
-					smHelper.print(print, "Done");
-					// Write current date/time to date/time-file for next update:
-					this.writeOaiDateFile(oaiDatefile, until);
+								
+				// Write current date/time to date/time-file for next update:
+				this.writeOaiDateFile(oaiDatefile, until);
+				
+				// Start downloading XML data again until we reach today:
+				if (this.indexTimestamp > downloadTimestamp) {
+					oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, counter, print);
 				} else {
-					System.err.println("\nMerging downloaded files from OAI was not successful!");
-					mergedFileName = null;
+					// Reached today - stop downloading and start merging
+					smHelper.print(print, "\nAll OAI updates are downloaded.");
+					
+					// Start merging all downloaded updates into one file:
+					smHelper.print(print, "\nMerging downloaded XML data ... ");
+					mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
+					boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName);
+					if (isMergeSuccessful) {
+						smHelper.print(print, "Done");
+					} else {
+						System.err.print("\nERROR: Merging downloaded files from OAI was not successful!");
+						mergedFileName = null;
+					}
 				}
-			} else if (httpResponseCode == 413) {
-				System.err.println("\n-------------------------------------------");
-				System.err.println("\nToo many documents requested from OAI interface (> 100000) . Please specify \"until\" date for OAI harvesting.");
+
+			} else if (httpResponseCode == 413) {			
+				// Calculate new timestamp
+				long newTimeStamp = (long)(downloadTimestamp - (timeSpan*0.15));
+				//System.err.print("\nToo many documents requested from OAI interface (> 100000) . Trying again with shorter time span ...");
+				oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, newTimeStamp, counter, print);
 				mergedFileName = null;
 			} else {
-				System.err.println("\nError! Getting HTTP response code " + httpResponseCode + " from OAI interface at " + oaiUrl);
+				System.err.print("\nERROR: Getting HTTP response code " + httpResponseCode + " from OAI interface at " + oaiUrl);
 				mergedFileName = null;
 			}
 		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			mergedFileName = null;
+		} catch (Exception e) {
 			e.printStackTrace();
 			mergedFileName = null;
 		}
@@ -239,13 +286,15 @@ public class OaiUpdater {
 			oaiDateTimeProperties.load(propertiesInputStream);
 			propertiesInputStream.close();
 		} catch (FileNotFoundException e) {
-			System.err.println("Properties file not found. Please make sure the file " + propertiesFile + " exists and is valid.");
+			System.err.print("\nProperties file not found. Please make sure the file " + propertiesFile + " exists and is valid.");
 			oaiDateTimeProperties = null;
 			System.exit(1); // Stop execution of program
 		} catch (IOException e) {
 			e.printStackTrace();
 			oaiDateTimeProperties = null;
 			System.exit(1); // Stop execution of program
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 		return oaiDateTimeProperties;
@@ -265,7 +314,9 @@ public class OaiUpdater {
 			FileUtils.writeStringToFile(oaiDateFile, content);
 		} catch (IOException e) {
 			e.printStackTrace();
-		}		
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 
@@ -306,6 +357,8 @@ public class OaiUpdater {
 		} catch (TransformerConfigurationException e) {
 			e.printStackTrace();
 		} catch (TransformerException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -350,7 +403,11 @@ public class OaiUpdater {
 		} catch (IOException e) {
 			e.printStackTrace();
 			document = null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			document = null;
 		}
+		
 		return document;
 	}
 
@@ -371,7 +428,10 @@ public class OaiUpdater {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		
 		return httpResponseCode;
 	}
 
@@ -390,7 +450,10 @@ public class OaiUpdater {
 			resumptionToken = xmlParser.getTextValue(doc, xpath);
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		
 		return resumptionToken;
 	}
 
