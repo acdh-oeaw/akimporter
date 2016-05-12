@@ -1,5 +1,4 @@
 package main.java.betullam.akimporter.main;
-import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -34,17 +33,24 @@ public class WhileTest {
 		}
 
 
-		String currentDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date(currentTimeStamp));
-
+		// Get "from" timestamp:
+		long fromTimeStamp = 0;
 		try {
-			// Datum aus eMail from DNB: 13.01.2016, 14:00
-			String fromDateTime = "2016-01-13T14:00:00Z";
-			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-			Date date = dateFormat.parse(fromDateTime);
-			long fromTimestamp = date.getTime();
+			String fromDateTime = "2016-01-13T14:00:00Z"; // Date from eMail from DNB: 13.01.2016, 14:00
+			DateFormat fromDateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+			Date date = fromDateTimeFormat.parse(fromDateTime);
+			fromTimeStamp = date.getTime();
+			System.out.println("From timestamp " + fromTimeStamp);
+
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+		
+		// First use current time as "until" time:
+		String currentDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date(currentTimeStamp));
+		
+		// Difference between from and until
+		long timeSpan = currentTimeStamp - fromTimeStamp;
 
 		if (httpResponseCode == 200) {
 
@@ -60,7 +66,8 @@ public class WhileTest {
 			//System.err.println("Too many documents requested from OAI interface (> 100000) . Please specify \"until\" date for OAI harvesting.");
 			helperCounterForTest++;
 			
-			long newTimeStamp = (long)(currentTimeStamp - (currentTimeStamp*0.15));
+			// Calculate new timestamp
+			long newTimeStamp = (long)(currentTimeStamp - (timeSpan*0.10));
 			System.err.println("Trying with new timestamp " + newTimeStamp);
 
 			whileTest(newTimeStamp);
