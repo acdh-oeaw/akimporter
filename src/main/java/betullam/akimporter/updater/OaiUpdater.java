@@ -91,14 +91,14 @@ public class OaiUpdater {
 	 * @param optimize					boolean indicating whether to optimize the solr index not
 	 */
 	public void oaiUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
-
-		smHelper.print(print, "\n-------------------------------------------");
-		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 		
 		boolean isAuthorityUpdateSuccessful = false;
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
+		smHelper.print(print, "\n-------------------------------------------");
+		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		
 		// First start of downloading and mergeing XML files from OAI interface:
 		String mergedAuthFileName = oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, 0, print);
 
