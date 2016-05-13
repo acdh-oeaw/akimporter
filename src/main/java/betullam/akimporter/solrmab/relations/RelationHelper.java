@@ -199,22 +199,22 @@ public class RelationHelper {
 		// Filter all records that were indexed with the current import process
 		if (this.timeStamp != null) {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str:*", "indexTimestamp_str:"+this.timeStamp, "id:*");	
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:*");	
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
 			}
 		} else {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str:*", "id:*");
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str_mv:*", "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str:*", "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries("author_GndNo_str:* || author2_GndNo_str:* || author_additional_GndNo_str_mv:* || corporateAuthorGndNo_str:* || corporateAuthor2GndNo_str_mv:* || subjectGndNo_str_mv:*", "id:[" + lastDocId + " TO *]");
 			}
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv", "subjectGndNo_str");
+		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv", "subjectGndNo_str_mv");
 
 		try {
 			// Execute query and get results
@@ -384,10 +384,10 @@ public class RelationHelper {
 		query.setQuery("*:*");
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv", "subjectGndNo_str");
+		query.setFields("id", "sysNo_txt", "author_GndNo_str", "author2_GndNo_str", "author_additional_GndNo_str_mv", "corporateAuthorGndNo_str", "corporateAuthor2GndNo_str_mv", "subjectGndNo_str_mv");
 
 		for (String authId : authIds) {
-			query.setFilterQueries("author_GndNo_str:\""+authId+"\" || author2_GndNo_str:\""+authId+"\" || author_additional_GndNo_str_mv:\""+authId+"\" || corporateAuthorGndNo_str:\""+authId+"\" || corporateAuthor2GndNo_str_mv:\""+authId+"\" || subjectGndNo_str:\""+authId+"\"", "id:*");	
+			query.setFilterQueries("author_GndNo_str:\""+authId+"\" || author2_GndNo_str:\""+authId+"\" || author_additional_GndNo_str_mv:\""+authId+"\" || corporateAuthorGndNo_str:\""+authId+"\" || corporateAuthor2GndNo_str_mv:\""+authId+"\" || subjectGndNo_str_mv:\""+authId+"\"", "id:*");	
 			try {
 				// Execute query and get results
 				SolrDocumentList queryResult = this.solrServerBiblio.query(query).getResults();

@@ -258,7 +258,7 @@ public class AuthorityFlag {
 				String[] authorAdditionalGndNos = (recordWithAuth.getFieldValues("author_additional_GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("author_additional_GndNo_str_mv").toArray(new String[0]) : null;
 				String authorCorporateGndNo = (recordWithAuth.getFieldValue("corporateAuthorGndNo_str") != null) ? recordWithAuth.getFieldValue("corporateAuthorGndNo_str").toString() : null;
 				String[] authorCorporate2GndNos = (recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv") != null) ? recordWithAuth.getFieldValues("corporateAuthor2GndNo_str_mv").toArray(new String[0]) : null;				
-				String subjectGndNo = (recordWithAuth.getFieldValue("subjectGndNo_str") != null) ? recordWithAuth.getFieldValue("subjectGndNo_str").toString() : null;
+				String[] subjectGndNos = (recordWithAuth.getFieldValues("subjectGndNo_str_mv") != null) ? recordWithAuth.getFieldValues("subjectGndNo_str_mv").toArray(new String[0]) : null;
 
 				// Add all possible GND Numbers to a List<String> so that we can iterate over it later on
 				Set<String> gndNos = new HashSet<String>();
@@ -276,8 +276,12 @@ public class AuthorityFlag {
 						gndNos.add(authorCorporate2GndNo);
 					}
 				}
-				if (subjectGndNo != null) {gndNos.add(subjectGndNo); }
-
+				if (subjectGndNos != null) {
+					for (String subjectGndNo : subjectGndNos) {
+						gndNos.add(subjectGndNo);
+					}
+				}
+				
 				gndIds.addAll(gndNos);
 
 				// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
