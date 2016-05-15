@@ -207,6 +207,7 @@ public class Index {
 				boolean customText = false;
 				boolean translateValue = false;
 				boolean translateValueContains = false;
+				boolean translateValueRegex = false;
 				boolean hasDefaultValue = false;
 				boolean hasRegex = false;
 				boolean hasRegexStrict = false;
@@ -287,13 +288,14 @@ public class Index {
 				}
 
 
-				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains")) {
+				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains") || lstValuesClean.contains("translateValueRegex")) {
 					int index = 0;
 
 					// Is translateValue
 					if (lstValuesClean.contains("translateValue")) {
 						translateValue = true;
 						translateValueContains = false;
+						translateValueRegex = false;
 						index = lstValuesClean.indexOf("translateValue");
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
@@ -303,7 +305,19 @@ public class Index {
 					if (lstValuesClean.contains("translateValueContains")) {
 						translateValueContains = true;
 						translateValue = false;
+						translateValueRegex = false;
 						index = lstValuesClean.indexOf("translateValueContains");
+						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					}
+					
+					
+					// Is translateValueRegex
+					if (lstValuesClean.contains("translateValueRegex")) {
+						translateValueRegex = true;
+						translateValue = false;
+						translateValueContains = false;
+						index = lstValuesClean.indexOf("translateValueRegex");
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					}
@@ -401,9 +415,9 @@ public class Index {
 						String cleanLstValue = lstValue.replaceAll("\\[.*?\\]", "");
 						mabFieldnames.put(cleanLstValue, null);
 
-						// Do not remove field if it's also a translateValue or translateValueContains (then just add "null"),
+						// Do not remove field if it's also a translateValue, translateValueContains or translateValueRegex (then just add "null"),
 						// because in this case we will still need the fields further down for the translate operations.
-						fieldsToRemove.add((translateValue || translateValueContains) ? null : lstValue);
+						fieldsToRemove.add((translateValue || translateValueContains || translateValueRegex) ? null : lstValue);
 					}
 					lstValues.removeAll(fieldsToRemove);
 					fieldsToRemove.clear();
@@ -420,8 +434,8 @@ public class Index {
 					fieldsToRemove.clear();
 				}
 
-				// Get all translateValue and translateValueContains fields and remove them after we finished:
-				if (translateValue || translateValueContains) {
+				// Get all translateValue, translateValueContains and translateValueRegex fields and remove them after we finished:
+				if (translateValue || translateValueContains || translateValueRegex) {
 
 					if (filename != null) {
 
@@ -473,7 +487,7 @@ public class Index {
 						fieldsToRemove.clear();
 
 					} else {
-						System.out.println("Error: You need to specify a translation-properties file with the file-ending \".properties\"!");
+						System.err.println("Error: You need to specify a translation-properties file with the file-ending \".properties\"!");
 					}
 				}				
 
@@ -485,7 +499,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
 				matchingObjects.add(mo);
 			}
 
