@@ -205,6 +205,7 @@ public class Index {
 			for(String key : mabProperties.stringPropertyNames()) {
 				boolean multiValued = false;
 				boolean customText = false;
+				boolean getAllFields = false;
 				boolean translateValue = false;
 				boolean translateValueContains = false;
 				boolean translateValueRegex = false;

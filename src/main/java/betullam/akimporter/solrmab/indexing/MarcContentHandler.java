@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -270,7 +271,7 @@ public class MarcContentHandler implements ContentHandler {
 
 			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
-			}
+			}			
 		}
 
 		if(localName.equals("datafield")) {
@@ -314,7 +315,6 @@ public class MarcContentHandler implements ContentHandler {
 		// leader-, controlfield- and datafield-objects to the record-object and add the
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
-
 			counter = counter + 1;
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
