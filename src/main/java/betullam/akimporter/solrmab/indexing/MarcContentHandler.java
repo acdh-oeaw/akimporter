@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,6 +44,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
+
+import main.java.betullam.akimporter.solrmab.Index;
 
 
 public class MarcContentHandler implements ContentHandler {
@@ -83,11 +86,16 @@ public class MarcContentHandler implements ContentHandler {
 	String connectedSubfieldText = null;
 	List<String> currentMasterSubfields = new ArrayList<String>();
 	Map<String, String> currentMasterSubfieldsValues = new HashMap<String, String>();
-	
+
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
 	private String allfieldsField = null;
 	private List<String> allFieldsExceptions = new ArrayList<String>();
+
+	// Variable for fullrecord
+	private boolean getFullRecordAsXML = false;
+	private String fullrecordField = null;
+	private String fullrecordXmlString = null;
 
 
 	/**
@@ -106,7 +114,7 @@ public class MarcContentHandler implements ContentHandler {
 		this.print = print;
 
 		for (MatchingObject mo : listOfMatchingObjs) {
-			
+
 			// Get list of connected fields. We need to check them while parsing the XML.
 			if (mo.hasConnectedSubfields()) {
 
@@ -129,12 +137,18 @@ public class MarcContentHandler implements ContentHandler {
 
 				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));
 			}
-			
+
 			// Get allfields if it is set
 			if (mo.isGetAllFields()) {
 				hasAllFieldsField = true;
 				allfieldsField = mo.getSolrFieldname(); // Get Solr field to which all fields should be indexed
 				allFieldsExceptions = mo.getAllFieldsExceptions(); // Get list of fields that should not be indexed
+			}
+
+			// Get fullrecord field if it is set
+			if (mo.isGetFullRecordAsXML()) {
+				getFullRecordAsXML = true;
+				fullrecordField = mo.getSolrFieldname(); // Get Solr field to which the full record (as XML) should be indexed
 			}
 		}
 	}
@@ -173,16 +187,29 @@ public class MarcContentHandler implements ContentHandler {
 		if(localName.equals("record")) {
 			allFields = new ArrayList<Mabfield>();
 			record = new Record();
+			fullrecordXmlString = null; // Reset for new record
+			if (getFullRecordAsXML) {
+				fullrecordXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><collection><record>"; // Begin new XML for the current record
+			}
 		}
 
+		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
+		if (getFullRecordAsXML) {
+			if(localName.equals("leader")) {
+				fullrecordXmlString += "<leader>";
+			}
+		}
 
-		// If the parser encounters the start of the "controlfield"-tag, create a new mabfield-object, get the XML-attributes, set them on the object and add it to the "record"-object:
+		// If the parser encounters the start of a "controlfield"-tag, create a new mabfield-object, get the XML-attributes, set them on the object and add it to the "record"-object:
 		if(localName.equals("controlfield")) {
 			controlfieldTag = attribs.getValue("tag");
 			isSYS = (controlfieldTag.equals("SYS")) ? true : false;
 			controlfield = new Mabfield();
 			controlfield.setFieldname(controlfieldTag);
 			is001Controlfield = (controlfieldTag.equals("001")) ? true : false;
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "<controlfield tag=\""+controlfieldTag+"\">";
+			}
 		}
 
 		if(localName.equals("datafield")) {
@@ -196,7 +223,9 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldInd1 = (datafieldInd1 != null && !datafieldInd1.isEmpty()) ? datafieldInd1 : "*";
 			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
 			is001Datafield = (datafieldTag.equals("001")) ? true : false;
-
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "<datafield tag=\""+datafieldTag+"\" ind1=\""+datafieldInd1+"\" ind2=\""+datafieldInd2+"\">";
+			}
 
 			for (Connectedfield connectedField : connectedFields) {
 
@@ -216,7 +245,9 @@ public class MarcContentHandler implements ContentHandler {
 		if(localName.equals("subfield")) {
 			subfieldCode = attribs.getValue("code").trim();
 			subfieldCode = (subfieldCode != null && !subfieldCode.isEmpty()) ? subfieldCode : "-";
-
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "<subfield code=\""+subfieldCode+"\">";
+			}
 			String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + subfieldCode;
 
 			// Create a new mabfield so that we can concentenate a datafield and a subfield to a mabfield
@@ -239,12 +270,21 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 
+		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
+		if (getFullRecordAsXML) {
+			if(localName.equals("leader")) {
+				String leaderText = nodeContent.toString();
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(leaderText)+"</leader>";
+			}
+		}
 
 		if(localName.equals("controlfield") ) {
 			String controlfieldText = nodeContent.toString();
 			controlfield.setFieldvalue(controlfieldText);
 			allFields.add(controlfield);
-
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(controlfieldText)+"</controlfield>";
+			}
 			if (isSYS == true) {
 				recordSYS = controlfieldText;
 			}
@@ -257,6 +297,9 @@ public class MarcContentHandler implements ContentHandler {
 		if(localName.equals("subfield")) {
 
 			String subfieldText = nodeContent.toString();
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(subfieldText).trim()+"</subfield>";
+			}
 
 			// If there could be a connected subfield within the datafield, but we don't know for yet if it really exists.
 			// For that, we have to wait for the end of the datafield tag in endElement().
@@ -268,7 +311,7 @@ public class MarcContentHandler implements ContentHandler {
 					// Do the default operation
 					datafield.setFieldvalue(subfieldText);
 					allFields.add(datafield);
-					
+
 					// If it is one of the connected subfields, add its text value to an intermediate variable
 					if (currentConnectedSubfields.contains(subfieldCode)) {
 						// Add text only if we don't have one already
@@ -289,18 +332,22 @@ public class MarcContentHandler implements ContentHandler {
 
 		if(localName.equals("datafield")) {
 
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "</datafield>";
+			}
+			
 			// Set the connected datafields:
 			if (datafieldContainsConnectedFields && connectedValueRequired) {
-				
+
 				for (Entry<String, String> currentMasterSubfieldsEntry : currentMasterSubfieldsValues.entrySet()) {
 					String currentMasterSubfieldCode = currentMasterSubfieldsEntry.getKey();
 					String currentMasterSubfieldText = currentMasterSubfieldsEntry.getValue();
-					
+
 					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentMasterSubfieldCode;
 					Mabfield connectedDatafield = new Mabfield();
 					connectedDatafield.setFieldname(datafieldName);
 					connectedDatafield.setFieldvalue(currentMasterSubfieldText);
-					
+
 					String connectedValue = "ERROR";
 					if (connectedSubfieldText != null && !connectedSubfieldText.isEmpty()) {
 						connectedValue = connectedSubfieldText;
@@ -327,6 +374,16 @@ public class MarcContentHandler implements ContentHandler {
 		// leader-, controlfield- and datafield-objects to the record-object and add the
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
+
+			// End XML representation of the current record for "fullrecord" Solr field:
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "</record></collection>";
+				Mabfield fullRecordAsXML = new Mabfield();
+				fullRecordAsXML.setFieldname(fullrecordField);
+				fullRecordAsXML.setFieldvalue(fullrecordXmlString);
+				allFields.add(fullRecordAsXML);
+			}
+
 			counter = counter + 1;
 			record.setMabfields(allFields);
 			record.setRecordID(recordID);
@@ -412,6 +469,7 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Create a document:
 				SolrInputDocument doc = new SolrInputDocument();
+
 				
 				// Create a HashSet for the allfields field if one is defined.
 				// We do that do prevent duplicated values
@@ -420,6 +478,7 @@ public class MarcContentHandler implements ContentHandler {
 					allfieldsSet = new HashSet<String>();
 				}
 				
+
 				for (Mabfield mf : record.getMabfields()) {
 
 					String fieldName = mf.getFieldname();
@@ -428,12 +487,12 @@ public class MarcContentHandler implements ContentHandler {
 
 					// Add the fieldname and fieldvalue to the document:
 					doc.addField(fieldName, fieldValue);
-					
+
 					// Add the connected value to the document if one exists:
 					if (connValue != null) {
 						doc.addField(fieldName, connValue);
 					}
-					
+
 					// Add values to the "allfields" field, except for the exception values defined in mab.properties:
 					if (hasAllFieldsField) {
 						if (!allFieldsExceptions.contains(fieldName)) {
@@ -447,7 +506,7 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
 				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
-				
+
 				// Add the allfields field to the document if it is used
 				if (hasAllFieldsField) {
 					doc.addField(allfieldsField, allfieldsSet);

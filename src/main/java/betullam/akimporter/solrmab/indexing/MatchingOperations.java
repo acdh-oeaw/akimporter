@@ -48,6 +48,7 @@ public class MatchingOperations {
 	List<String> multiValuedFields = Index.multiValuedFields;
 	List<Mabfield> customTextFields = Index.customTextFields;
 	HashMap<String, List<String>> translateFields = Index.translateFields;
+	String fullRecordFieldname = Index.fullrecordFieldname;
 
 
 	/**
@@ -63,16 +64,23 @@ public class MatchingOperations {
 
 		newListOfRecords = new ArrayList<Record>();		
 
-		for (Record oldRecord : oldRecordSet) {	
-
+		for (Record oldRecord : oldRecordSet) {			
+			
+			String fullRecordAsXml = null;
 			listOfNewSolrfieldLists = new ArrayList<List<Mabfield>>();
 			listOfNewFieldsForNewRecord = new ArrayList<Mabfield>();
 			newRecord = new Record();			
 
 			for (Mabfield oldMabField : oldRecord.getMabfields()) {
-				// Match each Mabfield in the Record to the defined Solrfields. As one old Mabfield could match multiple Solrfields, we get back a List of Fields:
-				List<Mabfield> listOfSolrfieldsForMabfield = this.matchField(oldMabField, listOfMatchingObjs);
-				listOfNewSolrfieldLists.add(listOfSolrfieldsForMabfield);
+				if (!oldMabField.getFieldname().equals(fullRecordFieldname)) {
+					// Match each Mabfield in the Record to the defined Solrfields. As one old Mabfield could match multiple Solrfields, we get back a List of Fields:
+					List<Mabfield> listOfSolrfieldsForMabfield = this.matchField(oldMabField, listOfMatchingObjs);
+					listOfNewSolrfieldLists.add(listOfSolrfieldsForMabfield);
+				} else {
+					// Get full record as XML
+					fullRecordAsXml = oldMabField.getFieldvalue();
+					System.out.println("Found");
+				}
 			}
 
 			for (List<Mabfield> newSolrFields : listOfNewSolrfieldLists) {
@@ -81,11 +89,9 @@ public class MatchingOperations {
 				}
 			}
 
-
 			for (Mabfield customTextField : customTextFields) {
 				listOfNewFieldsForNewRecord.add(customTextField);
 			}
-
 
 			// DeDuplication of none-multivalued SolrFields:
 			HashSet<Mabfield> dedupSolrSet = new HashSet<Mabfield>();
@@ -104,7 +110,6 @@ public class MatchingOperations {
 						dedupSolrSet.add(solrfield);
 					}
 
-
 				} else { // Multi valued SolrField					
 					if (solrfield.isAllowDuplicates()) { // Allow duplicates - necessary for connected fields
 						dedupSolrList.add(solrfield); // Add directly to the list to allow duplicates
@@ -116,8 +121,18 @@ public class MatchingOperations {
 
 			// Add Set<Mabfield> (deduplicated mulitvalued fields) to a List<Mabfield> which we have to use as type for "mabfields" variable
 			// in Record object, because when getting MAB-Codes from XML file, "mabfields" variable should be able to contain duplicates.
-			dedupSolrList.addAll(dedupSolrSet);			
-			Collections.sort(dedupSolrList); // Sort by fieldName (better readibility in Solr admin console)
+			dedupSolrList.addAll(dedupSolrSet);
+			
+			// Add full record as XML
+			if (fullRecordFieldname != null && !fullRecordFieldname.isEmpty()) {
+				Mabfield fullrecord = new Mabfield();
+				fullrecord.setFieldname(fullRecordFieldname);
+				fullrecord.setFieldvalue(fullRecordAsXml);
+				dedupSolrList.add(fullrecord);
+			}
+			
+			// Sort by fieldName (better readibility in Solr admin console):
+			Collections.sort(dedupSolrList); 
 
 			// Set variables of new record object:
 			newRecord.setMabfields(dedupSolrList);

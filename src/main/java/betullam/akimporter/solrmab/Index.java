@@ -71,7 +71,7 @@ public class Index {
 	public static List<String> multiValuedFields = new ArrayList<String>();
 	public static List<Mabfield> customTextFields = new ArrayList<Mabfield>();
 	public static HashMap<String, List<String>> translateFields = new HashMap<String, List<String>>();
-
+	public static String fullrecordFieldname = null;
 
 
 	public Index(String mabXmlFile, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
@@ -206,6 +206,7 @@ public class Index {
 				boolean customText = false;
 				boolean getAllFields = false;
 				List<String> allFieldsExceptions = new ArrayList<String>();
+				boolean getFullRecordAsXML = false;
 				boolean translateValue = false;
 				boolean translateValueContains = false;
 				boolean translateValueRegex = false;
@@ -282,11 +283,13 @@ public class Index {
 					lstValues.remove(lstValuesClean.indexOf("multiValued")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("multiValued")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
 				}
+				
 				if (lstValuesClean.contains("customText")) {
 					customText = true;
 					lstValues.remove(lstValuesClean.indexOf("customText")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("customText")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 				}
+				
 				if (lstValuesClean.contains("getAllFields")) {
 					getAllFields = true;
 					String getAllFieldsString = null;
@@ -303,7 +306,12 @@ public class Index {
 					}
 				}
 
-
+				if (lstValuesClean.contains("getFullRecordAsXML")) {
+					getFullRecordAsXML = true;
+					lstValues.remove(lstValuesClean.indexOf("getFullRecordAsXML")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(lstValuesClean.indexOf("getFullRecordAsXML")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
+				}
+				
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains") || lstValuesClean.contains("translateValueRegex")) {
 					int index = 0;
 
@@ -512,7 +520,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
 				matchingObjects.add(mo);
 			}
 
@@ -540,8 +548,12 @@ public class Index {
 				}
 			}
 
-			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains()) {
+			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() | matchingObject.isTranslateValueRegex()) {
 				translateFields = matchingObject.getMabFieldnames();
+			}
+			
+			if (matchingObject.isGetFullRecordAsXML()) {
+				fullrecordFieldname = matchingObject.getSolrFieldname();
 			}
 
 		}
