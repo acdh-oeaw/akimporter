@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -86,6 +87,7 @@ public class MarcContentHandler implements ContentHandler {
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
 	private String allfieldsField = null;
+	private List<String> allFieldsExceptions = new ArrayList<String>();
 
 
 	/**
@@ -128,12 +130,12 @@ public class MarcContentHandler implements ContentHandler {
 				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));
 			}
 			
-			// Get allfields
+			// Get allfields if it is set
 			if (mo.isGetAllFields()) {
 				hasAllFieldsField = true;
-				allfieldsField = mo.getSolrFieldname();
+				allfieldsField = mo.getSolrFieldname(); // Get Solr field to which all fields should be indexed
+				allFieldsExceptions = mo.getAllFieldsExceptions(); // Get list of fields that should not be indexed
 			}
-			
 		}
 	}
 
@@ -410,7 +412,14 @@ public class MarcContentHandler implements ContentHandler {
 
 				// Create a document:
 				SolrInputDocument doc = new SolrInputDocument();
-
+				
+				// Create a HashSet for the allfields field if one is defined.
+				// We do that do prevent duplicated values
+				Set<String> allfieldsSet = null;
+				if (hasAllFieldsField) {
+					allfieldsSet = new HashSet<String>();
+				}
+				
 				for (Mabfield mf : record.getMabfields()) {
 
 					String fieldName = mf.getFieldname();
@@ -425,18 +434,24 @@ public class MarcContentHandler implements ContentHandler {
 						doc.addField(fieldName, connValue);
 					}
 					
-					// Add values to the "allfields" field:
+					// Add values to the "allfields" field, except for the exception values defined in mab.properties:
 					if (hasAllFieldsField) {
-						doc.addField(allfieldsField, fieldValue);
-						if (connValue != null) {
-							doc.addField(allfieldsField, connValue);
+						if (!allFieldsExceptions.contains(fieldName)) {
+							allfieldsSet.add(fieldValue);
+							if (connValue != null) {
+								allfieldsSet.add(connValue);
+							}
 						}
 					}
-					
 				}
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
 				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
+				
+				// Add the allfields field to the document if it is used
+				if (hasAllFieldsField) {
+					doc.addField(allfieldsField, allfieldsSet);
+				}
 
 				// Add the document to the collection of documents:
 				docs.add(doc);

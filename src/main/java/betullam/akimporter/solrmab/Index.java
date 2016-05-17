@@ -68,7 +68,6 @@ public class Index {
 	private String timeStamp = null;
 	private SolrMabHelper smHelper = null;
 	private boolean isIndexingSuccessful = false;
-
 	public static List<String> multiValuedFields = new ArrayList<String>();
 	public static List<Mabfield> customTextFields = new ArrayList<Mabfield>();
 	public static HashMap<String, List<String>> translateFields = new HashMap<String, List<String>>();
@@ -206,6 +205,7 @@ public class Index {
 				boolean multiValued = false;
 				boolean customText = false;
 				boolean getAllFields = false;
+				List<String> allFieldsExceptions = new ArrayList<String>();
 				boolean translateValue = false;
 				boolean translateValueContains = false;
 				boolean translateValueRegex = false;
@@ -289,8 +289,18 @@ public class Index {
 				}
 				if (lstValuesClean.contains("getAllFields")) {
 					getAllFields = true;
-					lstValues.remove(lstValuesClean.indexOf("getAllFields")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
-					lstValuesClean.remove(lstValuesClean.indexOf("getAllFields")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					String getAllFieldsString = null;
+					int index = lstValuesClean.indexOf("getAllFields");
+					getAllFieldsString = lstValues.get(index); // Get whole string incl. square brackets, e. g. getAllFields[url:id:...]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					if (getAllFieldsString != null) {
+						// Extract the text in the square brackets:
+						Pattern patternAllFieldsExceptions = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcherAllFieldsExceptions = patternAllFieldsExceptions.matcher(getAllFieldsString);
+						String strAllFieldsExceptions = (matcherAllFieldsExceptions.find()) ? matcherAllFieldsExceptions.group().replace("[", "").replace("]", "").trim() : null;
+						allFieldsExceptions = Arrays.asList(strAllFieldsExceptions.split("\\s*:\\s*"));
+					}
 				}
 
 
@@ -316,7 +326,6 @@ public class Index {
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					}
-					
 					
 					// Is translateValueRegex
 					if (lstValuesClean.contains("translateValueRegex")) {
@@ -429,7 +438,6 @@ public class Index {
 					fieldsToRemove.clear();
 				}
 
-
 				// Get all customText fields and remove them after we finished:
 				if (customText) {
 					for(String lstValue : lstValues) {
@@ -439,7 +447,6 @@ public class Index {
 					lstValues.removeAll(fieldsToRemove);
 					fieldsToRemove.clear();
 				}				
-				
 
 				// Get all translateValue, translateValueContains and translateValueRegex fields and remove them after we finished:
 				if (translateValue || translateValueContains || translateValueRegex) {
@@ -461,7 +468,6 @@ public class Index {
 						Matcher matcherFrom = patternFrom.matcher("");
 						Matcher matcherTo = patternTo.matcher("");
 						Matcher matcherAll = patternAll.matcher("");
-
 
 						for(String lstValue : lstValues) {
 
@@ -506,7 +512,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
 				matchingObjects.add(mo);
 			}
 

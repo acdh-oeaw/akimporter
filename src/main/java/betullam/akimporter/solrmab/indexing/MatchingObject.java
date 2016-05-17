@@ -34,6 +34,7 @@ public class MatchingObject {
 	private boolean multiValued;
 	private boolean customText;
 	private boolean getAllFields;
+	private List<String> allFieldsExceptions;
 	private boolean translateValue;
 	private boolean translateValueContains;
 	private boolean translateValueRegex;
@@ -51,12 +52,13 @@ public class MatchingObject {
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, List<String> connectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean allowDuplicates) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, List<String> connectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean allowDuplicates) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
 		this.setCustomText(customText);
 		this.setGetAllFields(getAllFields);
+		this.setAllFieldsExceptions(allFieldsExceptions);
 		this.setTranslateValue(translateValue);
 		this.setTranslateValueContains(translateValueContains);
 		this.setTranslateValueRegex(translateValueRegex);
@@ -110,6 +112,14 @@ public class MatchingObject {
 
 	public void setGetAllFields(boolean getAllFields) {
 		this.getAllFields = getAllFields;
+	}
+
+	public List<String> getAllFieldsExceptions() {
+		return allFieldsExceptions;
+	}
+
+	public void setAllFieldsExceptions(List<String> allFieldsExceptions) {
+		this.allFieldsExceptions = allFieldsExceptions;
 	}
 
 	public boolean isTranslateValue() {
@@ -219,12 +229,15 @@ public class MatchingObject {
 	@Override
 	public String toString() {
 		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
-				+ multiValued + ", customText=" + customText + ", getAllFields=" + getAllFields + ", translateValue="
-				+ translateValue + ", translateValueContains=" + translateValueContains + ", translateValueRegex="
-				+ translateValueRegex + ", translateProperties=" + translateProperties + ", hasDefaultValue="
-				+ hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
-				+ hasConnectedSubfields + ", connectedSubfields=" + connectedSubfields + ", hasRegex=" + hasRegex
-				+ ", regexValue=" + regexValue + ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue="
-				+ regexStrictValue + ", allowDuplicates=" + allowDuplicates + "]";
-	}	
+				+ multiValued + ", customText=" + customText + ", getAllFields=" + getAllFields
+				+ ", allFieldsExceptions=" + allFieldsExceptions + ", translateValue=" + translateValue
+				+ ", translateValueContains=" + translateValueContains + ", translateValueRegex=" + translateValueRegex
+				+ ", translateProperties=" + translateProperties + ", hasDefaultValue=" + hasDefaultValue
+				+ ", defaultValue=" + defaultValue + ", hasConnectedSubfields=" + hasConnectedSubfields
+				+ ", connectedSubfields=" + connectedSubfields + ", hasRegex=" + hasRegex + ", regexValue=" + regexValue
+				+ ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue=" + regexStrictValue + ", allowDuplicates="
+				+ allowDuplicates + "]";
+	}
+
+		
 }
