@@ -287,6 +287,11 @@ public class Index {
 					lstValues.remove(lstValuesClean.indexOf("customText")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("customText")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 				}
+				if (lstValuesClean.contains("getAllFields")) {
+					getAllFields = true;
+					lstValues.remove(lstValuesClean.indexOf("getAllFields")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(lstValuesClean.indexOf("getAllFields")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+				}
 
 
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains") || lstValuesClean.contains("translateValueRegex")) {
@@ -433,7 +438,8 @@ public class Index {
 					}
 					lstValues.removeAll(fieldsToRemove);
 					fieldsToRemove.clear();
-				}
+				}				
+				
 
 				// Get all translateValue, translateValueContains and translateValueRegex fields and remove them after we finished:
 				if (translateValue || translateValueContains || translateValueRegex) {
@@ -500,7 +506,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
 				matchingObjects.add(mo);
 			}
 
