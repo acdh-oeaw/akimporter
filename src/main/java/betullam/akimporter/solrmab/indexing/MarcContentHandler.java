@@ -82,6 +82,10 @@ public class MarcContentHandler implements ContentHandler {
 	String connectedSubfieldText = null;
 	List<String> currentMasterSubfields = new ArrayList<String>();
 	Map<String, String> currentMasterSubfieldsValues = new HashMap<String, String>();
+	
+	// Variables for allfields:
+	private boolean hasAllFieldsField = false;
+	private String allfieldsField = null;
 
 
 	/**
@@ -99,8 +103,9 @@ public class MarcContentHandler implements ContentHandler {
 		this.timeStamp = timeStamp;
 		this.print = print;
 
-		// Get list of connected fields. We need to check them while parsing the XML.
 		for (MatchingObject mo : listOfMatchingObjs) {
+			
+			// Get list of connected fields. We need to check them while parsing the XML.
 			if (mo.hasConnectedSubfields()) {
 
 				Map<String, String> connectedMasterFields = new HashMap<String, String>();
@@ -122,6 +127,13 @@ public class MarcContentHandler implements ContentHandler {
 
 				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));
 			}
+			
+			// Get allfields
+			if (mo.isGetAllFields()) {
+				hasAllFieldsField = true;
+				allfieldsField = mo.getSolrFieldname();
+			}
+			
 		}
 	}
 
@@ -275,7 +287,6 @@ public class MarcContentHandler implements ContentHandler {
 
 		if(localName.equals("datafield")) {
 
-			
 			// Set the connected datafields:
 			if (datafieldContainsConnectedFields && connectedValueRequired) {
 				
@@ -413,6 +424,15 @@ public class MarcContentHandler implements ContentHandler {
 					if (connValue != null) {
 						doc.addField(fieldName, connValue);
 					}
+					
+					// Add values to the "allfields" field:
+					if (hasAllFieldsField) {
+						doc.addField(allfieldsField, fieldValue);
+						if (connValue != null) {
+							doc.addField(allfieldsField, connValue);
+						}
+					}
+					
 				}
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
