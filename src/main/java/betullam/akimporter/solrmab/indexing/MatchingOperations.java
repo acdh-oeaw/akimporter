@@ -79,7 +79,6 @@ public class MatchingOperations {
 				} else {
 					// Get full record as XML
 					fullRecordAsXml = oldMabField.getFieldvalue();
-					System.out.println("Found");
 				}
 			}
 
