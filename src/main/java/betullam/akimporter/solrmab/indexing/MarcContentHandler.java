@@ -45,8 +45,6 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
-import main.java.betullam.akimporter.solrmab.Index;
-
 
 public class MarcContentHandler implements ContentHandler {
 
