@@ -140,7 +140,7 @@ public class Index {
 			}
 			endTime = System.currentTimeMillis();
 			smHelper.print(print, "Done indexing to Solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n\n");
-			
+
 			isIndexingSuccessful = true;
 
 		} catch (RemoteSolrException e) {
@@ -213,14 +213,18 @@ public class Index {
 				boolean hasDefaultValue = false;
 				boolean hasRegex = false;
 				boolean hasRegexStrict = false;
+				boolean hasRegExReplace = false;
 				String defaultValue = null;
 				List<String> connectedSubfields = null;
 				boolean hasConnectedSubfields = false;
 				String regexValue = null;
 				String regexStrictValue = null;
+				String regexReplaceValue = null;
+				Map<Integer, String> regexReplaceValues = new HashMap<Integer, String>();
 				String strValues = mabProperties.getProperty(key);
 				boolean allowDuplicates = false;
 
+				
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
 				// INFO:
 				// We can't use something like replaceAll or replaceFirst becaus in regEx rules, we could have nested brackets, e. g.
@@ -283,13 +287,13 @@ public class Index {
 					lstValues.remove(lstValuesClean.indexOf("multiValued")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("multiValued")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
 				}
-				
+
 				if (lstValuesClean.contains("customText")) {
 					customText = true;
 					lstValues.remove(lstValuesClean.indexOf("customText")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("customText")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 				}
-				
+
 				if (lstValuesClean.contains("getAllFields")) {
 					getAllFields = true;
 					String getAllFieldsString = null;
@@ -311,7 +315,7 @@ public class Index {
 					lstValues.remove(lstValuesClean.indexOf("getFullRecordAsXML")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("getFullRecordAsXML")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
 				}
-				
+
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains") || lstValuesClean.contains("translateValueRegex")) {
 					int index = 0;
 
@@ -334,7 +338,7 @@ public class Index {
 						lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 						lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					}
-					
+
 					// Is translateValueRegex
 					if (lstValuesClean.contains("translateValueRegex")) {
 						translateValueRegex = true;
@@ -373,7 +377,7 @@ public class Index {
 						defaultValue = (matcherDefaultValue.find()) ? matcherDefaultValue.group().replace("[", "").replace("]", "").trim() : null;
 					}
 				}
-				
+
 				if (lstValuesClean.contains("connectedSubfields")) {
 					String connectedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("connectedSubfields");
@@ -394,6 +398,7 @@ public class Index {
 					String regexValueString = null;
 					hasRegex = true;
 					hasRegexStrict = false;
+					hasRegExReplace = false;
 					int index = lstValuesClean.indexOf("regEx");
 					regexValueString =  lstValues.get(index); // Get whole string of regex value incl. square brackets, e. g. regEx[REGEX]
 					lstValues.remove(index); // Use index of clean list (without square brackets).
@@ -410,6 +415,7 @@ public class Index {
 					String regexStrictValueString = null;
 					hasRegexStrict = true;
 					hasRegex = false;
+					hasRegExReplace = false;
 					int index = lstValuesClean.indexOf("regExStrict");
 					regexStrictValueString =  lstValues.get(index); // Get whole string of regex value incl. square brackets, e. g. regExStrict[REGEX]
 					lstValues.remove(index); // Use index of clean list (without square brackets).
@@ -421,13 +427,68 @@ public class Index {
 						regexStrictValue = (matcherRegexStrictValue.find()) ? matcherRegexStrictValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 					}
 				}
+
+				if (lstValuesClean.contains("regExReplace")) {
+					System.out.println("\n");
+					String regExReplaceValueString = null;
+					hasRegExReplace = true;
+					hasRegexStrict = false;
+					hasRegex = false;
+					int index = lstValuesClean.indexOf("regExReplace");
+					regExReplaceValueString =  lstValues.get(index); // Get whole string of regex value incl. square brackets, e. g. regExStrict[REGEX]
+					lstValues.remove(index); // Use index of clean list (without square brackets).
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+
+					if (regExReplaceValueString != null) {
+						// Extract the regex value in the square brackets:
+						Pattern patternRegexReplaceValue = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcherRegexReplaceValue = patternRegexReplaceValue.matcher(regExReplaceValueString);
+						regexReplaceValue = (matcherRegexReplaceValue.find()) ? matcherRegexReplaceValue.group().trim() : null;
+					}
+					regexReplaceValue = regexReplaceValue.replace("regExReplace", "");
+					
+					// Get everything between the 2 outermost squarebrackets:
+					String regexReplaceValueClean = "";
+					int outerBracketsCounter = 0;
+					openBracketsCounter = 0; // Reuse variable from above
+					closeBracketsCounter = 0; // Reuse variable from above
+					bracketCounter = 0; // Reuse variable from above
+					// Iterate over each character of regexReplaceValue:
+					for (int i = 0; i < regexReplaceValue.length(); i++){
+						char c = regexReplaceValue.charAt(i);
+						String s = Character.toString(c);
+						// Check if the current character is an opening bracket
+						if (s.equals("[")) {
+							openBracketsCounter = openBracketsCounter + 1;
+							bracketCounter = bracketCounter + 1;
+							// Check if we have an outer bracket (count value equals 1) {
+							if (bracketCounter == 1) {
+								outerBracketsCounter = outerBracketsCounter + 1;
+							}
+						}
+						// Add characters to the new string only if within an outer bracket (count value equals or higher 1)
+						if (bracketCounter >= 1) {
+							regexReplaceValueClean += s;
+						}
+						// Check if the current character is a closing bracket
+						if (s.equals("]")) {
+							if (bracketCounter == 1) {								
+								regexReplaceValues.put(outerBracketsCounter, regexReplaceValueClean.replaceFirst("\\[", "").replaceFirst("\\]$", ""));
+								regexReplaceValueClean = "";
+							}
+							closeBracketsCounter = closeBracketsCounter + 1;
+							bracketCounter = bracketCounter - 1;		
+						}
+					}
+				}
 				
+
 				if (lstValuesClean.contains("allowDuplicates")) {
 					allowDuplicates = true;
 					lstValues.remove(lstValuesClean.indexOf("allowDuplicates")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("allowDuplicates")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
 				}
-				
+
 
 				// Get all multiValued fields and remove them after we finished:
 				if (multiValued) {
@@ -519,8 +580,8 @@ public class Index {
 				}
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
-
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, allowDuplicates);				
+				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);				
 				matchingObjects.add(mo);
 			}
 
@@ -551,7 +612,7 @@ public class Index {
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() | matchingObject.isTranslateValueRegex()) {
 				translateFields = matchingObject.getMabFieldnames();
 			}
-			
+
 			if (matchingObject.isGetFullRecordAsXML()) {
 				fullrecordFieldname = matchingObject.getSolrFieldname();
 			}

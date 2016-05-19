@@ -185,7 +185,11 @@ public class MatchingOperations {
 			String regexValue = matchingObject.getRegexValue();
 			boolean hasRegexStrict = matchingObject.hasRegexStrict();
 			String regexStrictValue = matchingObject.getRegexStrictValue();
+			boolean hasRegexReplace = matchingObject.hasRegExReplace();
+			String regexReplacePattern = matchingObject.getRegexReplaceValues().get(1);
+			String regexReplaceValue = matchingObject.getRegexReplaceValues().get(2);
 			boolean allowDuplicates = matchingObject.isAllowDuplicates();
+			
 
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
 
@@ -209,7 +213,7 @@ public class MatchingOperations {
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
 					String fromCharacter = valueToMatchWith.getValue().get(0);
 					String toCharacter = valueToMatchWith.getValue().get(1);
-					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, hasRegex, regexValue, hasRegexStrict, regexStrictValue);
+					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegexReplace, regexReplacePattern, regexReplaceValue);
 
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
@@ -296,6 +300,11 @@ public class MatchingOperations {
 							// Return null ("strict" regex)
 							mabFieldValue = null;
 						}
+					}
+					
+					// Use regex replace if user has defined one:
+					if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) {
+						mabFieldValue = mabFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
 					}
 
 					if (mabFieldnameProps.length() == 3) {
@@ -484,7 +493,7 @@ public class MatchingOperations {
 	 * @param toCount				int: Index of last character to match
 	 * @return						String containing the translated value
 	 */
-	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue) {
+	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
 		String translateValue = null;
 		String matchedValueXml = null;
 		String fieldNameXml = mabField.getFieldname();
@@ -518,6 +527,12 @@ public class MatchingOperations {
 				fieldValueXml = null;
 			}
 		}
+		
+		// Use regex replace if user has defined one:
+		if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) {
+			fieldValueXml = fieldValueXml.replaceAll(regexReplacePattern, regexReplaceValue).trim();
+		}
+		
 
 		// Get characters from the positions the user defined in mab.properties file:
 		// E. g. get "Full" from "Fulltext" if character positions [1-4] was defined.

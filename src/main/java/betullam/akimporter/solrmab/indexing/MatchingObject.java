@@ -26,6 +26,7 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MatchingObject {
 
@@ -48,12 +49,14 @@ public class MatchingObject {
 	private String regexValue;
 	private boolean hasRegexStrict;
 	private String regexStrictValue;
+	private boolean hasRegExReplace;
+	private Map<Integer, String> regexReplaceValues;
 	private boolean allowDuplicates;
 	
 	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean getFullRecordAsXML, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, List<String> connectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean allowDuplicates) {
+	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean getFullRecordAsXML, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, List<String> connectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegExReplace, Map<Integer, String> regexReplaceValues, boolean allowDuplicates) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
@@ -73,6 +76,8 @@ public class MatchingObject {
 		this.setRegexValue(regexValue);
 		this.setHasRegexStrict(hasRegexStrict);
 		this.setRegexStrictValue(regexStrictValue);
+		this.setHasRegExReplace(hasRegExReplace);
+		this.setRegexReplaceValues(regexReplaceValues);
 		this.setAllowDuplicates(allowDuplicates);
 	}
 
@@ -228,6 +233,22 @@ public class MatchingObject {
 		this.regexStrictValue = regexStrictValue;
 	}
 
+	public boolean hasRegExReplace() {
+		return hasRegExReplace;
+	}
+
+	public void setHasRegExReplace(boolean hasRegExReplace) {
+		this.hasRegExReplace = hasRegExReplace;
+	}
+
+	public Map<Integer, String> getRegexReplaceValues() {
+		return regexReplaceValues;
+	}
+
+	public void setRegexReplaceValues(Map<Integer, String> regexReplaceValues) {
+		this.regexReplaceValues = regexReplaceValues;
+	}
+
 	public boolean isAllowDuplicates() {
 		return allowDuplicates;
 	}
@@ -236,6 +257,7 @@ public class MatchingObject {
 		this.allowDuplicates = allowDuplicates;
 	}
 
+	
 	@Override
 	public String toString() {
 		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
@@ -246,10 +268,7 @@ public class MatchingObject {
 				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
 				+ hasConnectedSubfields + ", connectedSubfields=" + connectedSubfields + ", hasRegex=" + hasRegex
 				+ ", regexValue=" + regexValue + ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue="
-				+ regexStrictValue + ", allowDuplicates=" + allowDuplicates + "]";
-	}
-
-
-
-		
+				+ regexStrictValue + ", hasRegExReplace=" + hasRegExReplace + ", regexReplaceValues="
+				+ regexReplaceValues + ", allowDuplicates=" + allowDuplicates + "]";
+	}	
 }
