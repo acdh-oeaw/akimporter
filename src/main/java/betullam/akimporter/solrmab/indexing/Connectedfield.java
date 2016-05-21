@@ -25,27 +25,26 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public class Connectedfield {
 
-	private Map<String, String> connectedMasterFields; // First String = Master subfield code, Second String = Master datafield code 
+	private Set<String> connectedMasterFields; // Set of Strings like 100p, 655u, etc. 
 	private List<String> connectedSubfields; // Subfields that should contain a value
 	private String connectedDefaultValue; // Default value if none of the given subfields in connectedSubfields exists
 	
 	
-	public Connectedfield(Map<String, String> connectedMasterFields, List<String> connectedSubfields, String connectedDefaultValue) {
+	public Connectedfield(Set<String> connectedMasterFields, List<String> connectedSubfields, String connectedDefaultValue) {
 		this.connectedMasterFields = connectedMasterFields;
 		this.connectedSubfields = connectedSubfields;
 		this.connectedDefaultValue = connectedDefaultValue;
 	}
 
-	
-	public Map<String, String> getConnectedMasterFields() {
+	public Set<String> getConnectedMasterFields() {
 		return connectedMasterFields;
 	}
 
-	public void setConnectedMasterFields(Map<String, String> connectedMasterFields) {
+	public void setConnectedMasterFields(Set<String> connectedMasterFields) {
 		this.connectedMasterFields = connectedMasterFields;
 	}
 
@@ -65,11 +64,14 @@ public class Connectedfield {
 		this.connectedDefaultValue = connectedDefaultValue;
 	}
 
+	
+
 	@Override
 	public String toString() {
 		return "Connectedfield [connectedMasterFields=" + connectedMasterFields + ", connectedSubfields="
 				+ connectedSubfields + ", connectedDefaultValue=" + connectedDefaultValue + "]";
 	}
+
 
 	@Override
 	public int hashCode() {

@@ -581,7 +581,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 				
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);				
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
 				matchingObjects.add(mo);
 			}
 

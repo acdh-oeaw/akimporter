@@ -116,7 +116,7 @@ public class MarcContentHandler implements ContentHandler {
 			// Get list of connected fields. We need to check them while parsing the XML.
 			if (mo.hasConnectedSubfields()) {
 
-				Map<String, String> connectedMasterFields = new HashMap<String, String>();
+				Set<String> connectedMasterFields = new HashSet<String>();
 				String connectedDefaultValue = null;
 				List<String> mutableList = new ArrayList<String>();
 				mutableList.addAll(mo.getConnectedSubfields()); // Create CHANGEABLE/MUTABLE List:
@@ -127,13 +127,11 @@ public class MarcContentHandler implements ContentHandler {
 					String completeFieldname = mabfieldName.getKey().toString();
 					String connectedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
 					String connectedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
-					connectedMasterFields.put(connectedMasterSubfield, connectedMasterDatafield);
+					connectedMasterFields.add(connectedMasterDatafield+connectedMasterSubfield);
 				}
-
 				connectedDefaultValue = mutableList.get(lastListElement); // Last value is always the default value to use
 				mutableList.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
-
-				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));
+				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));	
 			}
 
 			// Get allfields if it is set
@@ -226,18 +224,18 @@ public class MarcContentHandler implements ContentHandler {
 			}
 
 			for (Connectedfield connectedField : connectedFields) {
-
-				for (Entry<String, String> masterField : connectedField.getConnectedMasterFields().entrySet()) {
-					String masterDatafield = masterField.getValue().toString(); // E. g.: 655
-					if (masterDatafield.equals(datafieldTag)) {
+				for (String masterField : connectedField.getConnectedMasterFields()) {
+					String masterFieldName = masterField.substring(0,3);
+					String masterFieldSubfield = masterField.substring(masterField.length() - 1);
+					
+					if (masterFieldName.equals(datafieldTag)) {
 						datafieldContainsConnectedFields = true;
-						currentMasterSubfields.add(masterField.getKey().toString()); // E. g.: u
+						currentMasterSubfields.add(masterFieldSubfield);
 						currentConnectedField = connectedField;
 						currentConnectedSubfields = currentConnectedField.getConnectedSubfields();
 					}
-				}
+				}	
 			}
-
 		}
 
 		if(localName.equals("subfield")) {
