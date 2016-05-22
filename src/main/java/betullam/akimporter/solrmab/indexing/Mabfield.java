@@ -25,12 +25,15 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.Comparator;
+import java.util.HashMap;
 
 public class Mabfield implements Comparable<Mabfield> {
 
 	private String fieldname;
 	private String fieldvalue;
 	private String connectedValue;
+	private boolean isTranslateConnectedSubfields = false;
+	private HashMap<String, String> translateSubfieldsProperties;
 	private boolean allowDuplicates = false;
 
 	public Mabfield() {}
@@ -65,6 +68,22 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.connectedValue = connectedValue;
 	}
 
+	public boolean isTranslateConnectedSubfields() {
+		return isTranslateConnectedSubfields;
+	}
+
+	public void setTranslateConnectedSubfields(boolean isTranslateConnectedSubfields) {
+		this.isTranslateConnectedSubfields = isTranslateConnectedSubfields;
+	}
+
+	public HashMap<String, String> getTranslateSubfieldsProperties() {
+		return translateSubfieldsProperties;
+	}
+
+	public void setTranslateSubfieldsProperties(HashMap<String, String> translateSubfieldsProperties) {
+		this.translateSubfieldsProperties = translateSubfieldsProperties;
+	}
+
 	public boolean isAllowDuplicates() {
 		return allowDuplicates;
 	}
@@ -73,10 +92,11 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.allowDuplicates = allowDuplicates;
 	}
 
-
 	@Override
 	public String toString() {
 		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + ", connectedValue=" + connectedValue
+				+ ", isTranslateConnectedSubfields=" + isTranslateConnectedSubfields
+				+ ", translateConnectedSubfieldsProperties=" + translateSubfieldsProperties
 				+ ", allowDuplicates=" + allowDuplicates + "]";
 	}
 

@@ -121,6 +121,8 @@ public class MarcContentHandler implements ContentHandler {
 				List<String> mutableList = new ArrayList<String>();
 				mutableList.addAll(mo.getConnectedSubfields()); // Create CHANGEABLE/MUTABLE List:
 				int lastListElement = (mutableList.size()-1); // Get index of last List element
+				boolean isTranslateConnectedSubfields = mo.isTranslateConnectedSubfields();
+				HashMap<String, String> translateSubfieldsProperties = mo.getTranslateSubfieldsProperties();
 
 				// Get all master fields:
 				for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
@@ -131,7 +133,7 @@ public class MarcContentHandler implements ContentHandler {
 				}
 				connectedDefaultValue = mutableList.get(lastListElement); // Last value is always the default value to use
 				mutableList.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
-				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue));	
+				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue, isTranslateConnectedSubfields, translateSubfieldsProperties));	
 			}
 
 			// Get allfields if it is set
@@ -344,6 +346,7 @@ public class MarcContentHandler implements ContentHandler {
 					connectedDatafield.setFieldname(datafieldName);
 					connectedDatafield.setFieldvalue(currentMasterSubfieldText);
 
+					// Set value of connected subfield
 					String connectedValue = "ERROR";
 					if (connectedSubfieldText != null && !connectedSubfieldText.isEmpty()) {
 						connectedValue = connectedSubfieldText;
@@ -351,6 +354,12 @@ public class MarcContentHandler implements ContentHandler {
 						connectedValue = currentConnectedField.getConnectedDefaultValue();
 					}
 					connectedDatafield.setConnectedValue(connectedValue);
+					
+					// Indicate if subfield value should be translated in the next step (MatchingOperations)
+					boolean isTranslateConnectedSubfields = currentConnectedField.isTranslateConnectedSubfields();
+					connectedDatafield.setTranslateConnectedSubfields(isTranslateConnectedSubfields);
+					connectedDatafield.setTranslateSubfieldsProperties(currentConnectedField.getTranslateSubfieldsProperties());
+					
 					allFields.add(connectedDatafield);
 					connectedDatafield = null;
 				}

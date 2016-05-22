@@ -65,7 +65,7 @@ public class MatchingOperations {
 		newListOfRecords = new ArrayList<Record>();		
 
 		for (Record oldRecord : oldRecordSet) {			
-			
+
 			String fullRecordAsXml = null;
 			listOfNewSolrfieldLists = new ArrayList<List<Mabfield>>();
 			listOfNewFieldsForNewRecord = new ArrayList<Mabfield>();
@@ -121,7 +121,7 @@ public class MatchingOperations {
 			// Add Set<Mabfield> (deduplicated mulitvalued fields) to a List<Mabfield> which we have to use as type for "mabfields" variable
 			// in Record object, because when getting MAB-Codes from XML file, "mabfields" variable should be able to contain duplicates.
 			dedupSolrList.addAll(dedupSolrSet);
-			
+
 			// Add full record as XML
 			if (fullRecordFieldname != null && !fullRecordFieldname.isEmpty()) {
 				Mabfield fullrecord = new Mabfield();
@@ -129,7 +129,7 @@ public class MatchingOperations {
 				fullrecord.setFieldvalue(fullRecordAsXml);
 				dedupSolrList.add(fullrecord);
 			}
-			
+
 			// Sort by fieldName (better readibility in Solr admin console):
 			Collections.sort(dedupSolrList); 
 
@@ -175,6 +175,16 @@ public class MatchingOperations {
 		String connectedSubfieldValue = null;
 		if (mabField.getConnectedValue() != null && !mabField.getConnectedValue().isEmpty()) {
 			connectedSubfieldValue = mabField.getConnectedValue();
+			if (mabField.isTranslateConnectedSubfields()) {
+				// Treat translate values for connected subfields
+				HashMap<String, String> translateSubfieldsProperties = null;
+				String defaultConnectedValue = null;
+				if (mabField.isTranslateConnectedSubfields()) {
+					translateSubfieldsProperties = mabField.getTranslateSubfieldsProperties();
+					defaultConnectedValue = connectedSubfieldValue;				
+					connectedSubfieldValue = getTranslatedValue(mabFieldnameXml, mabField, translateSubfieldsProperties, "all", "all", defaultConnectedValue, true, false, false, true, false, null, false, null, false, null, null);
+				}	
+			}
 		}
 
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
@@ -189,14 +199,16 @@ public class MatchingOperations {
 			String regexReplacePattern = matchingObject.getRegexReplaceValues().get(1);
 			String regexReplaceValue = matchingObject.getRegexReplaceValues().get(2);
 			boolean allowDuplicates = matchingObject.isAllowDuplicates();
-			
+			boolean isTranslateValue = false;
+			boolean isTranslateValueContains = false;
+			boolean isTranslateValueRegex = false;
 
+			
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
 
-				boolean isTranslateValue = false;
-				boolean isTranslateValueContains = false;
-				boolean isTranslateValueRegex = false;
-				
+				// Treat "normal" translate values
+				HashMap<String, String> translateProperties = matchingObject.getTranslateProperties();
+				String defaultValue = matchingObject.getDefaultValue();
 				if (matchingObject.isTranslateValue()) {
 					isTranslateValue = true;
 				} else if (matchingObject.isTranslateValueContains()) {
@@ -204,16 +216,13 @@ public class MatchingOperations {
 				} else if (matchingObject.isTranslateValueRegex()) {
 					isTranslateValueRegex = true;
 				}
-				
-				HashMap<String, String> translateProperties = matchingObject.getTranslateProperties();
-				String defaultValue = matchingObject.getDefaultValue();
 
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
 					String fromCharacter = valueToMatchWith.getValue().get(0);
 					String toCharacter = valueToMatchWith.getValue().get(1);
-					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegexReplace, regexReplacePattern, regexReplaceValue);
+					String translatedValue = getTranslatedValue(solrFieldname, mabField, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, false, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegexReplace, regexReplacePattern, regexReplaceValue);
 
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
@@ -301,7 +310,7 @@ public class MatchingOperations {
 							mabFieldValue = null;
 						}
 					}
-					
+
 					// Use regex replace if user has defined one:
 					if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) {
 						mabFieldValue = mabFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
@@ -483,22 +492,37 @@ public class MatchingOperations {
 		return matches;
 	}
 
+
 	/**
 	 * Getting the value of a translation file.
-	 * 
-	 * @param solrFieldname			String: Name of Solr field 
-	 * @param mabField				Mabfield: Mabfield object
-	 * @param translateProperties	HashMap<String, String>: Contents of a translation.properties file
-	 * @param fromCount				int: Index of first character to match
-	 * @param toCount				int: Index of last character to match
-	 * @return						String containing the translated value
+	 * @param solrFieldname								String: Name of Solr field 
+	 * @param mabField									Mabfield: Mabfield object
+	 * @param translateProperties						HashMap<String, String>: Contents of a translation.properties file
+	 * @param fromCount									String: Index of first character to match or "all"
+	 * @param toCount									String: Index of last character to match or "all"
+	 * @param translateDefaultValue						String
+	 * @param isTranslateValue							boolean
+	 * @param isTranslateValueContains					boolean
+	 * @param isTranslateValueRegex						boolean
+	 * @param hasRegex									boolean
+	 * @param isTranslateConnectedSubfields				boolean
+	 * @param regexValue								String
+	 * @param hasRegexStrict							hasRegexStrict
+	 * @param regexStrictValue							String
+	 * @param hasRegexReplace							boolean
+	 * @param regexReplacePattern						String
+	 * @param regexReplaceValue							String
+	 * @return											String containing the translated value
 	 */
-	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
+	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean isTranslateConnectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
 		String translateValue = null;
 		String matchedValueXml = null;
 		String fieldNameXml = mabField.getFieldname();
 		String fieldValueXml = mabField.getFieldvalue();
-
+		if (isTranslateConnectedSubfields) {
+			fieldValueXml = mabField.getConnectedValue();
+		}
+		
 		// Use regex if user has defined one:
 		if (hasRegex && regexValue != null) {
 			Pattern pattern = java.util.regex.Pattern.compile(regexValue);
@@ -527,31 +551,32 @@ public class MatchingOperations {
 				fieldValueXml = null;
 			}
 		}
-		
+
 		// Use regex replace if user has defined one:
 		if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) {
 			fieldValueXml = fieldValueXml.replaceAll(regexReplacePattern, regexReplaceValue).trim();
 		}
-		
+
 
 		// Get characters from the positions the user defined in mab.properties file:
 		// E. g. get "Full" from "Fulltext" if character positions [1-4] was defined.
 		if (fromCount.equals("all") && toCount.equals("all")) {
 			matchedValueXml = fieldValueXml.substring(0, fieldValueXml.length());
+
 		} else {
 			
 			try {
 				int intFromCount = Integer.valueOf(fromCount); // Beginning Index of value to match
 				intFromCount = (intFromCount-1);
 				int intToCount = Integer.valueOf(toCount); // Ending Index of value to match
-				
+
 				if (intToCount <= fieldValueXml.length()) {
 					matchedValueXml = fieldValueXml.substring(intFromCount, intToCount);
 				} else if (intFromCount <= fieldValueXml.length() && intToCount >= fieldValueXml.length()) {
 					matchedValueXml = fieldValueXml.substring(intFromCount, fieldValueXml.length());
 				}
 			} catch (NumberFormatException nfe) {
-				System.err.println("ERROR: Please make sure that you defined [n-n] or [all] for MAB field \"" + mabField.getFieldname() + "\" in your mab.properties for Solr field \"" + solrFieldname +"\". This is normally necessary for translate values.\n");
+				System.err.println("ERROR: Please make sure that you defined [n-n] or [all] for MAB field \"" + mabField.getFieldname() + "\" in your mab.properties for field \"" + solrFieldname +"\". This is normally necessary for translate values.\n");
 				System.exit(1);
 			}
 		}
@@ -581,11 +606,11 @@ public class MatchingOperations {
 		if (translateValue == null && translateDefaultValue != null) {
 			translateValue = translateDefaultValue;
 		}
-
+		
 		return translateValue;
 	}
 
-	
+
 	/**
 	 * Add values to a Mabfield object.
 	 * @param solrFieldname		String: Name of the solr field

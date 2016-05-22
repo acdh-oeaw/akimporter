@@ -851,7 +851,9 @@ public class Main {
 				if (lstValue.toString().contains(".properties")) { // Check if a .properties-File is indicated
 
 					// Get the filename with the help of RegEx:
-					Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
+					//Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
+					Pattern patternPropFile = java.util.regex.Pattern.compile("[a-zA-Z0-9]+\\.properties");
+					
 					Matcher matcherPropFile = patternPropFile.matcher("");
 					for(String lstVal : lstValue) {
 						matcherPropFile.reset(lstVal);

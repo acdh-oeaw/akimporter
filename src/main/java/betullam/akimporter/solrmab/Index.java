@@ -217,6 +217,7 @@ public class Index {
 				String defaultValue = null;
 				List<String> connectedSubfields = null;
 				boolean hasConnectedSubfields = false;
+				boolean translateConnectedSubfields = false;
 				String regexValue = null;
 				String regexStrictValue = null;
 				String regexReplaceValue = null;
@@ -264,8 +265,8 @@ public class Index {
 					System.exit(0);
 				}
 
-
 				HashMap<String, String> translateProperties = new HashMap<String, String>();
+				HashMap<String, String> translateSubfieldsProperties = new HashMap<String, String>();
 				String filename = null;
 				HashMap<String, List<String>> mabFieldnames = new HashMap<String, List<String>>();
 				List<String> fieldsToRemove = new ArrayList<String>();
@@ -381,7 +382,7 @@ public class Index {
 				if (lstValuesClean.contains("connectedSubfields")) {
 					String connectedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("connectedSubfields");
-					connectedSubfieldsString =  lstValues.get(index); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
+					connectedSubfieldsString = lstValues.get(index); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					hasConnectedSubfields = true;
@@ -391,6 +392,23 @@ public class Index {
 						Matcher matcherConnectedSubfields = patternConnectedSubfields.matcher(connectedSubfieldsString);
 						String strConnectedSubfields = (matcherConnectedSubfields.find()) ? matcherConnectedSubfields.group().replace("[", "").replace("]", "").trim() : null;
 						connectedSubfields = Arrays.asList(strConnectedSubfields.split("\\s*:\\s*"));
+					}
+				}
+				
+				if (lstValuesClean.contains("translateConnectedSubfields")) {
+					int index = lstValuesClean.indexOf("translateConnectedSubfields");
+					String translateConnectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. translateConnectedSubfields[translate.properties]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					translateConnectedSubfields = true;
+					if (translateConnectedSubfieldsString != null) {
+						String translateConnectedSubfieldsFilename = null;
+						Pattern pattern = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcher = pattern.matcher(translateConnectedSubfieldsString);
+						translateConnectedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
+						if (translateConnectedSubfieldsFilename != null) {
+							translateSubfieldsProperties = getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles);
+						}
 					}
 				}
 
@@ -581,7 +599,7 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 				
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, translateConnectedSubfields, translateSubfieldsProperties, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
 				matchingObjects.add(mo);
 			}
 

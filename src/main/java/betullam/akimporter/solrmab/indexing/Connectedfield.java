@@ -24,6 +24,7 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -32,12 +33,15 @@ public class Connectedfield {
 	private Set<String> connectedMasterFields; // Set of Strings like 100p, 655u, etc. 
 	private List<String> connectedSubfields; // Subfields that should contain a value
 	private String connectedDefaultValue; // Default value if none of the given subfields in connectedSubfields exists
+	private boolean translateConnectedSubfields;
+	private HashMap<String, String> translateSubfieldsProperties;
 	
-	
-	public Connectedfield(Set<String> connectedMasterFields, List<String> connectedSubfields, String connectedDefaultValue) {
+	public Connectedfield(Set<String> connectedMasterFields, List<String> connectedSubfields, String connectedDefaultValue, boolean translateConnectedSubfields, HashMap<String, String> translateSubfieldsProperties) {
 		this.connectedMasterFields = connectedMasterFields;
 		this.connectedSubfields = connectedSubfields;
 		this.connectedDefaultValue = connectedDefaultValue;
+		this.translateConnectedSubfields = translateConnectedSubfields;
+		this.translateSubfieldsProperties = translateSubfieldsProperties;
 	}
 
 	public Set<String> getConnectedMasterFields() {
@@ -64,14 +68,31 @@ public class Connectedfield {
 		this.connectedDefaultValue = connectedDefaultValue;
 	}
 
+	public boolean isTranslateConnectedSubfields() {
+		return translateConnectedSubfields;
+	}
+
+	public void setTranslateConnectedSubfields(boolean translateConnectedSubfields) {
+		this.translateConnectedSubfields = translateConnectedSubfields;
+	}
+
+	public HashMap<String, String> getTranslateSubfieldsProperties() {
+		return translateSubfieldsProperties;
+	}
+
+	public void setTranslateSubfieldsProperties(HashMap<String, String> translateSubfieldsProperties) {
+		this.translateSubfieldsProperties = translateSubfieldsProperties;
+	}
+
 	
 
 	@Override
 	public String toString() {
 		return "Connectedfield [connectedMasterFields=" + connectedMasterFields + ", connectedSubfields="
-				+ connectedSubfields + ", connectedDefaultValue=" + connectedDefaultValue + "]";
+				+ connectedSubfields + ", connectedDefaultValue=" + connectedDefaultValue
+				+ ", translateConnectedSubfields=" + translateConnectedSubfields + ", translateSubfieldsProperties="
+				+ translateSubfieldsProperties + "]";
 	}
-
 
 	@Override
 	public int hashCode() {
@@ -80,6 +101,7 @@ public class Connectedfield {
 		result = prime * result + ((connectedDefaultValue == null) ? 0 : connectedDefaultValue.hashCode());
 		result = prime * result + ((connectedMasterFields == null) ? 0 : connectedMasterFields.hashCode());
 		result = prime * result + ((connectedSubfields == null) ? 0 : connectedSubfields.hashCode());
+		result = prime * result + (translateConnectedSubfields ? 1231 : 1237);
 		return result;
 	}
 
@@ -114,6 +136,9 @@ public class Connectedfield {
 				return false;
 			}
 		} else if (!connectedSubfields.equals(other.connectedSubfields)) {
+			return false;
+		}
+		if (translateConnectedSubfields != other.translateConnectedSubfields) {
 			return false;
 		}
 		return true;
