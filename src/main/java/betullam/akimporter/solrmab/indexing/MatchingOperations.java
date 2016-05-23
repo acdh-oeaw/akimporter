@@ -29,9 +29,9 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +47,7 @@ public class MatchingOperations {
 	private Record newRecord;
 	List<String> multiValuedFields = Index.multiValuedFields;
 	List<Mabfield> customTextFields = Index.customTextFields;
-	HashMap<String, List<String>> translateFields = Index.translateFields;
+	Map<String, List<String>> translateFields = Index.translateFields;
 	String fullRecordFieldname = Index.fullrecordFieldname;
 
 
@@ -172,25 +172,34 @@ public class MatchingOperations {
 		}
 
 		// Connected subfields
-		String connectedSubfieldValue = null;
-		if (mabField.getConnectedValue() != null && !mabField.getConnectedValue().isEmpty()) {
-			connectedSubfieldValue = mabField.getConnectedValue();
+		List<String> connectedSubfieldValues = null;
+		if (mabField.getConnectedValues() != null && !mabField.getConnectedValues().isEmpty()) {
+			connectedSubfieldValues = mabField.getConnectedValues();
 			if (mabField.isTranslateConnectedSubfields()) {
 				// Treat translate values for connected subfields
-				HashMap<String, String> translateSubfieldsProperties = null;
+				Map<String, String> translateSubfieldsProperties = null;
 				String defaultConnectedValue = null;
 				if (mabField.isTranslateConnectedSubfields()) {
 					translateSubfieldsProperties = mabField.getTranslateSubfieldsProperties();
-					defaultConnectedValue = connectedSubfieldValue;				
-					connectedSubfieldValue = getTranslatedValue(mabFieldnameXml, mabField, translateSubfieldsProperties, "all", "all", defaultConnectedValue, true, false, false, true, false, null, false, null, false, null, null);
+					List<String> translatedConnectedSubfieldValues = new ArrayList<String>();
+					for (String connectedSubfieldValue : connectedSubfieldValues) {
+						defaultConnectedValue = connectedSubfieldValue;
+						Mabfield mfForTranslation = new Mabfield();
+						mfForTranslation.setFieldname(mabFieldnameXml);
+						mfForTranslation.setFieldvalue(connectedSubfieldValue);
+						String translatedConnectedSubfieldValue = getTranslatedValue(mabFieldnameXml, mfForTranslation, translateSubfieldsProperties, "all", "all", defaultConnectedValue, true, false, false, true, false, null, false, null, false, null, null);
+						translatedConnectedSubfieldValues.add(translatedConnectedSubfieldValue);
+					}
+					connectedSubfieldValues.clear();
+					connectedSubfieldValues.addAll(translatedConnectedSubfieldValues);
 				}	
 			}
 		}
-
+		
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
 
 			String solrFieldname = matchingObject.getSolrFieldname();
-			HashMap<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
+			Map<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
 			boolean hasRegex = matchingObject.hasRegex();
 			String regexValue = matchingObject.getRegexValue();
 			boolean hasRegexStrict = matchingObject.hasRegexStrict();
@@ -207,7 +216,7 @@ public class MatchingOperations {
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
 
 				// Treat "normal" translate values
-				HashMap<String, String> translateProperties = matchingObject.getTranslateProperties();
+				Map<String, String> translateProperties = matchingObject.getTranslateProperties();
 				String defaultValue = matchingObject.getDefaultValue();
 				if (matchingObject.isTranslateValue()) {
 					isTranslateValue = true;
@@ -228,49 +237,49 @@ public class MatchingOperations {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 						if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 						if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 						if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 						if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 						if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
 						if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					} else { 
 						if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					}
@@ -319,41 +328,41 @@ public class MatchingOperations {
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
-							addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+							addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 						}
 					} else if (mabFieldnameProps.length() == 8) {
 
 						if (mabFieldnameProps.substring(3).equals("$**$*")) { // Match against all indicators and subfields. E. g. 100$**$* matches 100$a1$b, 100$b3$z, 100$z*$-, etc.
 							if (allFields(mabFieldnameXml, mabFieldnameProps) == true) {	
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 							if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 							if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 							if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 							if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 							if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
 							if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						} else { 
 							if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValue);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, connectedSubfieldValues);
 							}
 						}
 					}
@@ -497,7 +506,7 @@ public class MatchingOperations {
 	 * Getting the value of a translation file.
 	 * @param solrFieldname								String: Name of Solr field 
 	 * @param mabField									Mabfield: Mabfield object
-	 * @param translateProperties						HashMap<String, String>: Contents of a translation.properties file
+	 * @param translateProperties						Map<String, String>: Contents of a translation.properties file
 	 * @param fromCount									String: Index of first character to match or "all"
 	 * @param toCount									String: Index of last character to match or "all"
 	 * @param translateDefaultValue						String
@@ -514,14 +523,11 @@ public class MatchingOperations {
 	 * @param regexReplaceValue							String
 	 * @return											String containing the translated value
 	 */
-	private String getTranslatedValue(String solrFieldname, Mabfield mabField, HashMap<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean isTranslateConnectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
+	private String getTranslatedValue(String solrFieldname, Mabfield mabField, Map<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean isTranslateConnectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
 		String translateValue = null;
 		String matchedValueXml = null;
 		String fieldNameXml = mabField.getFieldname();
 		String fieldValueXml = mabField.getFieldvalue();
-		if (isTranslateConnectedSubfields) {
-			fieldValueXml = mabField.getConnectedValue();
-		}
 		
 		// Use regex if user has defined one:
 		if (hasRegex && regexValue != null) {
@@ -617,11 +623,11 @@ public class MatchingOperations {
 	 * @param solrFieldvalue	String: Value of the solr field
 	 * @param allowDuplicates	boolean: Indicate if duplicate values are allowed in Solr multivalued fields (default is false).
 	 */
-	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, String connectedSubfieldValue) {
+	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, List<String> connectedSubfieldValues) {
 		Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);
 		mf.setAllowDuplicates(allowDuplicates);
-		if (connectedSubfieldValue != null) {
-			mf.setConnectedValue(connectedSubfieldValue);
+		if (connectedSubfieldValues != null && !connectedSubfieldValues.isEmpty()) {
+			mf.setConnectedValues(connectedSubfieldValues);
 		}
 		listOfMatchedFields.add(mf);
 	}

@@ -28,9 +28,12 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -76,14 +79,15 @@ public class MarcContentHandler implements ContentHandler {
 	String subfieldCode;
 
 	// Variables for connected fields:
-	private HashSet<Connectedfield> connectedFields = new HashSet<Connectedfield>();
+	private LinkedHashSet<Connectedfield> connectedFields = new LinkedHashSet<Connectedfield>();
 	private boolean datafieldContainsConnectedFields = false;
 	Connectedfield currentConnectedField = null;
-	List<String> currentConnectedSubfields = null;
+	LinkedHashMap<Integer, Map<String, List<String>>> currentConnectedSubfields = null;
 	private boolean connectedValueRequired = false;
-	String connectedSubfieldText = null;
 	List<String> currentMasterSubfields = new ArrayList<String>();
 	Map<String, String> currentMasterSubfieldsValues = new HashMap<String, String>();
+	List<String> connectedValuesToUse = new ArrayList<String>();
+	Map<String, String> subfieldsInDatafield = new HashMap<String, String>();
 
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
@@ -115,25 +119,37 @@ public class MarcContentHandler implements ContentHandler {
 
 			// Get list of connected fields. We need to check them while parsing the XML.
 			if (mo.hasConnectedSubfields()) {
+				
+				LinkedHashMap<Integer, String> connectedSubfields = mo.getConnectedSubfields();
+				LinkedHashMap<Integer, Map<String, List<String>>> mapConnectedSubfields = new LinkedHashMap<Integer, Map<String, List<String>>>();
 
-				Set<String> connectedMasterFields = new HashSet<String>();
-				String connectedDefaultValue = null;
-				List<String> mutableList = new ArrayList<String>();
-				mutableList.addAll(mo.getConnectedSubfields()); // Create CHANGEABLE/MUTABLE List:
-				int lastListElement = (mutableList.size()-1); // Get index of last List element
-				boolean isTranslateConnectedSubfields = mo.isTranslateConnectedSubfields();
-				HashMap<String, String> translateSubfieldsProperties = mo.getTranslateSubfieldsProperties();
+				for (Entry<Integer, String> connectedSubfield : connectedSubfields.entrySet()) {
 
-				// Get all master fields:
-				for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
-					String completeFieldname = mabfieldName.getKey().toString();
-					String connectedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
-					String connectedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
-					connectedMasterFields.add(connectedMasterDatafield+connectedMasterSubfield);
+					Set<String> connectedMasterFields = new HashSet<String>();
+					String connectedDefaultValue = null;
+					List<String> immutableList = Arrays.asList(connectedSubfield.getValue().split("\\s*:\\s*"));
+					List<String> mutableList = new ArrayList<String>();
+					mutableList.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
+					int lastListElement = (mutableList.size()-1); // Get index of last List element
+					boolean isTranslateConnectedSubfields = mo.isTranslateConnectedSubfields();
+					Map<String, String> translateSubfieldsProperties = mo.getTranslateSubfieldsProperties();
+
+					// Get all master fields:
+					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+						String completeFieldname = mabfieldName.getKey().toString();
+						String connectedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
+						String connectedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
+						connectedMasterFields.add(connectedMasterDatafield+connectedMasterSubfield);
+					}
+					connectedDefaultValue = mutableList.get(lastListElement); // Last value is always the default value to use
+					mutableList.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
+					
+					Map<String, List<String>> mapSubfieldValues = new HashMap<String, List<String>>();
+					mapSubfieldValues.put(connectedDefaultValue, mutableList);
+					mapConnectedSubfields.put(connectedSubfield.getKey(), mapSubfieldValues);	
+							
+					connectedFields.add(new Connectedfield(connectedMasterFields, mapConnectedSubfields, isTranslateConnectedSubfields, translateSubfieldsProperties));
 				}
-				connectedDefaultValue = mutableList.get(lastListElement); // Last value is always the default value to use
-				mutableList.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
-				connectedFields.add(new Connectedfield(connectedMasterFields, mutableList, connectedDefaultValue, isTranslateConnectedSubfields, translateSubfieldsProperties));	
 			}
 
 			// Get allfields if it is set
@@ -226,17 +242,18 @@ public class MarcContentHandler implements ContentHandler {
 			}
 
 			for (Connectedfield connectedField : connectedFields) {
+				
 				for (String masterField : connectedField.getConnectedMasterFields()) {
 					String masterFieldName = masterField.substring(0,3);
 					String masterFieldSubfield = masterField.substring(masterField.length() - 1);
 					
 					if (masterFieldName.equals(datafieldTag)) {
 						datafieldContainsConnectedFields = true;
-						currentMasterSubfields.add(masterFieldSubfield);
+						currentMasterSubfields.add(masterFieldSubfield); // TODO: Could currentMasterSubfields be a Set to avoid duplicates?
 						currentConnectedField = connectedField;
 						currentConnectedSubfields = currentConnectedField.getConnectedSubfields();
 					}
-				}	
+				}
 			}
 		}
 
@@ -309,14 +326,7 @@ public class MarcContentHandler implements ContentHandler {
 					// Do the default operation
 					datafield.setFieldvalue(subfieldText);
 					allFields.add(datafield);
-
-					// If it is one of the connected subfields, add its text value to an intermediate variable
-					if (currentConnectedSubfields.contains(subfieldCode)) {
-						// Add text only if we don't have one already
-						if (connectedSubfieldText == null || connectedSubfieldText.isEmpty()) {
-							connectedSubfieldText = subfieldText;
-						}
-					}
+					subfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
 			} else { // Default operation - no connected value
 				datafield.setFieldvalue(subfieldText);
@@ -325,9 +335,11 @@ public class MarcContentHandler implements ContentHandler {
 
 			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
-			}			
+			}
 		}
 
+		
+		
 		if(localName.equals("datafield")) {
 
 			if (getFullRecordAsXML) {
@@ -336,7 +348,7 @@ public class MarcContentHandler implements ContentHandler {
 			
 			// Set the connected datafields:
 			if (datafieldContainsConnectedFields && connectedValueRequired) {
-
+								
 				for (Entry<String, String> currentMasterSubfieldsEntry : currentMasterSubfieldsValues.entrySet()) {
 					String currentMasterSubfieldCode = currentMasterSubfieldsEntry.getKey();
 					String currentMasterSubfieldText = currentMasterSubfieldsEntry.getValue();
@@ -344,35 +356,52 @@ public class MarcContentHandler implements ContentHandler {
 					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentMasterSubfieldCode;
 					Mabfield connectedDatafield = new Mabfield();
 					connectedDatafield.setFieldname(datafieldName);
-					connectedDatafield.setFieldvalue(currentMasterSubfieldText);
-
-					// Set value of connected subfield
-					String connectedValue = "ERROR";
-					if (connectedSubfieldText != null && !connectedSubfieldText.isEmpty()) {
-						connectedValue = connectedSubfieldText;
-					} else {
-						connectedValue = currentConnectedField.getConnectedDefaultValue();
+					connectedDatafield.setFieldvalue(currentMasterSubfieldText);					
+						
+					for (Entry<Integer, Map<String, List<String>>> entry1 : currentConnectedSubfields.entrySet()) {
+						Map<String, List<String>> entrySet2 = entry1.getValue();
+						
+						for (Entry<String, List<String>> entry2 : entrySet2.entrySet()) {
+							String defaultValue = entry2.getKey();
+							List<String> bracketValues = entry2.getValue();
+							String subfieldText = null;
+							String textToUse = null;
+							
+							// Add connected value if it exists
+							for (String bracketValue : bracketValues) {
+								subfieldText = subfieldsInDatafield.get(bracketValue);
+								if (subfieldText != null) {
+									if (textToUse == null) {
+										textToUse = subfieldText;
+										connectedValuesToUse.add(textToUse);
+									}
+								}
+							}
+							
+							// Add default connected value
+							if (textToUse == null) {
+								textToUse = defaultValue;
+								connectedValuesToUse.add(textToUse);
+							}
+						}
 					}
-					connectedDatafield.setConnectedValue(connectedValue);
 					
-					// Indicate if subfield value should be translated in the next step (MatchingOperations)
-					boolean isTranslateConnectedSubfields = currentConnectedField.isTranslateConnectedSubfields();
-					connectedDatafield.setTranslateConnectedSubfields(isTranslateConnectedSubfields);
+					connectedDatafield.setConnectedValues(connectedValuesToUse);
+					connectedDatafield.setTranslateConnectedSubfields(currentConnectedField.isTranslateConnectedSubfields());
 					connectedDatafield.setTranslateSubfieldsProperties(currentConnectedField.getTranslateSubfieldsProperties());
-					
 					allFields.add(connectedDatafield);
 					connectedDatafield = null;
 				}
 			}
-
+			
 			// Reset values:
 			datafieldContainsConnectedFields = false;
 			connectedValueRequired = false;
 			currentConnectedField = null;
 			currentConnectedSubfields = null;
-			connectedSubfieldText = null;
 			currentMasterSubfields = new ArrayList<String>();
 			currentMasterSubfieldsValues = new HashMap<String, String>();
+			connectedValuesToUse = new ArrayList<String>();
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
@@ -488,22 +517,26 @@ public class MarcContentHandler implements ContentHandler {
 
 					String fieldName = mf.getFieldname();
 					String fieldValue = mf.getFieldvalue();
-					String connValue = mf.getConnectedValue();
-
+					List<String> connValues = mf.getConnectedValues();
+					
 					// Add the fieldname and fieldvalue to the document:
 					doc.addField(fieldName, fieldValue);
 
 					// Add the connected value to the document if one exists:
-					if (connValue != null) {
-						doc.addField(fieldName, connValue);
+					if (connValues != null && !connValues.isEmpty()) {
+						for (String connValue : connValues) {
+							doc.addField(fieldName, connValue);
+						}
 					}
 
 					// Add values to the "allfields" field, except for the exception values defined in mab.properties:
 					if (hasAllFieldsField) {
 						if (!allFieldsExceptions.contains(fieldName)) {
 							allfieldsSet.add(fieldValue);
-							if (connValue != null) {
-								allfieldsSet.add(connValue);
+							if (connValues != null && !connValues.isEmpty()) {
+								for (String connValue : connValues) {
+									allfieldsSet.add(connValue);
+								}
 							}
 						}
 					}

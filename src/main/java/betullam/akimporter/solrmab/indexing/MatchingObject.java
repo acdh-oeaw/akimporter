@@ -24,14 +24,14 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MatchingObject {
 
 	private String solrFieldname; // Solr fieldname (e. g. "autor", "title", "id", etc.)
-	private HashMap<String, List<String>> mabFieldnames;
+	private Map<String, List<String>> mabFieldnames;
 	private boolean multiValued;
 	private boolean customText;
 	private boolean getAllFields;
@@ -40,13 +40,13 @@ public class MatchingObject {
 	private boolean translateValue;
 	private boolean translateValueContains;
 	private boolean translateValueRegex;
-	private HashMap<String, String> translateProperties;
+	private Map<String, String> translateProperties;
 	private boolean hasDefaultValue;
 	private String defaultValue;
 	private boolean hasConnectedSubfields;
-	private List<String> connectedSubfields;
+	private LinkedHashMap<Integer, String> connectedSubfields;
 	private boolean translateConnectedSubfields;
-	private HashMap<String, String> translateSubfieldsProperties;
+	private Map<String, String> translateSubfieldsProperties;
 	private boolean hasRegex;
 	private String regexValue;
 	private boolean hasRegexStrict;
@@ -55,10 +55,9 @@ public class MatchingObject {
 	private Map<Integer, String> regexReplaceValues;
 	private boolean allowDuplicates;
 	
-	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, HashMap<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean getFullRecordAsXML, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, HashMap<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, List<String> connectedSubfields, boolean translateConnectedSubfields, HashMap<String, String> translateSubfieldsProperties, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegExReplace, Map<Integer, String> regexReplaceValues, boolean allowDuplicates) {
+	public MatchingObject(String solrFieldname, Map<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean getFullRecordAsXML, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, Map<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, LinkedHashMap<Integer, String> connectedSubfields, boolean translateConnectedSubfields, Map<String, String> translateSubfieldsProperties, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegExReplace, Map<Integer, String> regexReplaceValues, boolean allowDuplicates) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
@@ -93,11 +92,11 @@ public class MatchingObject {
 		this.solrFieldname = solrFieldname;
 	}
 
-	public HashMap<String, List<String>> getMabFieldnames() {
+	public Map<String, List<String>> getMabFieldnames() {
 		return this.mabFieldnames;
 	}
 
-	public void setMabFieldnames(HashMap<String, List<String>> mabFieldnames) {
+	public void setMabFieldnames(Map<String, List<String>> mabFieldnames) {
 		this.mabFieldnames = mabFieldnames;
 	}
 
@@ -165,11 +164,11 @@ public class MatchingObject {
 		this.translateValueRegex = translateValueRegex;
 	}
 
-	public HashMap<String, String> getTranslateProperties() {
+	public Map<String, String> getTranslateProperties() {
 		return translateProperties;
 	}
 
-	public void setTranslateProperties(HashMap<String, String> translateProperties) {
+	public void setTranslateProperties(Map<String, String> translateProperties) {
 		this.translateProperties = translateProperties;
 	}
 
@@ -189,11 +188,11 @@ public class MatchingObject {
 		this.defaultValue = defaultValue;
 	}
 	
-	public List<String> getConnectedSubfields() {
+	public LinkedHashMap<Integer, String> getConnectedSubfields() {
 		return connectedSubfields;
 	}
 
-	public void setConnectedSubfields(List<String> connectedSubfields) {
+	public void setConnectedSubfields(LinkedHashMap<Integer, String> connectedSubfields) {
 		this.connectedSubfields = connectedSubfields;
 	}
 
@@ -205,11 +204,11 @@ public class MatchingObject {
 		this.translateConnectedSubfields = translateConnectedSubfields;
 	}
 
-	public HashMap<String, String> getTranslateSubfieldsProperties() {
+	public Map<String, String> getTranslateSubfieldsProperties() {
 		return translateSubfieldsProperties;
 	}
 
-	public void setTranslateSubfieldsProperties(HashMap<String, String> translateSubfieldsProperties) {
+	public void setTranslateSubfieldsProperties(Map<String, String> translateSubfieldsProperties) {
 		this.translateSubfieldsProperties = translateSubfieldsProperties;
 	}
 

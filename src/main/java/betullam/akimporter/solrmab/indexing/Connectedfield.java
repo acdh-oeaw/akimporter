@@ -24,22 +24,22 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Connectedfield {
 
 	private Set<String> connectedMasterFields; // Set of Strings like 100p, 655u, etc. 
-	private List<String> connectedSubfields; // Subfields that should contain a value
-	private String connectedDefaultValue; // Default value if none of the given subfields in connectedSubfields exists
+	LinkedHashMap<Integer, Map<String, List<String>>> connectedSubfields; // Subfields that should contain a value. Integer is the order, Map<String, List<String>> is Map<DefaultValue, List<SubfieldCode1, SubfieldCode2, ...>>
+
 	private boolean translateConnectedSubfields;
-	private HashMap<String, String> translateSubfieldsProperties;
+	private Map<String, String> translateSubfieldsProperties;
 	
-	public Connectedfield(Set<String> connectedMasterFields, List<String> connectedSubfields, String connectedDefaultValue, boolean translateConnectedSubfields, HashMap<String, String> translateSubfieldsProperties) {
+	public Connectedfield(Set<String> connectedMasterFields, LinkedHashMap<Integer, Map<String, List<String>>> connectedSubfields, boolean translateConnectedSubfields, Map<String, String> translateSubfieldsProperties) {
 		this.connectedMasterFields = connectedMasterFields;
 		this.connectedSubfields = connectedSubfields;
-		this.connectedDefaultValue = connectedDefaultValue;
 		this.translateConnectedSubfields = translateConnectedSubfields;
 		this.translateSubfieldsProperties = translateSubfieldsProperties;
 	}
@@ -52,20 +52,12 @@ public class Connectedfield {
 		this.connectedMasterFields = connectedMasterFields;
 	}
 
-	public List<String> getConnectedSubfields() {
+	public LinkedHashMap<Integer, Map<String, List<String>>> getConnectedSubfields() {
 		return connectedSubfields;
 	}
 
-	public void setConnectedSubfields(List<String> connectedSubfields) {
+	public void setConnectedSubfields(LinkedHashMap<Integer, Map<String, List<String>>> connectedSubfields) {
 		this.connectedSubfields = connectedSubfields;
-	}
-
-	public String getConnectedDefaultValue() {
-		return connectedDefaultValue;
-	}
-
-	public void setConnectedDefaultValue(String connectedDefaultValue) {
-		this.connectedDefaultValue = connectedDefaultValue;
 	}
 
 	public boolean isTranslateConnectedSubfields() {
@@ -76,71 +68,22 @@ public class Connectedfield {
 		this.translateConnectedSubfields = translateConnectedSubfields;
 	}
 
-	public HashMap<String, String> getTranslateSubfieldsProperties() {
+	public Map<String, String> getTranslateSubfieldsProperties() {
 		return translateSubfieldsProperties;
 	}
 
-	public void setTranslateSubfieldsProperties(HashMap<String, String> translateSubfieldsProperties) {
+	public void setTranslateSubfieldsProperties(Map<String, String> translateSubfieldsProperties) {
 		this.translateSubfieldsProperties = translateSubfieldsProperties;
 	}
-
-	
 
 	@Override
 	public String toString() {
 		return "Connectedfield [connectedMasterFields=" + connectedMasterFields + ", connectedSubfields="
-				+ connectedSubfields + ", connectedDefaultValue=" + connectedDefaultValue
-				+ ", translateConnectedSubfields=" + translateConnectedSubfields + ", translateSubfieldsProperties="
-				+ translateSubfieldsProperties + "]";
+				+ connectedSubfields + ", translateConnectedSubfields=" + translateConnectedSubfields
+				+ ", translateSubfieldsProperties=" + translateSubfieldsProperties + "]";
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((connectedDefaultValue == null) ? 0 : connectedDefaultValue.hashCode());
-		result = prime * result + ((connectedMasterFields == null) ? 0 : connectedMasterFields.hashCode());
-		result = prime * result + ((connectedSubfields == null) ? 0 : connectedSubfields.hashCode());
-		result = prime * result + (translateConnectedSubfields ? 1231 : 1237);
-		return result;
-	}
+	
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof Connectedfield)) {
-			return false;
-		}
-		Connectedfield other = (Connectedfield) obj;
-		if (connectedDefaultValue == null) {
-			if (other.connectedDefaultValue != null) {
-				return false;
-			}
-		} else if (!connectedDefaultValue.equals(other.connectedDefaultValue)) {
-			return false;
-		}
-		if (connectedMasterFields == null) {
-			if (other.connectedMasterFields != null) {
-				return false;
-			}
-		} else if (!connectedMasterFields.equals(other.connectedMasterFields)) {
-			return false;
-		}
-		if (connectedSubfields == null) {
-			if (other.connectedSubfields != null) {
-				return false;
-			}
-		} else if (!connectedSubfields.equals(other.connectedSubfields)) {
-			return false;
-		}
-		if (translateConnectedSubfields != other.translateConnectedSubfields) {
-			return false;
-		}
-		return true;
-	}
+	
 }

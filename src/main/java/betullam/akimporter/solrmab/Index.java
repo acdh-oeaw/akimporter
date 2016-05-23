@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -70,7 +71,7 @@ public class Index {
 	private boolean isIndexingSuccessful = false;
 	public static List<String> multiValuedFields = new ArrayList<String>();
 	public static List<Mabfield> customTextFields = new ArrayList<Mabfield>();
-	public static HashMap<String, List<String>> translateFields = new HashMap<String, List<String>>();
+	public static Map<String, List<String>> translateFields = new HashMap<String, List<String>>();
 	public static String fullrecordFieldname = null;
 
 
@@ -215,7 +216,7 @@ public class Index {
 				boolean hasRegexStrict = false;
 				boolean hasRegExReplace = false;
 				String defaultValue = null;
-				List<String> connectedSubfields = null;
+				LinkedHashMap<Integer, String> connectedSubfields = new LinkedHashMap<Integer, String>();
 				boolean hasConnectedSubfields = false;
 				boolean translateConnectedSubfields = false;
 				String regexValue = null;
@@ -382,17 +383,21 @@ public class Index {
 				if (lstValuesClean.contains("connectedSubfields")) {
 					String connectedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("connectedSubfields");
-					connectedSubfieldsString = lstValues.get(index); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
+					connectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
+					
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					hasConnectedSubfields = true;
 					if (connectedSubfieldsString != null) {
 						// Extract the text in the square brackets:
-						Pattern patternConnectedSubfields = java.util.regex.Pattern.compile("\\[.*?\\]"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Pattern patternConnectedSubfields = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between the first and last squary brackets
 						Matcher matcherConnectedSubfields = patternConnectedSubfields.matcher(connectedSubfieldsString);
-						String strConnectedSubfields = (matcherConnectedSubfields.find()) ? matcherConnectedSubfields.group().replace("[", "").replace("]", "").trim() : null;
-						connectedSubfields = Arrays.asList(strConnectedSubfields.split("\\s*:\\s*"));
-					}
+						String connectedSubfieldsAllBrackets = (matcherConnectedSubfields.find()) ? matcherConnectedSubfields.group().trim() : null;
+						connectedSubfieldsAllBrackets = connectedSubfieldsAllBrackets.replace("connectedSubfields", "");
+						
+						// Get everything between the 2 outermost squarebrackets:
+						connectedSubfields = getBracketValues(connectedSubfieldsAllBrackets);
+					}	
 				}
 				
 				if (lstValuesClean.contains("translateConnectedSubfields")) {
@@ -466,38 +471,7 @@ public class Index {
 					regexReplaceValue = regexReplaceValue.replace("regExReplace", "");
 					
 					// Get everything between the 2 outermost squarebrackets:
-					String regexReplaceValueClean = "";
-					int outerBracketsCounter = 0;
-					openBracketsCounter = 0; // Reuse variable from above
-					closeBracketsCounter = 0; // Reuse variable from above
-					bracketCounter = 0; // Reuse variable from above
-					// Iterate over each character of regexReplaceValue:
-					for (int i = 0; i < regexReplaceValue.length(); i++){
-						char c = regexReplaceValue.charAt(i);
-						String s = Character.toString(c);
-						// Check if the current character is an opening bracket
-						if (s.equals("[")) {
-							openBracketsCounter = openBracketsCounter + 1;
-							bracketCounter = bracketCounter + 1;
-							// Check if we have an outer bracket (count value equals 1) {
-							if (bracketCounter == 1) {
-								outerBracketsCounter = outerBracketsCounter + 1;
-							}
-						}
-						// Add characters to the new string only if within an outer bracket (count value equals or higher 1)
-						if (bracketCounter >= 1) {
-							regexReplaceValueClean += s;
-						}
-						// Check if the current character is a closing bracket
-						if (s.equals("]")) {
-							if (bracketCounter == 1) {								
-								regexReplaceValues.put(outerBracketsCounter, regexReplaceValueClean.replaceFirst("\\[", "").replaceFirst("\\]$", ""));
-								regexReplaceValueClean = "";
-							}
-							closeBracketsCounter = closeBracketsCounter + 1;
-							bracketCounter = bracketCounter - 1;		
-						}
-					}
+					regexReplaceValues = getBracketValues(regexReplaceValue);
 				}
 				
 
@@ -619,7 +593,7 @@ public class Index {
 
 			if (matchingObject.isCustomText()) {
 				String solrFieldName = matchingObject.getSolrFieldname();
-				HashMap<String, List<String>> customTexts = matchingObject.getMabFieldnames();
+				Map<String, List<String>> customTexts = matchingObject.getMabFieldnames();
 
 				// Make new Mabfield for each custom text and add it to a List of Mabfields, so we can process it later on:
 				for (Entry<String, List<String>> customText : customTexts.entrySet()) {
@@ -683,5 +657,52 @@ public class Index {
 		}
 
 		return translateProperties;
+	}
+	
+	
+	/**
+	 * Getting values between square brackets as Map.
+	 * 
+	 * @param rawValue			String: The raw value with square brackets, e. g. connectedSubfields[b:4:NoRole][9:NoGndId]
+	 * @return					Map<Integer, String>: Integer indicates the position of the square bracket, String is the value within the bracket
+	 */
+	private LinkedHashMap<Integer, String> getBracketValues(String rawValue) {		
+		LinkedHashMap<Integer, String> bracketValues = new LinkedHashMap<Integer, String>();
+		
+		String valueClean = "";
+		int outerBracketsCounter = 0;
+		int openBracketsCounter = 0; // Reuse variable from above
+		int closeBracketsCounter = 0; // Reuse variable from above
+		int bracketCounter = 0; // Reuse variable from above
+		
+		// Iterate over each character of rawValue:
+		for (int i = 0; i < rawValue.length(); i++){
+			char c = rawValue.charAt(i);
+			String s = Character.toString(c);
+			// Check if the current character is an opening bracket
+			if (s.equals("[")) {
+				openBracketsCounter = openBracketsCounter + 1;
+				bracketCounter = bracketCounter + 1;
+				// Check if we have an outer bracket (count value equals 1) {
+				if (bracketCounter == 1) {
+					outerBracketsCounter = outerBracketsCounter + 1;
+				}
+			}
+			// Add characters to the new string only if within an outer bracket (count value equals or higher 1)
+			if (bracketCounter >= 1) {
+				valueClean += s;
+			}
+			// Check if the current character is a closing bracket
+			if (s.equals("]")) {
+				if (bracketCounter == 1) {								
+					bracketValues.put(outerBracketsCounter, valueClean.replaceFirst("\\[", "").replaceFirst("\\]$", ""));
+					valueClean = "";
+				}
+				closeBracketsCounter = closeBracketsCounter + 1;
+				bracketCounter = bracketCounter - 1;		
+			}
+		}
+		
+		return bracketValues;
 	}
 }

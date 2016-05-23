@@ -25,15 +25,16 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Mabfield implements Comparable<Mabfield> {
 
 	private String fieldname;
 	private String fieldvalue;
-	private String connectedValue;
+	private List<String> connectedValues;
 	private boolean isTranslateConnectedSubfields = false;
-	private HashMap<String, String> translateSubfieldsProperties;
+	private Map<String, String> translateSubfieldsProperties;
 	private boolean allowDuplicates = false;
 
 	public Mabfield() {}
@@ -60,12 +61,12 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.fieldvalue = fieldvalue;
 	}
 	
-	public String getConnectedValue() {
-		return connectedValue;
+	public List<String> getConnectedValues() {
+		return connectedValues;
 	}
 
-	public void setConnectedValue(String connectedValue) {
-		this.connectedValue = connectedValue;
+	public void setConnectedValues(List<String> connectedValues) {
+		this.connectedValues = connectedValues;
 	}
 
 	public boolean isTranslateConnectedSubfields() {
@@ -76,11 +77,11 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.isTranslateConnectedSubfields = isTranslateConnectedSubfields;
 	}
 
-	public HashMap<String, String> getTranslateSubfieldsProperties() {
+	public Map<String, String> getTranslateSubfieldsProperties() {
 		return translateSubfieldsProperties;
 	}
 
-	public void setTranslateSubfieldsProperties(HashMap<String, String> translateSubfieldsProperties) {
+	public void setTranslateSubfieldsProperties(Map<String, String> translateSubfieldsProperties) {
 		this.translateSubfieldsProperties = translateSubfieldsProperties;
 	}
 
@@ -92,12 +93,14 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.allowDuplicates = allowDuplicates;
 	}
 
+	
+
 	@Override
 	public String toString() {
-		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + ", connectedValue=" + connectedValue
-				+ ", isTranslateConnectedSubfields=" + isTranslateConnectedSubfields
-				+ ", translateConnectedSubfieldsProperties=" + translateSubfieldsProperties
-				+ ", allowDuplicates=" + allowDuplicates + "]";
+		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + ", connectedValues="
+				+ connectedValues + ", isTranslateConnectedSubfields=" + isTranslateConnectedSubfields
+				+ ", translateSubfieldsProperties=" + translateSubfieldsProperties + ", allowDuplicates="
+				+ allowDuplicates + "]";
 	}
 
 	@Override
