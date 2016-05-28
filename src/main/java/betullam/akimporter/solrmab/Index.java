@@ -452,7 +452,6 @@ public class Index {
 				}
 
 				if (lstValuesClean.contains("regExReplace")) {
-					System.out.println("\n");
 					String regExReplaceValueString = null;
 					hasRegExReplace = true;
 					hasRegexStrict = false;
@@ -573,8 +572,21 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 				
+
 				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, translateConnectedSubfields, translateSubfieldsProperties, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
 				matchingObjects.add(mo);
+				
+				/*
+				if (hasConnectedSubfields) {
+					System.out.println("\n");
+					System.out.println(mo.toString());
+				}
+				
+				if (mo.getSolrFieldname().equals("author_additional")) {
+					System.out.println("\n");
+					System.out.println(mo.toString());
+				}
+				*/
 			}
 
 		} catch (IOException e) {

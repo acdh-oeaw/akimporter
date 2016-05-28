@@ -116,7 +116,7 @@ public class MarcContentHandler implements ContentHandler {
 		this.print = print;
 
 		for (MatchingObject mo : listOfMatchingObjs) {
-
+			
 			// Get list of connected fields. We need to check them while parsing the XML.
 			if (mo.hasConnectedSubfields()) {
 				
@@ -147,10 +147,12 @@ public class MarcContentHandler implements ContentHandler {
 					Map<String, List<String>> mapSubfieldValues = new HashMap<String, List<String>>();
 					mapSubfieldValues.put(connectedDefaultValue, mutableList);
 					mapConnectedSubfields.put(connectedSubfield.getKey(), mapSubfieldValues);	
-							
-					connectedFields.add(new Connectedfield(connectedMasterFields, mapConnectedSubfields, isTranslateConnectedSubfields, translateSubfieldsProperties));
+				
+					Connectedfield newConnectedfield = new Connectedfield(connectedMasterFields, mapConnectedSubfields, isTranslateConnectedSubfields, translateSubfieldsProperties);
+					connectedFields.add(newConnectedfield);
 				}
 			}
+			
 
 			// Get allfields if it is set
 			if (mo.isGetAllFields()) {
