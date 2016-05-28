@@ -402,6 +402,7 @@ public class MarcContentHandler implements ContentHandler {
 			currentMasterSubfields = new ArrayList<String>();
 			currentMasterSubfieldsValues = new HashMap<String, String>();
 			connectedValuesToUse = new ArrayList<String>();
+			subfieldsInDatafield = new HashMap<String, String>();
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
