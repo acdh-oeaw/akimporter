@@ -180,7 +180,7 @@ public class Main {
 
 			case "k": { // FOR TESTING ONLY
 				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
-
+				
 				/*
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				System.out.println("Start re-importing ongoing data updates ...");
@@ -219,6 +219,17 @@ public class Main {
 				*/
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
 	
+				
+				/*
+				// Test case-insensitivity flag for regex:
+				String testString = "Der Teststring";
+				String strPattern = "^(?iu)(\")?(\\.\\.\\.*\\s*)?(<.*?>)?(der|die[sermn]*|das|den|dem|ein[esrmn]*|a|the|ein|il|le|el|le[s]*)*[^\\w\\d\\$§@\u20ACöäüß]*[^\\w\\d\\$§@\u20ACöäüß]";
+				Pattern pattern = java.util.regex.Pattern.compile(strPattern); // Get everything between square brackets and the brackets themselve (we will remove them later)
+				Matcher matcher = pattern.matcher(testString);
+				String result = (matcher.find()) ? matcher.group().replace("[", "").replace("]", "").trim() : null;
+				System.out.println(result);
+				*/
+				
 				break;
 			}
 
