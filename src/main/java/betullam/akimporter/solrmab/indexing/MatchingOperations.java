@@ -215,7 +215,17 @@ public class MatchingOperations {
 			if (matchingObject.hasConnectedSubfields()) {
 				hasConnectedSubfields = true;
 			}
-
+			
+			/*
+			if (matchingObject.hasConcatenatedSubfields()) {
+				System.out.println(matchingObject.toString());
+			}
+			
+			if (solrFieldname.equals("geographic_facet")) {
+				System.out.println("Value: " + mabField.getFieldvalue());
+				System.out.println("Object: " + matchingObject.toString());
+			}
+			*/
 			
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
 

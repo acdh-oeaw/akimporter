@@ -47,6 +47,8 @@ public class MatchingObject {
 	private LinkedHashMap<Integer, String> connectedSubfields;
 	private boolean translateConnectedSubfields;
 	private Map<String, String> translateSubfieldsProperties;
+	private boolean hasConcatenatedSubfields;
+	private LinkedHashMap<Integer, String> concatenatedSubfields;
 	private boolean hasRegex;
 	private String regexValue;
 	private boolean hasRegexStrict;
@@ -55,9 +57,11 @@ public class MatchingObject {
 	private Map<Integer, String> regexReplaceValues;
 	private boolean allowDuplicates;
 	
+	
+	
 	public MatchingObject() {}
 	
-	public MatchingObject(String solrFieldname, Map<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean getFullRecordAsXML, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, Map<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, LinkedHashMap<Integer, String> connectedSubfields, boolean translateConnectedSubfields, Map<String, String> translateSubfieldsProperties, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegExReplace, Map<Integer, String> regexReplaceValues, boolean allowDuplicates) {
+	public MatchingObject(String solrFieldname, Map<String, List<String>> mabFieldnames, boolean multiValued, boolean customText, boolean getAllFields, List<String> allFieldsExceptions, boolean getFullRecordAsXML, boolean translateValue, boolean translateValueContains, boolean translateValueRegex, Map<String, String> translateProperties, boolean hasDefaultValue, String defaultValue, boolean hasConnectedSubfields, LinkedHashMap<Integer, String> connectedSubfields, boolean translateConnectedSubfields, Map<String, String> translateSubfieldsProperties, boolean hasConcatenatedSubfields, LinkedHashMap<Integer, String> concatenatedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegExReplace, Map<Integer, String> regexReplaceValues, boolean allowDuplicates) {
 		this.setSolrFieldname(solrFieldname);
 		this.setMabFieldnames(mabFieldnames);
 		this.setMultiValued(multiValued);
@@ -72,9 +76,11 @@ public class MatchingObject {
 		this.setHasDefaultValue(hasDefaultValue);
 		this.setDefaultValue(defaultValue);
 		this.setHasConnectedSubfields(hasConnectedSubfields);
-		this.setConnectedSubfields(connectedSubfields);
+		this.setConnectedSubfields(connectedSubfields);		
 		this.setTranslateConnectedSubfields(translateConnectedSubfields);
-		this.setTranslateSubfieldsProperties(translateSubfieldsProperties);
+		this.setTranslateSubfieldsProperties(translateSubfieldsProperties);				
+		this.setHasConcatenatedSubfields(hasConcatenatedSubfields);
+		this.setConcatenatedSubfields(concatenatedSubfields);
 		this.setHasRegex(hasRegex);
 		this.setRegexValue(regexValue);
 		this.setHasRegexStrict(hasRegexStrict);
@@ -220,6 +226,22 @@ public class MatchingObject {
 		this.hasConnectedSubfields = hasConnectedSubfields;
 	}
 
+	public boolean hasConcatenatedSubfields() {
+		return hasConcatenatedSubfields;
+	}
+
+	public void setHasConcatenatedSubfields(boolean hasConcatenatedSubfields) {
+		this.hasConcatenatedSubfields = hasConcatenatedSubfields;
+	}
+
+	public LinkedHashMap<Integer, String> getConcatenatedSubfields() {
+		return concatenatedSubfields;
+	}
+
+	public void setConcatenatedSubfields(LinkedHashMap<Integer, String> concatenatedSubfields) {
+		this.concatenatedSubfields = concatenatedSubfields;
+	}
+
 	public boolean hasRegex() {
 		return hasRegex;
 	}
@@ -286,10 +308,12 @@ public class MatchingObject {
 				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
 				+ hasConnectedSubfields + ", connectedSubfields=" + connectedSubfields
 				+ ", translateConnectedSubfields=" + translateConnectedSubfields + ", translateSubfieldsProperties="
-				+ translateSubfieldsProperties + ", hasRegex=" + hasRegex + ", regexValue=" + regexValue
-				+ ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace="
-				+ hasRegExReplace + ", regexReplaceValues=" + regexReplaceValues + ", allowDuplicates="
-				+ allowDuplicates + "]";
+				+ translateSubfieldsProperties + ", hasConcatenatedSubfields=" + hasConcatenatedSubfields
+				+ ", concatenatedSubfields=" + concatenatedSubfields + ", hasRegex=" + hasRegex + ", regexValue="
+				+ regexValue + ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue=" + regexStrictValue
+				+ ", hasRegExReplace=" + hasRegExReplace + ", regexReplaceValues=" + regexReplaceValues
+				+ ", allowDuplicates=" + allowDuplicates + "]";
 	}
+
 
 }

@@ -219,6 +219,8 @@ public class Index {
 				LinkedHashMap<Integer, String> connectedSubfields = new LinkedHashMap<Integer, String>();
 				boolean hasConnectedSubfields = false;
 				boolean translateConnectedSubfields = false;
+				LinkedHashMap<Integer, String> concatenatedSubfields = new LinkedHashMap<Integer, String>();
+				boolean hasConcatenatedSubfields = false;
 				String regexValue = null;
 				String regexStrictValue = null;
 				String regexReplaceValue = null;
@@ -274,14 +276,18 @@ public class Index {
 
 				// Create CHANGABLE list:
 				List<String> lstValues = new ArrayList<String>();
-				lstValues.addAll(Arrays.asList(strValues.split("\\s*,\\s*")));
+				//lstValues.addAll(Arrays.asList(strValues.split("\\s*,\\s*")));
+				lstValues.addAll(Arrays.asList(strValues.split("\\s*(?<!\\\\),\\s*")));
+				
+				
 
 				// Create a clean list (without square brackets) for option check below. This is in case a translateValue
 				// uses the default text option, e. g. translateValueContains[MyDefaultText]. The function
 				// "lstValues.contains("translateValueContains") would not match with translateValueContains[MyDefaultText].
 				// Also if regex[REGEX] is used. It would not match with the square brackets!
 				List<String> lstValuesClean = new ArrayList<String>();
-				lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*,\\s*")));
+				//lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*,\\s*")));
+				lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*(?<!\\\\),\\s*")));
 
 				// Check for options and prepare values
 				if (lstValuesClean.contains("multiValued")) {
@@ -416,6 +422,29 @@ public class Index {
 						}
 					}
 				}
+				
+				
+				if (lstValuesClean.contains("concatenatedSubfields")) {
+					String concatenatedSubfieldsString = null;
+					int index = lstValuesClean.indexOf("concatenatedSubfields");
+					concatenatedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. concatenatedSubfields[a:b:c:, ]
+					//System.out.println(concatenatedSubfieldsString);
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					hasConcatenatedSubfields = true;
+					if (concatenatedSubfieldsString != null) {
+						// Extract the text in the square brackets:
+						Pattern patternConcatenatedSubfields = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between the first and last squary brackets
+						Matcher matcherConcatenatedSubfields = patternConcatenatedSubfields.matcher(concatenatedSubfieldsString);
+						String concatenatedSubfieldsAllBrackets = (matcherConcatenatedSubfields.find()) ? matcherConcatenatedSubfields.group().trim() : null;
+						concatenatedSubfieldsAllBrackets = concatenatedSubfieldsAllBrackets.replace("concatenatedSubfields", "");
+						concatenatedSubfieldsAllBrackets = concatenatedSubfieldsAllBrackets.replace("\\,", ",");
+						
+						// Get everything between the 2 outermost squarebrackets:
+						concatenatedSubfields = getBracketValues(concatenatedSubfieldsAllBrackets);
+					}	
+				}
+				
 
 				if (lstValuesClean.contains("regEx")) {
 					String regexValueString = null;
@@ -572,21 +601,8 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 				
-
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, translateConnectedSubfields, translateSubfieldsProperties, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
+				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, translateConnectedSubfields, translateSubfieldsProperties, hasConcatenatedSubfields, concatenatedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
 				matchingObjects.add(mo);
-				
-				/*
-				if (hasConnectedSubfields) {
-					System.out.println("\n");
-					System.out.println(mo.toString());
-				}
-				
-				if (mo.getSolrFieldname().equals("author_additional")) {
-					System.out.println("\n");
-					System.out.println(mo.toString());
-				}
-				*/
 			}
 
 		} catch (IOException e) {

@@ -40,6 +40,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -88,6 +89,18 @@ public class MarcContentHandler implements ContentHandler {
 	Map<String, String> currentMasterSubfieldsValues = new HashMap<String, String>();
 	List<String> connectedValuesToUse = new ArrayList<String>();
 	Map<String, String> subfieldsInDatafield = new HashMap<String, String>();
+	
+	// Variables for concatenated fields:
+	LinkedHashSet<ConcatenatedField> concatenatedFields = new LinkedHashSet<ConcatenatedField>();
+	private boolean datafieldContainsConcatenatedFields = false;
+	ConcatenatedField currentConcatenatedField = null;
+	List<String> currentConcatenatedSubfields = null;
+	List<String> currentConcatenatedMasterSubfields = new ArrayList<String>();
+	Map<String, String> currentConcatenatedMasterSubfieldsValues = new HashMap<String, String>();
+	private boolean concatenatedValueRequired = false;
+	List<String> concatenatedValuesToUse = new ArrayList<String>();
+	Map<String, String> concatenatedSubfieldsInDatafield = new HashMap<String, String>();
+	
 
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
@@ -153,6 +166,34 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 			
+			if (mo.hasConcatenatedSubfields()) {
+				Set<String> concatenatedMasterFields = new HashSet<String>();
+				LinkedHashMap<Integer, String> concatenatedSubfields = mo.getConcatenatedSubfields();
+				
+				for (Entry<Integer, String> concatenatedSubfield : concatenatedSubfields.entrySet()) {
+					
+					List<String> immutableList = Arrays.asList(concatenatedSubfield.getValue().split("\\s*:\\s*"));
+					List<String> mutableList = new ArrayList<String>();
+					mutableList.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
+					int lastListElement = (mutableList.size()-1); // Get index of last List element (= separator)
+					
+					// Get all master fields:
+					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+						String completeFieldname = mabfieldName.getKey().toString();
+						String concatenatedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
+						String concatenatedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
+						concatenatedMasterFields.add(concatenatedMasterDatafield+concatenatedMasterSubfield);
+					}
+					
+					String concatenatedFieldsSeparator = mutableList.get(lastListElement); // Last value is always the separator to use
+					mutableList.remove(lastListElement); // Remove the separator value so that only the subfield codes will remain
+					
+					ConcatenatedField newConcatenatedField = new ConcatenatedField(concatenatedMasterFields, mutableList, concatenatedFieldsSeparator);
+					concatenatedFields.add(newConcatenatedField);
+				}
+				
+			}
+			
 
 			// Get allfields if it is set
 			if (mo.isGetAllFields()) {
@@ -167,6 +208,7 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordField = mo.getSolrFieldname(); // Get Solr field to which the full record (as XML) should be indexed
 			}
 		}
+		
 	}
 
 
@@ -243,6 +285,7 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordXmlString += "<datafield tag=\""+datafieldTag+"\" ind1=\""+datafieldInd1+"\" ind2=\""+datafieldInd2+"\">";
 			}
 
+			// Connected fields
 			for (Connectedfield connectedField : connectedFields) {
 				
 				for (String masterField : connectedField.getConnectedMasterFields()) {
@@ -257,7 +300,25 @@ public class MarcContentHandler implements ContentHandler {
 					}
 				}
 			}
+			
+			// Concatenated fields
+			for (ConcatenatedField concatenatedField : concatenatedFields) {
+				
+				for (String concatenatedMasterField : concatenatedField.getConcatenatedMasterFields()) {
+					String concatenatedMasterFieldName = concatenatedMasterField.substring(0,3);
+					String concatenatedMasterFieldSubfield = concatenatedMasterField.substring(concatenatedMasterField.length() - 1);
+					
+					if (concatenatedMasterFieldName.equals(datafieldTag)) {
+						datafieldContainsConcatenatedFields = true;
+						currentConcatenatedMasterSubfields.add(concatenatedMasterFieldSubfield); // TODO: Could currentMasterSubfields be a Set to avoid duplicates?
+						currentConcatenatedField = concatenatedField;
+						currentConcatenatedSubfields = currentConcatenatedField.getConcatenatedSubfields();
+					}
+				}
+			}
+			
 		}
+
 
 		if(localName.equals("subfield")) {
 			subfieldCode = attribs.getValue("code").trim();
@@ -318,22 +379,29 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordXmlString += StringEscapeUtils.escapeXml10(subfieldText).trim()+"</subfield>";
 			}
 
-			// If there could be a connected subfield within the datafield, but we don't know for yet if it really exists.
-			// For that, we have to wait for the end of the datafield tag in endElement().
-			if (datafieldContainsConnectedFields) { 
+			
+			if (datafieldContainsConnectedFields) { // If there could be a connected subfield within the datafield, but we don't know yet if it really exists. For that, we have to wait for the end of the datafield tag in endElement().
 				if (currentMasterSubfields.contains(subfieldCode)) { // If it is one of the connected master subfields
 					connectedValueRequired = true;
 					currentMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be more master subfields)
-				} else { // Default operation
-					// Do the default operation
+				} else { // Do the default operation
 					datafield.setFieldvalue(subfieldText);
 					allFields.add(datafield);
 					subfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
-			} else { // Default operation - no connected value
+			} else if (datafieldContainsConcatenatedFields) { // If there could be a concatenated subfield within the datafield, but we don't know yet if it really exists.
+				if (currentConcatenatedMasterSubfields.contains(subfieldCode)) { // If it is one of the concatenated master subfields
+					concatenatedValueRequired = true;
+					currentConcatenatedMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be more master subfields)
+				} else { // Do the default operation
+					concatenatedSubfieldsInDatafield.put(subfieldCode, subfieldText);
+				}
+			} else { // Default operation - no connected or concatenated value
 				datafield.setFieldvalue(subfieldText);
 				allFields.add(datafield);
 			}
+			
+			
 
 			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
@@ -396,7 +464,42 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 			
-			// Reset values:
+			// Set the concatenated datafields:
+			if (datafieldContainsConcatenatedFields && concatenatedValueRequired) {
+				for (Entry<String, String> currentConcatenatedMasterSubfieldsEntry : currentConcatenatedMasterSubfieldsValues.entrySet()) {
+					String currentConcatenatedMasterSubfieldCode = currentConcatenatedMasterSubfieldsEntry.getKey();
+					String currentConcatenatedMasterSubfieldText = currentConcatenatedMasterSubfieldsEntry.getValue();
+					String subfieldText = null;
+					List<String> concatenatedSubfieldValues = new ArrayList<String>();
+					String datafieldTextToUse = null;
+					
+					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentConcatenatedMasterSubfieldCode;
+					Mabfield concatenatedDatafield = new Mabfield();
+					concatenatedDatafield.setFieldname(datafieldName);
+					
+					for (String currentConcatenatedSubfield : currentConcatenatedSubfields) {
+						subfieldText = concatenatedSubfieldsInDatafield.get(currentConcatenatedSubfield);
+						if (subfieldText != null && subfieldText.trim() != "") {
+							concatenatedSubfieldValues.add(subfieldText);
+						}
+					}
+					
+					// Concatenate fields
+					if (!concatenatedSubfieldValues.isEmpty()) {
+						String separatorToUse = currentConcatenatedField.getConcatenatedFieldsSeparator();
+						datafieldTextToUse = currentConcatenatedMasterSubfieldText + separatorToUse + StringUtils.join(concatenatedSubfieldValues, separatorToUse);
+					} else {
+						datafieldTextToUse = currentConcatenatedMasterSubfieldText;
+					}
+					
+					concatenatedDatafield.setFieldvalue(datafieldTextToUse);
+					allFields.add(concatenatedDatafield);
+					concatenatedDatafield = null;
+				}
+			}
+			
+			
+			// Reset values for connected fields:
 			datafieldContainsConnectedFields = false;
 			connectedValueRequired = false;
 			currentConnectedField = null;
@@ -405,6 +508,19 @@ public class MarcContentHandler implements ContentHandler {
 			currentMasterSubfieldsValues = new HashMap<String, String>();
 			connectedValuesToUse = new ArrayList<String>();
 			subfieldsInDatafield = new HashMap<String, String>();
+			
+			// Reset values for concatenated fields:
+			datafieldContainsConcatenatedFields = false;
+			concatenatedValueRequired = false;
+			currentConcatenatedField = null;
+			currentConcatenatedSubfields = null;
+			currentConcatenatedMasterSubfields = new ArrayList<String>();
+			currentConcatenatedMasterSubfieldsValues = new HashMap<String, String>();
+			concatenatedValuesToUse = new ArrayList<String>();
+			concatenatedSubfieldsInDatafield = new HashMap<String, String>();
+			
+			
+			
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
