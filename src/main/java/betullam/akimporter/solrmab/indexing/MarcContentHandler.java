@@ -99,6 +99,7 @@ public class MarcContentHandler implements ContentHandler {
 	Map<String, String> currentConcatenatedMasterSubfieldsValues = new HashMap<String, String>();
 	private boolean concatenatedValueRequired = false;
 	List<String> concatenatedValuesToUse = new ArrayList<String>();
+	String concatenatedValuesSeparatorToUse = null;
 	Map<String, String> concatenatedSubfieldsInDatafield = new HashMap<String, String>();
 	
 
@@ -471,11 +472,11 @@ public class MarcContentHandler implements ContentHandler {
 					String currentConcatenatedMasterSubfieldText = currentConcatenatedMasterSubfieldsEntry.getValue();
 					String subfieldText = null;
 					List<String> concatenatedSubfieldValues = new ArrayList<String>();
-					String datafieldTextToUse = null;
 					
 					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentConcatenatedMasterSubfieldCode;
 					Mabfield concatenatedDatafield = new Mabfield();
 					concatenatedDatafield.setFieldname(datafieldName);
+					concatenatedDatafield.setFieldvalue(currentConcatenatedMasterSubfieldText);
 					
 					for (String currentConcatenatedSubfield : currentConcatenatedSubfields) {
 						subfieldText = concatenatedSubfieldsInDatafield.get(currentConcatenatedSubfield);
@@ -484,15 +485,16 @@ public class MarcContentHandler implements ContentHandler {
 						}
 					}
 					
-					// Concatenate fields
 					if (!concatenatedSubfieldValues.isEmpty()) {
-						String separatorToUse = currentConcatenatedField.getConcatenatedFieldsSeparator();
-						datafieldTextToUse = currentConcatenatedMasterSubfieldText + separatorToUse + StringUtils.join(concatenatedSubfieldValues, separatorToUse);
-					} else {
-						datafieldTextToUse = currentConcatenatedMasterSubfieldText;
+						concatenatedValuesSeparatorToUse = (currentConcatenatedField.getConcatenatedFieldsSeparator() != "") ? currentConcatenatedField.getConcatenatedFieldsSeparator() : ", ";
+						concatenatedValuesToUse = concatenatedSubfieldValues;
 					}
 					
-					concatenatedDatafield.setFieldvalue(datafieldTextToUse);
+					if (!concatenatedValuesToUse.isEmpty()) {
+						concatenatedDatafield.setConcatenatedValues(concatenatedValuesToUse);
+						concatenatedDatafield.setConcatenatedSeparator(concatenatedValuesSeparatorToUse);
+					}					
+					
 					allFields.add(concatenatedDatafield);
 					concatenatedDatafield = null;
 				}
@@ -517,6 +519,7 @@ public class MarcContentHandler implements ContentHandler {
 			currentConcatenatedMasterSubfields = new ArrayList<String>();
 			currentConcatenatedMasterSubfieldsValues = new HashMap<String, String>();
 			concatenatedValuesToUse = new ArrayList<String>();
+			concatenatedValuesSeparatorToUse = null;
 			concatenatedSubfieldsInDatafield = new HashMap<String, String>();
 			
 			

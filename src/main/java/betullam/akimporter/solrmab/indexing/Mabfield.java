@@ -37,6 +37,7 @@ public class Mabfield implements Comparable<Mabfield> {
 	private Map<String, String> translateSubfieldsProperties;
 	private boolean allowDuplicates = false;
 	private List<String> concatenatedValues;
+	private String concatenatedSeparator;
 
 	public Mabfield() {}
 
@@ -101,14 +102,22 @@ public class Mabfield implements Comparable<Mabfield> {
 	public void setConcatenatedValues(List<String> concatenatedValues) {
 		this.concatenatedValues = concatenatedValues;
 	}
+	
+	public String getConcatenatedSeparator() {
+		return concatenatedSeparator;
+	}
 
+	public void setConcatenatedSeparator(String concatenatedSeparator) {
+		this.concatenatedSeparator = concatenatedSeparator;
+	}
 
 	@Override
 	public String toString() {
 		return "Mabfield [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + ", connectedValues="
 				+ connectedValues + ", isTranslateConnectedSubfields=" + isTranslateConnectedSubfields
 				+ ", translateSubfieldsProperties=" + translateSubfieldsProperties + ", allowDuplicates="
-				+ allowDuplicates + ", concatenatedValues=" + concatenatedValues + "]";
+				+ allowDuplicates + ", concatenatedValues=" + concatenatedValues + ", concatenatedSeparator="
+				+ concatenatedSeparator + "]";
 	}
 
 	@Override

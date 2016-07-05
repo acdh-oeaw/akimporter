@@ -216,8 +216,9 @@ public class MatchingOperations {
 				hasConnectedSubfields = true;
 			}
 			
+			
 			/*
-			if (matchingObject.hasConcatenatedSubfields()) {
+			if (matchingObject.hasConcatenatedSubfields() || solrFieldname.equals("geographic_facet")) {
 				System.out.println(matchingObject.toString());
 			}
 			
