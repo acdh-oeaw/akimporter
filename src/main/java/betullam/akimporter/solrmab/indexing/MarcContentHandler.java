@@ -40,7 +40,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -168,6 +167,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 			
 			if (mo.hasConcatenatedSubfields()) {
+
 				Set<String> concatenatedMasterFields = new HashSet<String>();
 				LinkedHashMap<Integer, String> concatenatedSubfields = mo.getConcatenatedSubfields();
 				
@@ -177,6 +177,8 @@ public class MarcContentHandler implements ContentHandler {
 					List<String> mutableList = new ArrayList<String>();
 					mutableList.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
 					int lastListElement = (mutableList.size()-1); // Get index of last List element (= separator)
+					boolean isTranslateConcatenatedSubfields = mo.isTranslateConcatenatedSubfields();
+					Map<String, String> translateConcatenatedSubfieldsProperties = mo.getTranslateConcatenatedSubfieldsProperties();
 					
 					// Get all master fields:
 					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
@@ -188,8 +190,8 @@ public class MarcContentHandler implements ContentHandler {
 					
 					String concatenatedFieldsSeparator = mutableList.get(lastListElement); // Last value is always the separator to use
 					mutableList.remove(lastListElement); // Remove the separator value so that only the subfield codes will remain
-					
-					ConcatenatedField newConcatenatedField = new ConcatenatedField(concatenatedMasterFields, mutableList, concatenatedFieldsSeparator);
+
+					ConcatenatedField newConcatenatedField = new ConcatenatedField(concatenatedMasterFields, mutableList, concatenatedFieldsSeparator, isTranslateConcatenatedSubfields, translateConcatenatedSubfieldsProperties);					
 					concatenatedFields.add(newConcatenatedField);
 				}
 				
@@ -493,6 +495,8 @@ public class MarcContentHandler implements ContentHandler {
 					if (!concatenatedValuesToUse.isEmpty()) {
 						concatenatedDatafield.setConcatenatedValues(concatenatedValuesToUse);
 						concatenatedDatafield.setConcatenatedSeparator(concatenatedValuesSeparatorToUse);
+						concatenatedDatafield.setTranslateConcatenatedSubfields(currentConcatenatedField.isTranslateConcatenatedSubfields());
+						concatenatedDatafield.setTranslateConcatenatedSubfieldsProperties(currentConcatenatedField.getTranslateConcatenatedSubfieldsProperties());
 					}					
 					
 					allFields.add(concatenatedDatafield);

@@ -216,6 +216,7 @@ public class MatchingOperations {
 				hasConnectedSubfields = true;
 			}
 			
+			// TODO: Für Concatenated Fields nun genauso vorgehen wie für Connected Fields!
 			
 			/*
 			if (matchingObject.hasConcatenatedSubfields() || solrFieldname.equals("geographic_facet")) {
@@ -226,7 +227,12 @@ public class MatchingOperations {
 				System.out.println("Value: " + mabField.getFieldvalue());
 				System.out.println("Object: " + matchingObject.toString());
 			}
+			
+			if (matchingObject.hasConcatenatedSubfields() || solrFieldname.equals("geographic_facet")) {
+				System.out.println(solrFieldname + " (" + matchingObject.hasConcatenatedSubfields() + "): " + mabField.toString());
+			}
 			*/
+			
 			
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
 

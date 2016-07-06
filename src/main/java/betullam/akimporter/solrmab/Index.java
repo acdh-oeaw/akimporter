@@ -221,6 +221,7 @@ public class Index {
 				boolean translateConnectedSubfields = false;
 				LinkedHashMap<Integer, String> concatenatedSubfields = new LinkedHashMap<Integer, String>();
 				boolean hasConcatenatedSubfields = false;
+				boolean translateConcatenatedSubfields = false;
 				String regexValue = null;
 				String regexStrictValue = null;
 				String regexReplaceValue = null;
@@ -228,7 +229,7 @@ public class Index {
 				String strValues = mabProperties.getProperty(key);
 				boolean allowDuplicates = false;
 
-				
+
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
 				// INFO:
 				// We can't use something like replaceAll or replaceFirst becaus in regEx rules, we could have nested brackets, e. g.
@@ -269,7 +270,8 @@ public class Index {
 				}
 
 				HashMap<String, String> translateProperties = new HashMap<String, String>();
-				HashMap<String, String> translateSubfieldsProperties = new HashMap<String, String>();
+				HashMap<String, String> translateConnectedSubfieldsProperties = new HashMap<String, String>();
+				HashMap<String, String> translateConcatenatedSubfieldsProperties = new HashMap<String, String>();
 				String filename = null;
 				HashMap<String, List<String>> mabFieldnames = new HashMap<String, List<String>>();
 				List<String> fieldsToRemove = new ArrayList<String>();
@@ -278,8 +280,8 @@ public class Index {
 				List<String> lstValues = new ArrayList<String>();
 				//lstValues.addAll(Arrays.asList(strValues.split("\\s*,\\s*")));
 				lstValues.addAll(Arrays.asList(strValues.split("\\s*(?<!\\\\),\\s*")));
-				
-				
+
+
 
 				// Create a clean list (without square brackets) for option check below. This is in case a translateValue
 				// uses the default text option, e. g. translateValueContains[MyDefaultText]. The function
@@ -390,7 +392,7 @@ public class Index {
 					String connectedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("connectedSubfields");
 					connectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
-					
+
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					hasConnectedSubfields = true;
@@ -400,12 +402,12 @@ public class Index {
 						Matcher matcherConnectedSubfields = patternConnectedSubfields.matcher(connectedSubfieldsString);
 						String connectedSubfieldsAllBrackets = (matcherConnectedSubfields.find()) ? matcherConnectedSubfields.group().trim() : null;
 						connectedSubfieldsAllBrackets = connectedSubfieldsAllBrackets.replace("connectedSubfields", "");
-						
+
 						// Get everything between the 2 outermost squarebrackets:
 						connectedSubfields = getBracketValues(connectedSubfieldsAllBrackets);
 					}	
 				}
-				
+
 				if (lstValuesClean.contains("translateConnectedSubfields")) {
 					int index = lstValuesClean.indexOf("translateConnectedSubfields");
 					String translateConnectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. translateConnectedSubfields[translate.properties]
@@ -418,12 +420,12 @@ public class Index {
 						Matcher matcher = pattern.matcher(translateConnectedSubfieldsString);
 						translateConnectedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 						if (translateConnectedSubfieldsFilename != null) {
-							translateSubfieldsProperties = getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles);
+							translateConnectedSubfieldsProperties = getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles);
 						}
 					}
 				}
-				
-				
+
+
 				if (lstValuesClean.contains("concatenatedSubfields")) {
 					String concatenatedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("concatenatedSubfields");
@@ -439,12 +441,31 @@ public class Index {
 						String concatenatedSubfieldsAllBrackets = (matcherConcatenatedSubfields.find()) ? matcherConcatenatedSubfields.group().trim() : null;
 						concatenatedSubfieldsAllBrackets = concatenatedSubfieldsAllBrackets.replace("concatenatedSubfields", "");
 						concatenatedSubfieldsAllBrackets = concatenatedSubfieldsAllBrackets.replace("\\,", ",");
-						
+
 						// Get everything between the 2 outermost squarebrackets:
 						concatenatedSubfields = getBracketValues(concatenatedSubfieldsAllBrackets);
 					}	
 				}
-				
+
+				if (lstValuesClean.contains("translateConcatenatedSubfields")) {
+					int index = lstValuesClean.indexOf("translateConcatenatedSubfields");
+					String translateConcatenatedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. translateConcatenatedSubfields[translate.properties]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					translateConcatenatedSubfields = true;
+					if (translateConcatenatedSubfieldsString != null) {
+						String translateConcatenatedSubfieldsFilename = null;
+						Pattern pattern = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
+						Matcher matcher = pattern.matcher(translateConcatenatedSubfieldsString);
+						translateConcatenatedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
+						if (translateConcatenatedSubfieldsFilename != null) {
+							translateConcatenatedSubfieldsProperties = getTranslateProperties(translateConcatenatedSubfieldsFilename, pathToTranslationFiles);
+						}
+					}
+				}
+
+
+
 
 				if (lstValuesClean.contains("regEx")) {
 					String regexValueString = null;
@@ -497,11 +518,11 @@ public class Index {
 						regexReplaceValue = (matcherRegexReplaceValue.find()) ? matcherRegexReplaceValue.group().trim() : null;
 					}
 					regexReplaceValue = regexReplaceValue.replace("regExReplace", "");
-					
+
 					// Get everything between the 2 outermost squarebrackets:
 					regexReplaceValues = getBracketValues(regexReplaceValue);
 				}
-				
+
 
 				if (lstValuesClean.contains("allowDuplicates")) {
 					allowDuplicates = true;
@@ -600,8 +621,38 @@ public class Index {
 				}
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
+
+				MatchingObject mo = new MatchingObject(
+						key,
+						mabFieldnames,
+						multiValued,
+						customText,
+						getAllFields,
+						allFieldsExceptions,
+						getFullRecordAsXML,
+						translateValue,
+						translateValueContains,
+						translateValueRegex,
+						translateProperties,
+						hasDefaultValue,
+						defaultValue,
+						hasConnectedSubfields,
+						connectedSubfields,
+						translateConnectedSubfields,
+						translateConnectedSubfieldsProperties,
+						hasConcatenatedSubfields,
+						concatenatedSubfields,
+						translateConcatenatedSubfields,
+						translateConcatenatedSubfieldsProperties,
+						hasRegex,
+						regexValue,
+						hasRegexStrict,
+						regexStrictValue,
+						hasRegExReplace,
+						regexReplaceValues,
+						allowDuplicates
+				);
 				
-				MatchingObject mo = new MatchingObject(key, mabFieldnames, multiValued, customText, getAllFields, allFieldsExceptions, getFullRecordAsXML, translateValue, translateValueContains, translateValueRegex, translateProperties, hasDefaultValue, defaultValue, hasConnectedSubfields, connectedSubfields, translateConnectedSubfields, translateSubfieldsProperties, hasConcatenatedSubfields, concatenatedSubfields, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegExReplace, regexReplaceValues, allowDuplicates);
 				matchingObjects.add(mo);
 			}
 
@@ -686,8 +737,8 @@ public class Index {
 
 		return translateProperties;
 	}
-	
-	
+
+
 	/**
 	 * Getting values between square brackets as Map.
 	 * 
@@ -696,13 +747,13 @@ public class Index {
 	 */
 	private LinkedHashMap<Integer, String> getBracketValues(String rawValue) {		
 		LinkedHashMap<Integer, String> bracketValues = new LinkedHashMap<Integer, String>();
-		
+
 		String valueClean = "";
 		int outerBracketsCounter = 0;
 		int openBracketsCounter = 0; // Reuse variable from above
 		int closeBracketsCounter = 0; // Reuse variable from above
 		int bracketCounter = 0; // Reuse variable from above
-		
+
 		// Iterate over each character of rawValue:
 		for (int i = 0; i < rawValue.length(); i++){
 			char c = rawValue.charAt(i);
@@ -730,7 +781,7 @@ public class Index {
 				bracketCounter = bracketCounter - 1;		
 			}
 		}
-		
+
 		return bracketValues;
 	}
 }
