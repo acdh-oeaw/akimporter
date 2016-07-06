@@ -12,7 +12,6 @@ public class ConcatenatedField {
 	private boolean translateConcatenatedSubfields;
 	private Map<String, String> translateConcatenatedSubfieldsProperties;
 	
-	
 	public ConcatenatedField(Set<String> concatenatedMasterFields, List<String> concatenatedSubfields, String concatenatedFieldsSeparator, boolean translateConcatenatedSubfields, Map<String, String> translateConcatenatedSubfieldsProperties) {
 		this.concatenatedMasterFields = concatenatedMasterFields;
 		this.concatenatedSubfields = concatenatedSubfields;
@@ -21,7 +20,6 @@ public class ConcatenatedField {
 		this.translateConcatenatedSubfieldsProperties = translateConcatenatedSubfieldsProperties;
 	}
 
-	
 	public Set<String> getConcatenatedMasterFields() {
 		return concatenatedMasterFields;
 	}
@@ -69,5 +67,4 @@ public class ConcatenatedField {
 				+ ", translateConcatenatedSubfields=" + translateConcatenatedSubfields
 				+ ", translateConcatenatedSubfieldsProperties=" + translateConcatenatedSubfieldsProperties + "]";
 	}
-
 }

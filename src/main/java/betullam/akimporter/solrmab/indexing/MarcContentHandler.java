@@ -40,6 +40,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -412,7 +413,6 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 		
-		
 		if(localName.equals("datafield")) {
 
 			if (getFullRecordAsXML) {
@@ -504,7 +504,6 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 			
-			
 			// Reset values for connected fields:
 			datafieldContainsConnectedFields = false;
 			connectedValueRequired = false;
@@ -525,9 +524,6 @@ public class MarcContentHandler implements ContentHandler {
 			concatenatedValuesToUse = new ArrayList<String>();
 			concatenatedValuesSeparatorToUse = null;
 			concatenatedSubfieldsInDatafield = new HashMap<String, String>();
-			
-			
-			
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
@@ -644,14 +640,25 @@ public class MarcContentHandler implements ContentHandler {
 					String fieldName = mf.getFieldname();
 					String fieldValue = mf.getFieldvalue();
 					List<String> connValues = mf.getConnectedValues();
+					List<String> concatValues = mf.getConcatenatedValues();
 					
-					// Add the fieldname and fieldvalue to the document:
-					doc.addField(fieldName, fieldValue);
+					// Add the concatenated value(s) to the document if one exists:
+					if (concatValues != null && !concatValues.isEmpty()) {
+						String separator = mf.getConcatenatedSeparator();
+						String concatValue = StringUtils.join(concatValues, separator); // Join concatenated value(s) with the given separator character
+						String valueToAdd = fieldValue + separator + concatValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
+						doc.addField(fieldName, valueToAdd);
+					} else {
+						// Add fieldname and standard field value to the document, but only if we do not have a concatenated value.
+						// If we would do that, we would add the standard field value AND the concatenated value (but the standard field
+						// value is already included there). This is the difference to the connected value(s):
+						doc.addField(fieldName, fieldValue);
 
-					// Add the connected value to the document if one exists:
-					if (connValues != null && !connValues.isEmpty()) {
-						for (String connValue : connValues) {
-							doc.addField(fieldName, connValue);
+						// Add the connected value(s) additionally to the standard field value (this is the difference to the concatenated values):
+						if (connValues != null && !connValues.isEmpty()) {
+							for (String connValue : connValues) {
+								doc.addField(fieldName, connValue);
+							}
 						}
 					}
 
@@ -688,7 +695,6 @@ public class MarcContentHandler implements ContentHandler {
 				// Set "docs" to "null" (save memory):
 				docs = null;
 			}
-
 
 		} catch (SolrServerException e) {
 			e.printStackTrace();
