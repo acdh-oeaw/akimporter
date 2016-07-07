@@ -228,6 +228,10 @@ public class Index {
 				Map<Integer, String> regexReplaceValues = new HashMap<Integer, String>();
 				String strValues = mabProperties.getProperty(key);
 				boolean allowDuplicates = false;
+				boolean hasSubfieldExists = false;
+				LinkedHashMap<Integer, String> subfieldExists = new LinkedHashMap<Integer, String>();
+				boolean hasSubfieldNotExists = false;
+				LinkedHashMap<Integer, String> subfieldNotExists = new LinkedHashMap<Integer, String>();
 
 
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
@@ -392,7 +396,6 @@ public class Index {
 					String connectedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("connectedSubfields");
 					connectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. connectedSubfields[a:b:c]
-
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					hasConnectedSubfields = true;
@@ -430,7 +433,6 @@ public class Index {
 					String concatenatedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("concatenatedSubfields");
 					concatenatedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. concatenatedSubfields[a:b:c:, ]
-					//System.out.println(concatenatedSubfieldsString);
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					hasConcatenatedSubfields = true;
@@ -464,9 +466,44 @@ public class Index {
 					}
 				}
 
+				if (lstValuesClean.contains("subfieldExists")) {
+					String subfieldExistsString = null;
+					int index = lstValuesClean.indexOf("subfieldExists");
+					subfieldExistsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. subfieldExists[a:b:c:AND]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					hasSubfieldExists = true;
+					if (subfieldExistsString != null) {
+						// Extract the text in the square brackets:
+						Pattern patternSubfieldExists = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between the first and last squary brackets
+						Matcher matcherSubfieldExists = patternSubfieldExists.matcher(subfieldExistsString);
+						String subfieldExistsAllBrackets = (matcherSubfieldExists.find()) ? matcherSubfieldExists.group().trim() : null;
+						subfieldExistsAllBrackets = subfieldExistsAllBrackets.replace("subfieldExists", "");
 
+						// Get everything between the 2 outermost squarebrackets:
+						subfieldExists = getBracketValues(subfieldExistsAllBrackets);
+					}	
+				}
 
+				if (lstValuesClean.contains("subfieldNotExists")) {
+					String subfieldNotExistsString = null;
+					int index = lstValuesClean.indexOf("subfieldNotExists");
+					subfieldNotExistsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. subfieldNotExists[a:b:c:OR]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					hasSubfieldNotExists = true;
+					if (subfieldNotExistsString != null) {
+						// Extract the text in the square brackets:
+						Pattern patternSubfieldNotExists = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between the first and last squary brackets
+						Matcher matcherSubfieldNotExists = patternSubfieldNotExists.matcher(subfieldNotExistsString);
+						String subfieldNotExistsAllBrackets = (matcherSubfieldNotExists.find()) ? matcherSubfieldNotExists.group().trim() : null;
+						subfieldNotExistsAllBrackets = subfieldNotExistsAllBrackets.replace("subfieldNotExists", "");
 
+						// Get everything between the 2 outermost squarebrackets:
+						subfieldNotExists = getBracketValues(subfieldNotExistsAllBrackets);
+					}	
+				}
+				
 				if (lstValuesClean.contains("regEx")) {
 					String regexValueString = null;
 					hasRegex = true;
@@ -650,7 +687,11 @@ public class Index {
 						regexStrictValue,
 						hasRegExReplace,
 						regexReplaceValues,
-						allowDuplicates
+						allowDuplicates,
+						hasSubfieldExists,
+						subfieldExists,
+						hasSubfieldNotExists,
+						subfieldNotExists
 				);
 				
 				matchingObjects.add(mo);

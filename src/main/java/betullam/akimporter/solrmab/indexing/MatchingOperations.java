@@ -223,7 +223,7 @@ public class MatchingOperations {
 
 		
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
-
+			
 			String solrFieldname = matchingObject.getSolrFieldname();
 			Map<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
 			boolean hasRegex = matchingObject.hasRegex();
@@ -247,10 +247,10 @@ public class MatchingOperations {
 				hasConcatenatedSubfields = true;
 				concatenatedSeparator = mabField.getConcatenatedSeparator();
 			}
-
+			
 
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
-
+				
 				// Treat "normal" translate values
 				Map<String, String> translateProperties = matchingObject.getTranslateProperties();
 				String defaultValue = matchingObject.getDefaultValue();
@@ -321,12 +321,12 @@ public class MatchingOperations {
 					}
 				}
 			} else {
-
+				
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
 					String mabFieldValue = mabField.getFieldvalue();
-
+					
 					// Use regex if user has defined one:
 					if (hasRegex && regexValue != null) {
 						Pattern pattern = java.util.regex.Pattern.compile(regexValue); // Get everything between square brackets and the brackets themselve (we will remove them later)
@@ -361,6 +361,7 @@ public class MatchingOperations {
 						mabFieldValue = mabFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
 					}
 
+					
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
@@ -660,7 +661,8 @@ public class MatchingOperations {
 	 * @param allowDuplicates	boolean: Indicate if duplicate values are allowed in Solr multivalued fields (default is false).
 	 */
 	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, boolean hasConnectedSubfields, List<String> connectedSubfieldValues, boolean hasConcatenatedSubfields, List<String> concatenatedSubfieldValues, String concatenatedSeparator) {
-		Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);
+		Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);		
+		
 		mf.setAllowDuplicates(allowDuplicates);
 		if (hasConnectedSubfields && connectedSubfieldValues != null && !connectedSubfieldValues.isEmpty()) {
 			mf.setConnectedValues(connectedSubfieldValues);
@@ -670,6 +672,8 @@ public class MatchingOperations {
 			mf.setConcatenatedValues(concatenatedSubfieldValues);
 			mf.setConcatenatedSeparator(concatenatedSeparator);
 		}
+		
+		
 		listOfMatchedFields.add(mf);
 	}
 

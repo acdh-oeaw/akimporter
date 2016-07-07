@@ -58,6 +58,10 @@ public class MatchingObject {
 	private boolean hasRegExReplace;
 	private Map<Integer, String> regexReplaceValues;
 	private boolean allowDuplicates;
+	private boolean hasSubfieldExists;
+	private LinkedHashMap<Integer, String> subfieldExists;
+	private boolean hasSubfieldNotExists;
+	private LinkedHashMap<Integer, String> subfieldNotExists;
 
 
 
@@ -91,7 +95,11 @@ public class MatchingObject {
 			String regexStrictValue,
 			boolean hasRegExReplace,
 			Map<Integer, String> regexReplaceValues,
-			boolean allowDuplicates
+			boolean allowDuplicates,
+			boolean hasSubfieldExists,
+			LinkedHashMap<Integer, String> subfieldExists,
+			boolean hasSubfieldNotExists,
+			LinkedHashMap<Integer, String> subfieldNotExists
 		) {
 		
 		this.setSolrFieldname(solrFieldname);
@@ -122,6 +130,10 @@ public class MatchingObject {
 		this.setHasRegExReplace(hasRegExReplace);
 		this.setRegexReplaceValues(regexReplaceValues);
 		this.setAllowDuplicates(allowDuplicates);
+		this.setHasSubfieldExists(hasSubfieldExists);
+		this.setSubfieldExists(subfieldExists);
+		this.setHasSubfieldNotExists(hasSubfieldNotExists);
+		this.setSubfieldNotExists(subfieldNotExists);
 	}
 
 	public String getSolrFieldname() {
@@ -347,6 +359,38 @@ public class MatchingObject {
 	public void setAllowDuplicates(boolean allowDuplicates) {
 		this.allowDuplicates = allowDuplicates;
 	}
+	
+	public boolean hasSubfieldExists() {
+		return hasSubfieldExists;
+	}
+
+	public void setHasSubfieldExists(boolean hasSubfieldExists) {
+		this.hasSubfieldExists = hasSubfieldExists;
+	}
+
+	public LinkedHashMap<Integer, String> getSubfieldExists() {
+		return subfieldExists;
+	}
+
+	public void setSubfieldExists(LinkedHashMap<Integer, String> subfieldExists) {
+		this.subfieldExists = subfieldExists;
+	}
+
+	public boolean hasSubfieldNotExists() {
+		return hasSubfieldNotExists;
+	}
+
+	public void setHasSubfieldNotExists(boolean hasSubfieldNotExists) {
+		this.hasSubfieldNotExists = hasSubfieldNotExists;
+	}
+
+	public LinkedHashMap<Integer, String> getSubfieldNotExists() {
+		return subfieldNotExists;
+	}
+
+	public void setSubfieldNotExists(LinkedHashMap<Integer, String> subfieldNotExists) {
+		this.subfieldNotExists = subfieldNotExists;
+	}
 
 	@Override
 	public String toString() {
@@ -364,9 +408,7 @@ public class MatchingObject {
 				+ translateConcatenatedSubfieldsProperties + ", hasRegex=" + hasRegex + ", regexValue=" + regexValue
 				+ ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace="
 				+ hasRegExReplace + ", regexReplaceValues=" + regexReplaceValues + ", allowDuplicates="
-				+ allowDuplicates + "]";
+				+ allowDuplicates + ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
+				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists + "]";
 	}
-
-
-
 }
