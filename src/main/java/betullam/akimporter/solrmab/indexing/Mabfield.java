@@ -40,6 +40,7 @@ public class Mabfield implements Comparable<Mabfield> {
 	private String concatenatedSeparator;
 	private boolean isTranslateConcatenatedSubfields = false;
 	private Map<String, String> translateConcatenatedSubfieldsProperties;
+	private boolean skip = false;
 
 	public Mabfield() {}
 
@@ -129,6 +130,15 @@ public class Mabfield implements Comparable<Mabfield> {
 		this.translateConcatenatedSubfieldsProperties = translateConcatenatedSubfieldsProperties;
 	}
 
+	public boolean isSkip() {
+		return skip;
+	}
+
+	public void setSkip(boolean skip) {
+		this.skip = skip;
+	}
+
+	
 
 	@Override
 	public String toString() {
@@ -137,7 +147,8 @@ public class Mabfield implements Comparable<Mabfield> {
 				+ ", translateSubfieldsProperties=" + translateSubfieldsProperties + ", allowDuplicates="
 				+ allowDuplicates + ", concatenatedValues=" + concatenatedValues + ", concatenatedSeparator="
 				+ concatenatedSeparator + ", isTranslateConcatenatedSubfields=" + isTranslateConcatenatedSubfields
-				+ ", translateConcatenatedSubfieldsProperties=" + translateConcatenatedSubfieldsProperties + "]";
+				+ ", translateConcatenatedSubfieldsProperties=" + translateConcatenatedSubfieldsProperties + ", skip="
+				+ skip + "]";
 	}
 
 	@Override

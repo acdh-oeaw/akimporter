@@ -220,6 +220,12 @@ public class MatchingOperations {
 				}
 			}
 		}
+		
+		// Exists subfields (skip or don't skip)
+		boolean skip = false;
+		if (mabField.isSkip()) {
+			skip = true;
+		}
 
 		
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
@@ -273,49 +279,49 @@ public class MatchingOperations {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 						if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 						if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 						if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 						if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 						if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
 						if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					} else { 
 						if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
 							if (translatedValue != null) {
-								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, translatedValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					}
@@ -365,41 +371,41 @@ public class MatchingOperations {
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
-							addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+							addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 						}
 					} else if (mabFieldnameProps.length() == 8) {
 
 						if (mabFieldnameProps.substring(3).equals("$**$*")) { // Match against all indicators and subfields. E. g. 100$**$* matches 100$a1$b, 100$b3$z, 100$z*$-, etc.
 							if (allFields(mabFieldnameXml, mabFieldnameProps) == true) {	
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$*
 							if (matchInd1(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$*
 							if (matchInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{2}\\$\\*", mabFieldnameProps.substring(3, 8)) == true) { // 100$aa$*
 							if (matchInd1AndInd2(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else if (Pattern.matches("\\$[\\w-]{1}\\*\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$a*$a
 							if (matchInd1AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else if (Pattern.matches("\\$\\*[\\w-]{1}\\$\\w{1}", mabFieldnameProps.substring(3, 8)) == true) { // 100$*a$a
 							if (matchInd2AndSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else if (mabFieldnameProps.substring(3, 6).equals("$**")) { // 100$**$a
 							if (matchSubfield(mabFieldnameXml, mabFieldnameProps) == true) {
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						} else { 
 							if (mabFieldnameProps.equals(mabFieldnameXml)) { // Match against the value as it is. E. g. 100$a1$z matches only against 100$a1$z
-								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator);
+								addMabfield(solrFieldname, mabFieldValue, allowDuplicates, hasConnectedSubfields, connectedSubfieldValues, hasConcatenatedSubfields, concatenatedSubfieldValues, concatenatedSeparator, skip);
 							}
 						}
 					}
@@ -660,21 +666,26 @@ public class MatchingOperations {
 	 * @param solrFieldvalue	String: Value of the solr field
 	 * @param allowDuplicates	boolean: Indicate if duplicate values are allowed in Solr multivalued fields (default is false).
 	 */
-	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, boolean hasConnectedSubfields, List<String> connectedSubfieldValues, boolean hasConcatenatedSubfields, List<String> concatenatedSubfieldValues, String concatenatedSeparator) {
-		Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);		
+	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, boolean hasConnectedSubfields, List<String> connectedSubfieldValues, boolean hasConcatenatedSubfields, List<String> concatenatedSubfieldValues, String concatenatedSeparator, boolean skip) {
 		
-		mf.setAllowDuplicates(allowDuplicates);
-		if (hasConnectedSubfields && connectedSubfieldValues != null && !connectedSubfieldValues.isEmpty()) {
-			mf.setConnectedValues(connectedSubfieldValues);
+		if (!skip) { 
+			Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);		
+			
+			mf.setAllowDuplicates(allowDuplicates);
+			if (hasConnectedSubfields && connectedSubfieldValues != null && !connectedSubfieldValues.isEmpty()) {
+				mf.setConnectedValues(connectedSubfieldValues);
+			}
+			
+			if (hasConcatenatedSubfields && concatenatedSubfieldValues != null && !concatenatedSubfieldValues.isEmpty()) {
+				mf.setConcatenatedValues(concatenatedSubfieldValues);
+				mf.setConcatenatedSeparator(concatenatedSeparator);
+			}
+			
+			listOfMatchedFields.add(mf);
+			System.out.println("Inde (MatchingOperations): " + solrFieldname + " - " + solrFieldvalue);
+		} else {
+			System.out.println("Skip (MatchingOperations): " + solrFieldname + " - " + solrFieldvalue);
 		}
-		
-		if (hasConcatenatedSubfields && concatenatedSubfieldValues != null && !concatenatedSubfieldValues.isEmpty()) {
-			mf.setConcatenatedValues(concatenatedSubfieldValues);
-			mf.setConcatenatedSeparator(concatenatedSeparator);
-		}
-		
-		
-		listOfMatchedFields.add(mf);
 	}
 
 }
