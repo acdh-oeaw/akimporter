@@ -221,13 +221,12 @@ public class MatchingOperations {
 			}
 		}
 		
-		// Exists subfields (skip or don't skip)
-		boolean skip = false;
+		// Check for skip or don't skip
+		boolean checkForSkip = false;
 		if (mabField.isSkip()) {
-			skip = true;
+			checkForSkip = true;
 		}
 
-		
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
 			
 			String solrFieldname = matchingObject.getSolrFieldname();
@@ -253,6 +252,14 @@ public class MatchingOperations {
 				hasConcatenatedSubfields = true;
 				concatenatedSeparator = mabField.getConcatenatedSeparator();
 			}
+			
+			boolean skip = false;
+			if (checkForSkip) {
+				if (mabField.getSolrFieldnames().contains(matchingObject.getSolrFieldname())) {
+					skip = true;
+				}
+			}
+			
 			
 
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
@@ -681,10 +688,10 @@ public class MatchingOperations {
 				mf.setConcatenatedSeparator(concatenatedSeparator);
 			}
 			
+			
+			mf.setSkip(skip);
+			
 			listOfMatchedFields.add(mf);
-			System.out.println("Inde (MatchingOperations): " + solrFieldname + " - " + solrFieldvalue);
-		} else {
-			System.out.println("Skip (MatchingOperations): " + solrFieldname + " - " + solrFieldvalue);
 		}
 	}
 

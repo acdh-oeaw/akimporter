@@ -41,6 +41,7 @@ public class Mabfield implements Comparable<Mabfield> {
 	private boolean isTranslateConcatenatedSubfields = false;
 	private Map<String, String> translateConcatenatedSubfieldsProperties;
 	private boolean skip = false;
+	private List<String> solrFieldnames;
 
 	public Mabfield() {}
 
@@ -137,8 +138,15 @@ public class Mabfield implements Comparable<Mabfield> {
 	public void setSkip(boolean skip) {
 		this.skip = skip;
 	}
-
 	
+	public List<String> getSolrFieldnames() {
+		return solrFieldnames;
+	}
+
+	public void setSolrFieldnames(List<String> solrFieldnames) {
+		this.solrFieldnames = solrFieldnames;
+	}
+
 
 	@Override
 	public String toString() {
@@ -148,7 +156,7 @@ public class Mabfield implements Comparable<Mabfield> {
 				+ allowDuplicates + ", concatenatedValues=" + concatenatedValues + ", concatenatedSeparator="
 				+ concatenatedSeparator + ", isTranslateConcatenatedSubfields=" + isTranslateConcatenatedSubfields
 				+ ", translateConcatenatedSubfieldsProperties=" + translateConcatenatedSubfieldsProperties + ", skip="
-				+ skip + "]";
+				+ skip + ", solrFieldnames=" + solrFieldnames + "]";
 	}
 
 	@Override

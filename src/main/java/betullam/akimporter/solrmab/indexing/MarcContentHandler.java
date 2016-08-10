@@ -59,7 +59,8 @@ public class MarcContentHandler implements ContentHandler {
 	private String nodeContent;
 	private Record record;
 	private Mabfield controlfield;
-	private Mabfield datafield; // Datafield is conentenated of datafield and subfield
+	private Mabfield datafield; // Datafield is concatenated datafield and subfield
+	private List<Mabfield> allSubfieldsInDatafield;
 	private List<MatchingObject> listOfMatchingObjs;
 	private SolrServer sServer;
 	private String recordID;
@@ -89,7 +90,7 @@ public class MarcContentHandler implements ContentHandler {
 	List<String> currentMasterSubfields = new ArrayList<String>();
 	Map<String, String> currentMasterSubfieldsValues = new HashMap<String, String>();
 	List<String> connectedValuesToUse = new ArrayList<String>();
-	Map<String, String> subfieldsInDatafield = new HashMap<String, String>();
+	Map<String, String> connectedSubfieldsInDatafield = new HashMap<String, String>();
 
 	// Variables for concatenated fields:
 	LinkedHashSet<ConcatenatedField> concatenatedFields = new LinkedHashSet<ConcatenatedField>();
@@ -104,6 +105,8 @@ public class MarcContentHandler implements ContentHandler {
 	Map<String, String> concatenatedSubfieldsInDatafield = new HashMap<String, String>();
 
 	// Variables for subfield exists / not exists:
+	boolean isSubfieldExists = false;
+	boolean isSubfieldNotExists = false;
 	LinkedHashSet<ExistsField> existsFields = new LinkedHashSet<ExistsField>();
 	private boolean datafieldContainsExistsFields = false;
 	ExistsField currentExistsField = null;
@@ -113,7 +116,9 @@ public class MarcContentHandler implements ContentHandler {
 	private boolean existsValueRequired = false;
 	String existsOperatorToUse = null;
 	Set<String> existsSubfieldsInDatafield = new HashSet<String>();
-
+	List<String> existsSolrFieldnames = new ArrayList<String>();
+	boolean skip = false;
+	
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
 	private String allfieldsField = null;
@@ -178,6 +183,7 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 
+			// Concatenated subfields
 			if (mo.hasConcatenatedSubfields()) {
 
 				Set<String> concatenatedMasterFields = new HashSet<String>();
@@ -208,18 +214,31 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 
-			if (mo.hasSubfieldExists()) {
+			// Subfield exists / not exists
+			if (mo.hasSubfieldExists() || mo.hasSubfieldNotExists()) {
+
+				isSubfieldExists = mo.hasSubfieldExists();
+				isSubfieldNotExists = mo.hasSubfieldNotExists();
+				LinkedHashMap<Integer, String> subfieldExists = null;
 				Set<String> subfieldExistsMasterFields = new HashSet<String>();
 				String subfieldExistsOpearator = null;
-				LinkedHashMap<Integer, String> subfieldExists = mo.getSubfieldExists();
+				
+				existsSolrFieldnames.add(mo.getSolrFieldname());
+				
+				if (isSubfieldExists) {
+					subfieldExists = mo.getSubfieldExists();
+				} else if (isSubfieldNotExists) {
+					subfieldExists = mo.getSubfieldNotExists();
+				}
 
 				for (Entry<Integer, String> entry : subfieldExists.entrySet()) {
 					List<String> immutableList = Arrays.asList(entry.getValue().split("\\s*:\\s*"));
 					List<String> mutableList = new ArrayList<String>();
-					
+
 					if (immutableList.size() == 1) {
 						// If only one subfield is in the list, get that one. There should not be an operator (AND or OR)
 						mutableList.add(immutableList.get(0));
+						subfieldExistsOpearator = "AND"; // Default operator is AND
 					} else {
 						mutableList.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
 						int lastListElement = (mutableList.size()-1); // Get index of last List element (= operator (AND or OR))
@@ -232,16 +251,17 @@ public class MarcContentHandler implements ContentHandler {
 							// We do not remove the last list element here because it is not AND or OR and therfore it could be a subfield code that we should use.
 						}
 					}
-					
+
 					// Get all master fields:
 					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
-						String completeFieldname = mabfieldName.getKey().toString();
+						String completeFieldname = mabfieldName.getKey().toString(); // E. g. "655$e*$u"
 						String subfieldExistsMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
 						String subfieldExistsMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
 						subfieldExistsMasterFields.add(subfieldExistsMasterDatafield+subfieldExistsMasterSubfield);
 					}
 
-					ExistsField newExistsField = new ExistsField(subfieldExistsMasterFields, mutableList, subfieldExistsOpearator);
+					ExistsField newExistsField = new ExistsField(subfieldExistsMasterFields, mutableList, subfieldExistsOpearator, isSubfieldExists, isSubfieldNotExists, existsSolrFieldnames);
+										
 					existsFields.add(newExistsField);
 				}
 			}
@@ -323,6 +343,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 		if(localName.equals("datafield")) {
+			allSubfieldsInDatafield = new ArrayList<Mabfield>();
 			datafieldTag = attribs.getValue("tag").trim();
 			datafieldInd1 = attribs.getValue("ind1").trim();
 			datafieldInd2 = attribs.getValue("ind2").trim();
@@ -372,11 +393,11 @@ public class MarcContentHandler implements ContentHandler {
 				for (String existsMasterField : existsField.getExistsMasterFields()) {
 					String existsMasterFieldName = existsMasterField.substring(0,3);
 					String existsMasterFieldSubfield = existsMasterField.substring(existsMasterField.length() - 1);
-					
+
 					if (existsMasterFieldName.equals(datafieldTag)) {
 						datafieldContainsExistsFields = true;
 						currentExistsMasterSubfields.add(existsMasterFieldSubfield); // TODO: Could currentExistsMasterSubfields be a Set to avoid duplicates?
-						currentExistsField = existsField;
+						currentExistsField = existsField;						
 						currentExistsSubfields = currentExistsField.getExistsSubfields();
 					}
 				}
@@ -444,55 +465,50 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordXmlString += StringEscapeUtils.escapeXml10(subfieldText).trim()+"</subfield>";
 			}
 
-			
+
 			if (datafieldContainsConnectedFields) { // There could be a connected subfield within the datafield, but we don't know yet if it really exists. For that, we have to wait for the end of the datafield tag in endElement().
 				if (currentMasterSubfields.contains(subfieldCode)) { // If it is one of the connected master subfields
 					connectedValueRequired = true;
 					currentMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be multiple master subfields)
 				} else { // Do the default operation
 					datafield.setFieldvalue(subfieldText);
-					allFields.add(datafield);
-					subfieldsInDatafield.put(subfieldCode, subfieldText);
+					allSubfieldsInDatafield.add(datafield);
+					connectedSubfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
-				
-				
+
+
 			} else if (datafieldContainsConcatenatedFields) { // There could be a concatenated subfield within the datafield, but we don't know yet if it really exists.
 				if (currentConcatenatedMasterSubfields.contains(subfieldCode)) { // If it is one of the concatenated master subfields
 					concatenatedValueRequired = true;
 					currentConcatenatedMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be multiple master subfields)
 				} else { // Do the default operation
 					datafield.setFieldvalue(subfieldText);
-					allFields.add(datafield);
+					allSubfieldsInDatafield.add(datafield);
 					concatenatedSubfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
-			}/* else { // Default operation - no connected, concatenated or exists value
-				datafield.setFieldvalue(subfieldText);
-				allFields.add(datafield);
-			}*/
-						
+			}
+
 			if (datafieldContainsExistsFields) { // There could be a subfield within the datafield that we need to check for existance (subfieldExists, subfieldNotExists), but we don't know yet if it really exists.
 				if (currentExistsMasterSubfields.contains(subfieldCode)) { // If it is one of the master subfields
 					existsValueRequired = true;
 					currentExistsMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be multiple master subfields)
 				} else { // Do the default operation
-					/*datafield.setFieldvalue(subfieldText);
-					allFields.add(datafield);*/
 					existsSubfieldsInDatafield.add(subfieldCode);
 				}
 			}
-			
+
 			// Default operation - no connected, concatenated or exists value
 			if (!datafieldContainsConnectedFields && !datafieldContainsConcatenatedFields && !datafieldContainsExistsFields) {
 				datafield.setFieldvalue(subfieldText);
-				allFields.add(datafield);
+				allSubfieldsInDatafield.add(datafield);
 			}
-
 
 			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
 			}
 		}
 
+		
 
 		if(localName.equals("datafield")) {
 
@@ -500,17 +516,18 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordXmlString += "</datafield>";
 			}
 
+
 			// Set the connected datafields:
 			if (datafieldContainsConnectedFields && connectedValueRequired) {
 
 				for (Entry<String, String> currentMasterSubfieldsEntry : currentMasterSubfieldsValues.entrySet()) {
-					String currentMasterSubfieldCode = currentMasterSubfieldsEntry.getKey();
-					String currentMasterSubfieldText = currentMasterSubfieldsEntry.getValue();
+					String currentConnectedMasterSubfieldCode = currentMasterSubfieldsEntry.getKey();
+					String currentConnectedMasterSubfieldText = currentMasterSubfieldsEntry.getValue();
 
-					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentMasterSubfieldCode;
+					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentConnectedMasterSubfieldCode;
 					Mabfield connectedDatafield = new Mabfield();
 					connectedDatafield.setFieldname(datafieldName);
-					connectedDatafield.setFieldvalue(currentMasterSubfieldText);					
+					connectedDatafield.setFieldvalue(currentConnectedMasterSubfieldText);					
 
 					for (Entry<Integer, Map<String, List<String>>> entry1 : currentConnectedSubfields.entrySet()) {
 						Map<String, List<String>> entrySet2 = entry1.getValue();
@@ -523,7 +540,7 @@ public class MarcContentHandler implements ContentHandler {
 
 							// Add connected value if it exists
 							for (String bracketValue : bracketValues) {
-								subfieldText = subfieldsInDatafield.get(bracketValue);
+								subfieldText = connectedSubfieldsInDatafield.get(bracketValue);
 								if (subfieldText != null) {
 									if (textToUse == null) {
 										textToUse = subfieldText;
@@ -543,6 +560,16 @@ public class MarcContentHandler implements ContentHandler {
 					connectedDatafield.setConnectedValues(connectedValuesToUse);
 					connectedDatafield.setTranslateConnectedSubfields(currentConnectedField.isTranslateConnectedSubfields());
 					connectedDatafield.setTranslateSubfieldsProperties(currentConnectedField.getTranslateSubfieldsProperties());
+
+					// Check if field should be skiped or not (subfieldExists/subfieldNotExists):
+					if (datafieldContainsExistsFields && existsValueRequired) {
+						skip = this.skipField(currentExistsField, existsSubfieldsInDatafield, currentExistsMasterSubfields, currentConnectedMasterSubfieldCode);
+					}
+					connectedDatafield.setSkip(skip); // Set if field should be skiped or not
+					if (skip) {
+						connectedDatafield.setSolrFieldnames(currentExistsField.getSolrFieldnames()); // Set Solr fieldname to be sure that only the right field gets skiped.
+					}
+					
 					allFields.add(connectedDatafield);
 					connectedDatafield = null;
 				}
@@ -580,49 +607,39 @@ public class MarcContentHandler implements ContentHandler {
 						concatenatedDatafield.setTranslateConcatenatedSubfieldsProperties(currentConcatenatedField.getTranslateConcatenatedSubfieldsProperties());
 					}					
 
+					// Check if field should be skiped or not (subfieldExists/subfieldNotExists):
+					if (datafieldContainsExistsFields && existsValueRequired) {
+						skip = this.skipField(currentExistsField, existsSubfieldsInDatafield, currentExistsMasterSubfields, currentConcatenatedMasterSubfieldCode);
+					}
+					concatenatedDatafield.setSkip(skip); // Set if field should be skiped or not
+					if (skip) {
+						concatenatedDatafield.setSolrFieldnames(currentExistsField.getSolrFieldnames()); // Set Solr fieldname to be sure that only the right field gets skiped.
+					}
+					
 					allFields.add(concatenatedDatafield);
-										
+
 					concatenatedDatafield = null;
 				}
 			}
-			
-			// Set the exists datafields
-			if (datafieldContainsExistsFields && existsValueRequired) {
-				for (Entry<String, String> currentExistsMasterSubfieldsEntry : currentExistsMasterSubfieldsValues.entrySet()) {
+
+			// Set all other datafields:
+			for (Mabfield subfieldInDatafield : allSubfieldsInDatafield) {
+				
+				// Check if field should be skiped or not (subfieldExists/subfieldNotExists): 100$ab$c
+				if (datafieldContainsExistsFields && existsValueRequired) {
+					String masterSubfield = subfieldInDatafield.getFieldname().substring(7, 8); // Get subfield code
+					skip = this.skipField(currentExistsField, existsSubfieldsInDatafield, currentExistsMasterSubfields, masterSubfield);
 					
-					boolean skip = false;
-					String currentExistsMasterSubfieldCode = currentExistsMasterSubfieldsEntry.getKey();
-					String currentExistsMasterSubfieldText = currentExistsMasterSubfieldsEntry.getValue();
-					//System.out.println("\ncurrentExistsMasterSubfieldText: " + currentExistsMasterSubfieldText);
-					
-					// New field:
-					String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + currentExistsMasterSubfieldCode;
-					Mabfield existsDatafield = new Mabfield();
-					existsDatafield.setFieldname(datafieldName);
-					existsDatafield.setFieldvalue(currentExistsMasterSubfieldText);
-					
-					String existsOperator = currentExistsField.getExistsOperator();
-					List<String> existsSubfields = currentExistsField.getExistsSubfields();
-					
-					if (existsOperator.equals("AND")) {
-						// Set existsSubfieldsInDatafield contains all elements from list existsSubfields
-						if (existsSubfieldsInDatafield.containsAll(existsSubfields)) {
-							//System.out.println("\nAND: existsSubfieldsInDatafield: " + existsSubfieldsInDatafield);
-							skip = true;
-						}
-					} else if (existsOperator.equals("OR")) {
-						// Set existsSubfieldsInDatafield contains at least one element from list existsSubfields
-						if (!Collections.disjoint(existsSubfieldsInDatafield, existsSubfields)) {
-							//System.out.println("\nOR: existsSubfieldsInDatafield: " + existsSubfieldsInDatafield);
-							skip = true;
-						}
+					if (skip) {
+						subfieldInDatafield.setSolrFieldnames(currentExistsField.getSolrFieldnames()); // Set Solr fieldname to be sure that only the right field gets skiped.
 					}
-					
-					existsDatafield.setSkip(skip);					
-					allFields.add(existsDatafield);
-					existsDatafield = null;
 				}
+				subfieldInDatafield.setSkip(skip);
+				
+				
+				allFields.add(subfieldInDatafield);
 			}
+
 
 			// Reset values for connected fields:
 			datafieldContainsConnectedFields = false;
@@ -632,7 +649,7 @@ public class MarcContentHandler implements ContentHandler {
 			currentMasterSubfields = new ArrayList<String>();
 			currentMasterSubfieldsValues = new HashMap<String, String>();
 			connectedValuesToUse = new ArrayList<String>();
-			subfieldsInDatafield = new HashMap<String, String>();
+			connectedSubfieldsInDatafield = new HashMap<String, String>();
 
 			// Reset values for concatenated fields:
 			datafieldContainsConcatenatedFields = false;
@@ -644,7 +661,7 @@ public class MarcContentHandler implements ContentHandler {
 			concatenatedValuesToUse = new ArrayList<String>();
 			concatenatedValuesSeparatorToUse = null;
 			concatenatedSubfieldsInDatafield = new HashMap<String, String>();
-			
+
 			// Reset values for "exists" fields:
 			datafieldContainsExistsFields = false;
 			existsValueRequired = false;
@@ -654,6 +671,12 @@ public class MarcContentHandler implements ContentHandler {
 			currentExistsMasterSubfieldsValues = new HashMap<String, String>();
 			existsOperatorToUse = null;
 			existsSubfieldsInDatafield = new HashSet<String>();
+			isSubfieldExists = false;
+			isSubfieldNotExists = false;
+			skip = false;
+			
+			// Reset general variables:
+			allSubfieldsInDatafield = null;
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
@@ -770,7 +793,7 @@ public class MarcContentHandler implements ContentHandler {
 					String fieldName = mf.getFieldname();
 					String fieldValue = mf.getFieldvalue();
 					List<String> connValues = mf.getConnectedValues();
-					List<String> concatValues = mf.getConcatenatedValues();
+					List<String> concatValues = mf.getConcatenatedValues();					
 
 					// Add the concatenated value(s) to the document if one exists:
 					if (concatValues != null && !concatValues.isEmpty()) {
@@ -867,6 +890,41 @@ public class MarcContentHandler implements ContentHandler {
 		if (print) {
 			System.out.print(text);
 		}
+	}
+
+
+	// Check if field should be skiped or not (subfieldExists/subfieldNotExists): 
+	private boolean skipField(ExistsField currentExistsField, Set<String> existsSubfieldsInDatafield, List<String> currentExistsMasterSubfields, String currentMasterSubfieldCode) {
+		
+		boolean skip = false;
+				
+		if (currentExistsMasterSubfields.contains(currentMasterSubfieldCode)) {	
+			
+			String existsOperator = currentExistsField.getExistsOperator();
+			List<String> existsSubfields = currentExistsField.getExistsSubfields();
+	
+			if (existsOperator.equals("AND")) {
+				// Set existsSubfieldsInDatafield contains all elements from list existsSubfields
+				if (currentExistsField.isSubfieldExists() && !existsSubfieldsInDatafield.containsAll(existsSubfields)) {
+					//System.out.println("Exists, AND: " + existsSubfieldsInDatafield + " contains not all " + existsSubfields);
+					skip = true;
+				} else if (currentExistsField.isSubfieldNotExists() && existsSubfieldsInDatafield.containsAll(existsSubfields)) { // OK
+					//System.out.println("Exists Not, AND: " + existsSubfieldsInDatafield + " contains all " + existsSubfields);
+					skip = true;
+				}
+			} else if (existsOperator.equals("OR")) {
+				// Set existsSubfieldsInDatafield contains no element from list existsSubfields
+				if (currentExistsField.isSubfieldExists() && Collections.disjoint(existsSubfieldsInDatafield, existsSubfields)) {
+					//System.out.println("Exists, OR: " + existsSubfieldsInDatafield + " has not elements of " + existsSubfields);
+					skip = true;
+				} else if (currentExistsField.isSubfieldNotExists() && !Collections.disjoint(existsSubfieldsInDatafield, existsSubfields)) {
+					//System.out.println("Exists Not, OR: " + existsSubfieldsInDatafield + " has elements of " + existsSubfields);
+					skip = true;
+				}
+			}
+		}
+				
+		return skip;
 	}
 
 }
