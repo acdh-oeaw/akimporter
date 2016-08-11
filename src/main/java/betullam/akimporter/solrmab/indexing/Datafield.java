@@ -27,6 +27,7 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Datafield {
@@ -34,7 +35,8 @@ public class Datafield {
 	private String tag;
 	private String ind1;
 	private String ind2;
-	private List<Mabfield> mabfields;
+	//private List<Mabfield> mabfields;
+	private ArrayList<Subfield> subfields;
 
 	public Datafield() {}
 
@@ -62,7 +64,16 @@ public class Datafield {
 	public void setInd2(String ind2) {
 		this.ind2 = ind2;
 	}
+	
+	public ArrayList<Subfield> getSubfields() {
+		return subfields;
+	}
 
+	public void setSubfields(ArrayList<Subfield> subfields) {
+		this.subfields = subfields;
+	}
+	
+	/*
 	public List<Mabfield> getSubfields() {
 		return this.mabfields;
 	}
@@ -70,5 +81,10 @@ public class Datafield {
 	public void setSubfields(List<Mabfield> mabfields) {
 		this.mabfields = mabfields;
 	}
-	
+	*/
+
+	@Override
+	public String toString() {
+		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields + "]";
+	}
 }

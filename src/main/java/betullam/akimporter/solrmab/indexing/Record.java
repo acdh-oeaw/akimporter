@@ -30,6 +30,8 @@ import java.util.List;
 public class Record {
 
 	private List<Mabfield> mabfields;
+	private List<Controlfield> controlfields;
+	private List<Datafield> datafields;
 	private String recordID;
 	private String recordSYS;
 	private String indexTimestamp;
@@ -44,6 +46,23 @@ public class Record {
 	public void setMabfields(List<Mabfield> mabfields) {
 		this.mabfields = mabfields;
 	}
+	
+	public List<Controlfield> getControlfields() {
+		return controlfields;
+	}
+
+	public void setControlfields(List<Controlfield> controlfields) {
+		this.controlfields = controlfields;
+	}
+
+	public List<Datafield> getDatafields() {
+		return datafields;
+	}
+
+	public void setDatafields(List<Datafield> datafields) {
+		this.datafields = datafields;
+	}
+
 	public String getRecordID() {
 		return recordID;
 	}
@@ -70,7 +89,7 @@ public class Record {
 
 	@Override
 	public String toString() {
-		return "Record [mabfields=" + mabfields + ", recordID=" + recordID + ", recordSYS=" + recordSYS + ", indexTimestamp=" + indexTimestamp + "]";
+		return "Record [mabfields=" + mabfields + ", controlfields=" + controlfields + ", datafields=" + datafields
+				+ ", recordID=" + recordID + ", recordSYS=" + recordSYS + ", indexTimestamp=" + indexTimestamp + "]";
 	}
-
 }

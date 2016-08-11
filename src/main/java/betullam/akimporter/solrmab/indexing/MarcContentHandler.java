@@ -53,13 +53,14 @@ import org.xml.sax.SAXException;
 
 public class MarcContentHandler implements ContentHandler {
 
+	// ################ OLD #################
 	MatchingOperations matchingOps = new MatchingOperations();
 	List<Mabfield> allFields;
 	List<Record> allRecords;
 	private String nodeContent;
 	private Record record;
-	private Mabfield controlfield;
-	private Mabfield datafield; // Datafield is concatenated datafield and subfield
+	private Mabfield mabfieldControlfield;
+	private Mabfield mabfield; // Mabfield is concatenated datafield and subfield
 	private List<Mabfield> allSubfieldsInDatafield;
 	private List<MatchingObject> listOfMatchingObjs;
 	private SolrServer sServer;
@@ -128,6 +129,17 @@ public class MarcContentHandler implements ContentHandler {
 	private boolean getFullRecordAsXML = false;
 	private String fullrecordField = null;
 	private String fullrecordXmlString = null;
+	// ################ OLD #################
+	
+	
+	// ################ NEW #################
+	private Controlfield controlfield;
+	private ArrayList<Controlfield> controlfields;
+	private Datafield datafield;
+	private ArrayList<Datafield> datafields;
+	private Subfield subfield;
+	private ArrayList<Subfield> subfields;
+	// ################ NEW #################
 
 
 	/**
@@ -315,12 +327,28 @@ public class MarcContentHandler implements ContentHandler {
 		// If the parser encounters the start of the "record"-tag, create new List to hold the fields of
 		// this record and a new record-object to add these list:
 		if(localName.equals("record")) {
+			// ################ OLD #################
+			/*
 			allFields = new ArrayList<Mabfield>();
 			record = new Record();
 			fullrecordXmlString = null; // Reset for new record
 			if (getFullRecordAsXML) {
 				fullrecordXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><collection><record>"; // Begin new XML for the current record
 			}
+			*/
+			// ################ OLD #################
+			
+			
+			// ################ NEW #################
+			allFields = new ArrayList<Mabfield>();
+			record = new Record(); // A new record
+			controlfields = new ArrayList<Controlfield>(); // All controlfields of the record
+			datafields = new ArrayList<Datafield>(); // All datafields of the record
+			fullrecordXmlString = null; // Reset for new record
+			if (getFullRecordAsXML) {
+				fullrecordXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><collection><record>"; // Begin new XML for the current record
+			}
+			// ################ NEW #################
 		}
 
 		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
@@ -332,17 +360,34 @@ public class MarcContentHandler implements ContentHandler {
 
 		// If the parser encounters the start of a "controlfield"-tag, create a new mabfield-object, get the XML-attributes, set them on the object and add it to the "record"-object:
 		if(localName.equals("controlfield")) {
+			// ################ OLD #################
+			/*
 			controlfieldTag = attribs.getValue("tag");
 			isSYS = (controlfieldTag.equals("SYS")) ? true : false;
-			controlfield = new Mabfield();
-			controlfield.setFieldname(controlfieldTag);
+			mabfieldControlfield = new Mabfield();
+			mabfieldControlfield.setFieldname(controlfieldTag);
 			is001Controlfield = (controlfieldTag.equals("001")) ? true : false;
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "<controlfield tag=\""+controlfieldTag+"\">";
 			}
+			*/
+			// ################ OLD #################
+			
+			
+			// ################ NEW #################
+			String tag = attribs.getValue("tag").trim();
+			controlfield = new Controlfield();
+			controlfield.setTag(tag);
+			isSYS = (tag.equals("SYS")) ? true : false;
+			is001Controlfield = (tag.equals("001")) ? true : false;
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "<controlfield tag=\""+tag+"\">";
+			}
+			// ################ NEW #################
 		}
 
 		if(localName.equals("datafield")) {
+			// ################ OLD #################
 			allSubfieldsInDatafield = new ArrayList<Mabfield>();
 			datafieldTag = attribs.getValue("tag").trim();
 			datafieldInd1 = attribs.getValue("ind1").trim();
@@ -402,11 +447,38 @@ public class MarcContentHandler implements ContentHandler {
 					}
 				}
 			}
+			// ################ OLD #################
+			
+			
+			// ################ NEW #################
+			String tag = attribs.getValue("tag").trim();
+			String ind1 = attribs.getValue("ind1").trim();
+			String ind2 = attribs.getValue("ind2").trim();
+
+			// Set empty tags and indicators to a character, so that the string to match against is always
+			// of the same length, e. g. "311$ab$c" and "000$**$*". This prevents errors.
+			tag = (tag != null && !tag.isEmpty()) ? tag : "000";
+			ind1 = (ind1 != null && !ind1.isEmpty()) ? ind1 : "*";
+			ind2 = (ind2 != null && !ind2.isEmpty()) ? ind2 : "*";
+			
+			datafield = new Datafield();
+			datafield.setTag(tag);
+			datafield.setInd1(ind1);
+			datafield.setInd2(ind2);
+			
+			subfields = new ArrayList<Subfield>(); // All subfields of the datafield
+			
+			is001Datafield = (tag.equals("001")) ? true : false;
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "<datafield tag=\""+tag+"\" ind1=\""+ind1+"\" ind2=\""+ind2+"\">";
+			}
+			// ################ NEW #################
 
 		}
 
 
 		if(localName.equals("subfield")) {
+			// ################ OLD #################
 			subfieldCode = attribs.getValue("code").trim();
 			subfieldCode = (subfieldCode != null && !subfieldCode.isEmpty()) ? subfieldCode : "-";
 			if (getFullRecordAsXML) {
@@ -417,8 +489,20 @@ public class MarcContentHandler implements ContentHandler {
 			// Create a new mabfield so that we can concentenate a datafield and a subfield to a mabfield
 			// E. g.: Datafield = 100$**, Subfield = r, Subfield content = AC123456789
 			//        Result: mabfield name = 100$**$r, mabfield value = AC123456789
-			datafield = new Mabfield();
-			datafield.setFieldname(datafieldName);
+			mabfield = new Mabfield();
+			mabfield.setFieldname(datafieldName);
+			// ################ OLD #################
+			
+			
+			// ################ NEW #################
+			String code = attribs.getValue("code").trim();
+			code = (code != null && !code.isEmpty()) ? code : "-";
+			subfield = new Subfield();
+			subfield.setCode(code);
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "<subfield code=\""+code+"\">";
+			}
+			// ################ NEW #################
 		}
 
 	}
@@ -434,6 +518,10 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 
+		// ################ NEW #################
+		String content = nodeContent.toString();
+		// ################ NEW #################
+		
 		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
 		if (getFullRecordAsXML) {
 			if(localName.equals("leader")) {
@@ -442,10 +530,13 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
+		
 		if(localName.equals("controlfield") ) {
+			// ################ OLD #################
+			/*
 			String controlfieldText = nodeContent.toString();
-			controlfield.setFieldvalue(controlfieldText);
-			allFields.add(controlfield);
+			mabfieldControlfield.setFieldvalue(controlfieldText);
+			allFields.add(mabfieldControlfield);
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += StringEscapeUtils.escapeXml10(controlfieldText)+"</controlfield>";
 			}
@@ -455,8 +546,24 @@ public class MarcContentHandler implements ContentHandler {
 			if (is001Controlfield == true && is001Datafield == false) {
 				recordID = controlfieldText;
 			}
+			*/
+			// ################ OLD #################
+			
+			// ################ NEW #################
+			controlfield.setContent(content);
+			controlfields.add(controlfield);
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(content)+"</controlfield>";
+			}
+			if (isSYS == true) {
+				recordSYS = content;
+			}
+			if (is001Controlfield == true && is001Datafield == false) {
+				recordID = content;
+			}
+			// ################ NEW #################
 		}
-
+		
 
 		if(localName.equals("subfield")) {
 
@@ -471,8 +578,8 @@ public class MarcContentHandler implements ContentHandler {
 					connectedValueRequired = true;
 					currentMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be multiple master subfields)
 				} else { // Do the default operation
-					datafield.setFieldvalue(subfieldText);
-					allSubfieldsInDatafield.add(datafield);
+					mabfield.setFieldvalue(subfieldText);
+					allSubfieldsInDatafield.add(mabfield);
 					connectedSubfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
 
@@ -482,8 +589,8 @@ public class MarcContentHandler implements ContentHandler {
 					concatenatedValueRequired = true;
 					currentConcatenatedMasterSubfieldsValues.put(subfieldCode, subfieldText); // Add subfield code and text to an intermediate Map (a Map because there could be multiple master subfields)
 				} else { // Do the default operation
-					datafield.setFieldvalue(subfieldText);
-					allSubfieldsInDatafield.add(datafield);
+					mabfield.setFieldvalue(subfieldText);
+					allSubfieldsInDatafield.add(mabfield);
 					concatenatedSubfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
 			}
@@ -499,8 +606,8 @@ public class MarcContentHandler implements ContentHandler {
 
 			// Default operation - no connected, concatenated or exists value
 			if (!datafieldContainsConnectedFields && !datafieldContainsConcatenatedFields && !datafieldContainsExistsFields) {
-				datafield.setFieldvalue(subfieldText);
-				allSubfieldsInDatafield.add(datafield);
+				mabfield.setFieldvalue(subfieldText);
+				allSubfieldsInDatafield.add(mabfield);
 			}
 
 			if (is001Datafield == true && is001Controlfield == false) {
