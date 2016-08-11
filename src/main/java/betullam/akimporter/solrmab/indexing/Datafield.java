@@ -28,7 +28,6 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Datafield {
 

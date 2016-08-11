@@ -5,7 +5,7 @@ public class Subfield {
 	private String code;
 	private String content;
 	
-	public Subfield();
+	public Subfield() {}
 	
 	public Subfield(String code, String content) {
 		this.code = code;

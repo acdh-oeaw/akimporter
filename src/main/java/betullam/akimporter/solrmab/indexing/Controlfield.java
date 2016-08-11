@@ -4,7 +4,7 @@ public class Controlfield {
 	private String tag;
 	private String content;
 	
-	public Controlfield();
+	public Controlfield() {};
 	
 	public Controlfield(String tag, String content) {
 		this.tag = tag;

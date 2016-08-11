@@ -54,9 +54,9 @@ import org.xml.sax.SAXException;
 public class MarcContentHandler implements ContentHandler {
 
 	// ################ OLD #################
-	MatchingOperations matchingOps = new MatchingOperations();
+	//chingOperations matchingOps = new MatchingOperations();
 	List<Mabfield> allFields;
-	List<Record> allRecords;
+	//List<Record> allRecords;
 	private String nodeContent;
 	private Record record;
 	private Mabfield mabfieldControlfield;
@@ -119,7 +119,7 @@ public class MarcContentHandler implements ContentHandler {
 	Set<String> existsSubfieldsInDatafield = new HashSet<String>();
 	List<String> existsSolrFieldnames = new ArrayList<String>();
 	boolean skip = false;
-	
+
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
 	private String allfieldsField = null;
@@ -130,9 +130,10 @@ public class MarcContentHandler implements ContentHandler {
 	private String fullrecordField = null;
 	private String fullrecordXmlString = null;
 	// ################ OLD #################
-	
-	
+
+
 	// ################ NEW #################
+	List<Record> records;
 	private Controlfield controlfield;
 	private ArrayList<Controlfield> controlfields;
 	private Datafield datafield;
@@ -234,9 +235,9 @@ public class MarcContentHandler implements ContentHandler {
 				LinkedHashMap<Integer, String> subfieldExists = null;
 				Set<String> subfieldExistsMasterFields = new HashSet<String>();
 				String subfieldExistsOpearator = null;
-				
+
 				existsSolrFieldnames.add(mo.getSolrFieldname());
-				
+
 				if (isSubfieldExists) {
 					subfieldExists = mo.getSubfieldExists();
 				} else if (isSubfieldNotExists) {
@@ -273,7 +274,7 @@ public class MarcContentHandler implements ContentHandler {
 					}
 
 					ExistsField newExistsField = new ExistsField(subfieldExistsMasterFields, mutableList, subfieldExistsOpearator, isSubfieldExists, isSubfieldNotExists, existsSolrFieldnames);
-										
+
 					existsFields.add(newExistsField);
 				}
 			}
@@ -307,7 +308,7 @@ public class MarcContentHandler implements ContentHandler {
 		startTime = System.currentTimeMillis();
 
 		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
-		allRecords = new ArrayList<Record>();
+		records = new ArrayList<Record>();
 	}
 
 
@@ -335,10 +336,10 @@ public class MarcContentHandler implements ContentHandler {
 			if (getFullRecordAsXML) {
 				fullrecordXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><collection><record>"; // Begin new XML for the current record
 			}
-			*/
+			 */
 			// ################ OLD #################
-			
-			
+
+
 			// ################ NEW #################
 			allFields = new ArrayList<Mabfield>();
 			record = new Record(); // A new record
@@ -370,10 +371,10 @@ public class MarcContentHandler implements ContentHandler {
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "<controlfield tag=\""+controlfieldTag+"\">";
 			}
-			*/
+			 */
 			// ################ OLD #################
-			
-			
+
+
 			// ################ NEW #################
 			String tag = attribs.getValue("tag").trim();
 			controlfield = new Controlfield();
@@ -388,6 +389,7 @@ public class MarcContentHandler implements ContentHandler {
 
 		if(localName.equals("datafield")) {
 			// ################ OLD #################
+			/*
 			allSubfieldsInDatafield = new ArrayList<Mabfield>();
 			datafieldTag = attribs.getValue("tag").trim();
 			datafieldInd1 = attribs.getValue("ind1").trim();
@@ -447,9 +449,10 @@ public class MarcContentHandler implements ContentHandler {
 					}
 				}
 			}
+			 */
 			// ################ OLD #################
-			
-			
+
+
 			// ################ NEW #################
 			String tag = attribs.getValue("tag").trim();
 			String ind1 = attribs.getValue("ind1").trim();
@@ -460,17 +463,62 @@ public class MarcContentHandler implements ContentHandler {
 			tag = (tag != null && !tag.isEmpty()) ? tag : "000";
 			ind1 = (ind1 != null && !ind1.isEmpty()) ? ind1 : "*";
 			ind2 = (ind2 != null && !ind2.isEmpty()) ? ind2 : "*";
-			
+
 			datafield = new Datafield();
 			datafield.setTag(tag);
 			datafield.setInd1(ind1);
 			datafield.setInd2(ind2);
-			
+
 			subfields = new ArrayList<Subfield>(); // All subfields of the datafield
-			
+
 			is001Datafield = (tag.equals("001")) ? true : false;
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "<datafield tag=\""+tag+"\" ind1=\""+ind1+"\" ind2=\""+ind2+"\">";
+			}
+
+			// Connected fields
+			for (Connectedfield connectedField : connectedFields) {
+				for (String masterField : connectedField.getConnectedMasterFields()) {
+					String masterFieldName = masterField.substring(0,3);
+					String masterFieldSubfield = masterField.substring(masterField.length() - 1);
+
+					if (masterFieldName.equals(datafieldTag)) {
+						datafieldContainsConnectedFields = true;
+						currentMasterSubfields.add(masterFieldSubfield); // TODO: Could currentMasterSubfields be a Set to avoid duplicates?
+						currentConnectedField = connectedField;
+						currentConnectedSubfields = currentConnectedField.getConnectedSubfields();
+					}
+				}
+			}
+
+			// Concatenated fields
+			for (ConcatenatedField concatenatedField : concatenatedFields) {
+				for (String concatenatedMasterField : concatenatedField.getConcatenatedMasterFields()) {
+					String concatenatedMasterFieldName = concatenatedMasterField.substring(0,3);
+					String concatenatedMasterFieldSubfield = concatenatedMasterField.substring(concatenatedMasterField.length() - 1);
+
+					if (concatenatedMasterFieldName.equals(datafieldTag)) {
+						datafieldContainsConcatenatedFields = true;
+						currentConcatenatedMasterSubfields.add(concatenatedMasterFieldSubfield); // TODO: Could currentConcatenatedMasterSubfields be a Set to avoid duplicates?
+						currentConcatenatedField = concatenatedField;
+						currentConcatenatedSubfields = currentConcatenatedField.getConcatenatedSubfields();
+					}
+				}
+			}
+
+			// Subfield exists
+			for (ExistsField existsField : existsFields) {
+				for (String existsMasterField : existsField.getExistsMasterFields()) {
+					String existsMasterFieldName = existsMasterField.substring(0,3);
+					String existsMasterFieldSubfield = existsMasterField.substring(existsMasterField.length() - 1);
+
+					if (existsMasterFieldName.equals(datafieldTag)) {
+						datafieldContainsExistsFields = true;
+						currentExistsMasterSubfields.add(existsMasterFieldSubfield); // TODO: Could currentExistsMasterSubfields be a Set to avoid duplicates?
+						currentExistsField = existsField;						
+						currentExistsSubfields = currentExistsField.getExistsSubfields();
+					}
+				}
 			}
 			// ################ NEW #################
 
@@ -479,6 +527,7 @@ public class MarcContentHandler implements ContentHandler {
 
 		if(localName.equals("subfield")) {
 			// ################ OLD #################
+			/*
 			subfieldCode = attribs.getValue("code").trim();
 			subfieldCode = (subfieldCode != null && !subfieldCode.isEmpty()) ? subfieldCode : "-";
 			if (getFullRecordAsXML) {
@@ -491,9 +540,10 @@ public class MarcContentHandler implements ContentHandler {
 			//        Result: mabfield name = 100$**$r, mabfield value = AC123456789
 			mabfield = new Mabfield();
 			mabfield.setFieldname(datafieldName);
+			 */
 			// ################ OLD #################
-			
-			
+
+
 			// ################ NEW #################
 			String code = attribs.getValue("code").trim();
 			code = (code != null && !code.isEmpty()) ? code : "-";
@@ -521,7 +571,7 @@ public class MarcContentHandler implements ContentHandler {
 		// ################ NEW #################
 		String content = nodeContent.toString();
 		// ################ NEW #################
-		
+
 		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
 		if (getFullRecordAsXML) {
 			if(localName.equals("leader")) {
@@ -530,7 +580,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
-		
+
 		if(localName.equals("controlfield") ) {
 			// ################ OLD #################
 			/*
@@ -546,9 +596,9 @@ public class MarcContentHandler implements ContentHandler {
 			if (is001Controlfield == true && is001Datafield == false) {
 				recordID = controlfieldText;
 			}
-			*/
+			 */
 			// ################ OLD #################
-			
+
 			// ################ NEW #################
 			controlfield.setContent(content);
 			controlfields.add(controlfield);
@@ -563,10 +613,12 @@ public class MarcContentHandler implements ContentHandler {
 			}
 			// ################ NEW #################
 		}
-		
+
 
 		if(localName.equals("subfield")) {
 
+			// ################ OLD #################
+			/*
 			String subfieldText = nodeContent.toString();
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += StringEscapeUtils.escapeXml10(subfieldText).trim()+"</subfield>";
@@ -582,8 +634,6 @@ public class MarcContentHandler implements ContentHandler {
 					allSubfieldsInDatafield.add(mabfield);
 					connectedSubfieldsInDatafield.put(subfieldCode, subfieldText);
 				}
-
-
 			} else if (datafieldContainsConcatenatedFields) { // There could be a concatenated subfield within the datafield, but we don't know yet if it really exists.
 				if (currentConcatenatedMasterSubfields.contains(subfieldCode)) { // If it is one of the concatenated master subfields
 					concatenatedValueRequired = true;
@@ -613,16 +663,32 @@ public class MarcContentHandler implements ContentHandler {
 			if (is001Datafield == true && is001Controlfield == false) {
 				recordID = subfieldText;
 			}
+			 */
+			// ################ OLD #################
+
+
+
+			// ################ NEW #################
+			subfield.setContent(content);
+			subfields.add(subfield);
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(content).trim()+"</subfield>";
+			}
+			if (is001Datafield == true && is001Controlfield == false) {
+				recordID = content;
+			}
+			// ################ NEW #################
 		}
 
-		
+
 
 		if(localName.equals("datafield")) {
 
+			// ################ OLD #################
+			/*
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "</datafield>";
 			}
-
 
 			// Set the connected datafields:
 			if (datafieldContainsConnectedFields && connectedValueRequired) {
@@ -676,7 +742,7 @@ public class MarcContentHandler implements ContentHandler {
 					if (skip) {
 						connectedDatafield.setSolrFieldnames(currentExistsField.getSolrFieldnames()); // Set Solr fieldname to be sure that only the right field gets skiped.
 					}
-					
+
 					allFields.add(connectedDatafield);
 					connectedDatafield = null;
 				}
@@ -722,7 +788,7 @@ public class MarcContentHandler implements ContentHandler {
 					if (skip) {
 						concatenatedDatafield.setSolrFieldnames(currentExistsField.getSolrFieldnames()); // Set Solr fieldname to be sure that only the right field gets skiped.
 					}
-					
+
 					allFields.add(concatenatedDatafield);
 
 					concatenatedDatafield = null;
@@ -731,19 +797,19 @@ public class MarcContentHandler implements ContentHandler {
 
 			// Set all other datafields:
 			for (Mabfield subfieldInDatafield : allSubfieldsInDatafield) {
-				
+
 				// Check if field should be skiped or not (subfieldExists/subfieldNotExists): 100$ab$c
 				if (datafieldContainsExistsFields && existsValueRequired) {
 					String masterSubfield = subfieldInDatafield.getFieldname().substring(7, 8); // Get subfield code
 					skip = this.skipField(currentExistsField, existsSubfieldsInDatafield, currentExistsMasterSubfields, masterSubfield);
-					
+
 					if (skip) {
 						subfieldInDatafield.setSolrFieldnames(currentExistsField.getSolrFieldnames()); // Set Solr fieldname to be sure that only the right field gets skiped.
 					}
 				}
 				subfieldInDatafield.setSkip(skip);
-				
-				
+
+
 				allFields.add(subfieldInDatafield);
 			}
 
@@ -781,9 +847,20 @@ public class MarcContentHandler implements ContentHandler {
 			isSubfieldExists = false;
 			isSubfieldNotExists = false;
 			skip = false;
-			
+
 			// Reset general variables:
 			allSubfieldsInDatafield = null;
+			 */
+			// ################ OLD #################
+
+
+			// ################ NEW #################
+			datafield.setSubfields(subfields);
+			datafields.add(datafield);
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "</datafield>";
+			}
+			// ################ NEW #################
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
@@ -791,6 +868,8 @@ public class MarcContentHandler implements ContentHandler {
 		// record-object to the list of all records:
 		if(localName.equals("record")) {
 
+			// ################ OLD #################
+			/*
 			// End XML representation of the current record for "fullrecord" Solr field:
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "</record></collection>";
@@ -810,11 +889,10 @@ public class MarcContentHandler implements ContentHandler {
 
 			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
 
-			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
-			 * it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
-			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but at this point,
-			 * only 700 are indexed. The 33 remaining records will be indexed in endDocument() function.
-			 */
+			// Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
+			// it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
+			// If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but at this point,
+			// only 700 are indexed. The 33 remaining records will be indexed in endDocument() function.
 			if (counter % NO_OF_DOCS == 0) {
 
 				// Do the Matching and rewriting (see class "MatchingOperations"):
@@ -831,7 +909,55 @@ public class MarcContentHandler implements ContentHandler {
 				allFields = null;
 				newRecordSet = null;
 			}
+			 */
+			// ################ OLD #################
+
+
+			// ################ NEW #################
+			counter = counter + 1;	
+			record.setRecordID(recordID);
+			record.setRecordSYS(recordSYS);
+			record.setIndexTimestamp(timeStamp);
+			record.setControlfields(controlfields);
+			record.setDatafields(datafields);
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += "</record></collection>";
+				// TODO: Add fullrecordXmlString for Indexing!
+				//		 Maybe we could create the XML our "record" object in the next step instead of doing it here (see all the steps above)!
+			}
+			records.add(record);
+
+			
+			// Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
+			// it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
+			// If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but at this point,
+			// only 700 are indexed. The 33 remaining records will be indexed in endDocument() function.
+			if (counter % NO_OF_DOCS == 0) {
+
+				// Do the Matching and rewriting (see class "MatchingOperations"):
+				//List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
+				MatchingOperations matchingOperations = new MatchingOperations();
+				matchingOperations.setRawRecords(records);
+				matchingOperations.setMatchingObjects(this.listOfMatchingObjs);
+				List<Record> matchingResult = matchingOperations.getMatchingResult();
+				
+				// Add to Solr-Index:
+				//this.solrAddRecordSet(sServer, newRecordSet);
+
+				// Set all Objects to "null" to save memory
+				records.clear();
+				records = null;
+				records = new ArrayList<Record>();
+				allFields.clear();
+				allFields = null;
+				//newRecordSet = null;
+			}
+			
+
+			System.out.println(record.toString());
+			// ################ NEW #################
 		}
+
 	}
 
 
@@ -845,6 +971,8 @@ public class MarcContentHandler implements ContentHandler {
 		//+++++++++++++++ Add the remaining rest of the records to the index (see modulo-operation with "%"-operator in endElement()) +++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+		// ################ OLD #################
+		/*
 		// Do the Matching and rewriting (see class "MatchingOperations"):
 		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
 
@@ -858,6 +986,15 @@ public class MarcContentHandler implements ContentHandler {
 		newRecordSet = null;
 		listOfMatchingObjs.clear();
 		listOfMatchingObjs = null;
+		 */
+		// ################ OLD #################
+
+
+		// ################ NEW #################
+		// Clear objects to save memory
+		records.clear();
+		records = null;
+		// ################ NEW #################
 
 	}
 
@@ -1002,14 +1139,14 @@ public class MarcContentHandler implements ContentHandler {
 
 	// Check if field should be skiped or not (subfieldExists/subfieldNotExists): 
 	private boolean skipField(ExistsField currentExistsField, Set<String> existsSubfieldsInDatafield, List<String> currentExistsMasterSubfields, String currentMasterSubfieldCode) {
-		
+
 		boolean skip = false;
-				
+
 		if (currentExistsMasterSubfields.contains(currentMasterSubfieldCode)) {	
-			
+
 			String existsOperator = currentExistsField.getExistsOperator();
 			List<String> existsSubfields = currentExistsField.getExistsSubfields();
-	
+
 			if (existsOperator.equals("AND")) {
 				// Set existsSubfieldsInDatafield contains all elements from list existsSubfields
 				if (currentExistsField.isSubfieldExists() && !existsSubfieldsInDatafield.containsAll(existsSubfields)) {
@@ -1030,7 +1167,7 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 		}
-				
+
 		return skip;
 	}
 

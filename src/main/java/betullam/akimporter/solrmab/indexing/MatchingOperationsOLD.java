@@ -38,9 +38,8 @@ import java.util.regex.Pattern;
 
 import main.java.betullam.akimporter.solrmab.Index;
 
-public class MatchingOperations {
+public class MatchingOperationsOLD {
 
-	// ################ OLD #################
 	private List<Mabfield> listOfMatchedFields;
 	private List<Record> newListOfRecords;
 	private List<List<Mabfield>> listOfNewSolrfieldLists;
@@ -50,26 +49,7 @@ public class MatchingOperations {
 	List<Mabfield> customTextFields = Index.customTextFields;
 	Map<String, List<String>> translateFields = Index.translateFields;
 	String fullRecordFieldname = Index.fullrecordFieldname;
-	// ################ OLD #################
-	
-	
-	// ################ NEW #################
-	private List<Record> rawRecords;
-	private List<MatchingObject> matchingObjects;
-	private List<Record> matchingResult;
-	
-	public MatchingOperations() {}
-	
-	public MatchingOperations(List<Record> rawRecords, List<MatchingObject> matchingObjects) {
-		this.rawRecords = rawRecords;
-		this.matchingObjects = matchingObjects;
-	}
-	// ################ NEW #################
 
-	private List<Record> matching() {
-		
-		return matchingResult;
-	}
 
 	/**
 	 * This re-works a MarcXML record to records we can use for indexing to Solr.
@@ -80,7 +60,7 @@ public class MatchingOperations {
 	 * 								The rules are defined in the mab.properties file.
 	 * @return						List<Record>: A set of "new" records we can use for indexing to Solr
 	 */
-	public List<Record> matchingOLD(List<Record> oldRecordSet, List<MatchingObject> listOfMatchingObjs) {
+	public List<Record> matching(List<Record> oldRecordSet, List<MatchingObject> listOfMatchingObjs) {
 
 		newListOfRecords = new ArrayList<Record>();		
 
@@ -708,32 +688,11 @@ public class MatchingOperations {
 				mf.setConcatenatedSeparator(concatenatedSeparator);
 			}
 			
+			
 			mf.setSkip(skip);
 			
 			listOfMatchedFields.add(mf);
 		}
-	}
-
-
-
-	public List<Record> getRawRecords() {
-		return rawRecords;
-	}
-
-	public void setRawRecords(List<Record> rawRecords) {
-		this.rawRecords = rawRecords;
-	}
-
-	public List<MatchingObject> getMatchingObjects() {
-		return matchingObjects;
-	}
-
-	public void setMatchingObjects(List<MatchingObject> matchingObjects) {
-		this.matchingObjects = matchingObjects;
-	}
-
-	public List<Record> getMatchingResult() {
-		return this.matching(); // The matching() method sets the matching result
 	}
 
 }
