@@ -6,6 +6,8 @@ import java.util.Set;
 public class ExistsField {
 
 	private Set<String> existsMasterFields;
+	private Set<String> existsMasterTags;
+	private Set<String> existsMasterSubfields;
 	private List<String> existsSubfields;
 	private String existsOperator;
 	private boolean isSubfieldExists;
@@ -13,8 +15,10 @@ public class ExistsField {
 	private List<String> solrFieldnames;
 	
 	
-	public ExistsField(Set<String> existsMasterFields, List<String> existsSubfields, String existsOperator, boolean isSubfieldExists, boolean isSubfieldNotExists, List<String> solrFieldnames) {
+	public ExistsField(Set<String> existsMasterFields, Set<String> existsMasterTags, Set<String> existsMasterSubfields, List<String> existsSubfields, String existsOperator, boolean isSubfieldExists, boolean isSubfieldNotExists, List<String> solrFieldnames) {
 		this.existsMasterFields = existsMasterFields;
+		this.existsMasterTags = existsMasterTags;
+		this.existsMasterSubfields = existsMasterSubfields;
 		this.existsSubfields = existsSubfields;
 		this.existsOperator = existsOperator;
 		this.isSubfieldExists = isSubfieldExists;
@@ -30,6 +34,22 @@ public class ExistsField {
 		this.existsMasterFields = existsMasterFields;
 	}
 	
+	public Set<String> getExistsMasterTags() {
+		return existsMasterTags;
+	}
+
+	public void setExistsMasterTags(Set<String> existsMasterTags) {
+		this.existsMasterTags = existsMasterTags;
+	}
+
+	public Set<String> getExistsMasterSubfields() {
+		return existsMasterSubfields;
+	}
+
+	public void setExistsMasterSubfields(Set<String> existsMasterSubfields) {
+		this.existsMasterSubfields = existsMasterSubfields;
+	}
+
 	public List<String> getExistsSubfields() {
 		return existsSubfields;
 	}
@@ -70,12 +90,15 @@ public class ExistsField {
 		this.solrFieldnames = solrFieldnames;
 	}
 
-	
 	@Override
 	public String toString() {
-		return "ExistsField [existsMasterFields=" + existsMasterFields + ", existsSubfields=" + existsSubfields
+		return "ExistsField [existsMasterFields=" + existsMasterFields + ", existsMasterTags=" + existsMasterTags
+				+ ", existsMasterSubfields=" + existsMasterSubfields + ", existsSubfields=" + existsSubfields
 				+ ", existsOperator=" + existsOperator + ", isSubfieldExists=" + isSubfieldExists
 				+ ", isSubfieldNotExists=" + isSubfieldNotExists + ", solrFieldnames=" + solrFieldnames + "]";
 	}
+
+	
+	
 	
 }

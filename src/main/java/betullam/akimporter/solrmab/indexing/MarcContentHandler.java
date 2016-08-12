@@ -110,6 +110,7 @@ public class MarcContentHandler implements ContentHandler {
 	LinkedHashSet<ExistsField> existsFields = new LinkedHashSet<ExistsField>();
 	private boolean datafieldContainsExistsFields = false;
 	ExistsField currentExistsField = null;
+	LinkedHashSet<ExistsField> currentExistsFields = new LinkedHashSet<ExistsField>();
 	List<String> currentExistsSubfields = null;
 	List<String> currentExistsMasterSubfields = new ArrayList<String>();
 	Map<String, String> currentExistsMasterSubfieldsValues = new HashMap<String, String>();
@@ -221,6 +222,8 @@ public class MarcContentHandler implements ContentHandler {
 				isSubfieldNotExists = mo.hasSubfieldNotExists();
 				LinkedHashMap<Integer, String> subfieldExists = null;
 				Set<String> subfieldExistsMasterFields = new HashSet<String>();
+				Set<String> subfieldExistsMasterTags = new HashSet<String>();
+				Set<String> subfieldExistsMasterSubfields = new HashSet<String>();
 				String subfieldExistsOpearator = null;
 				
 				existsSolrFieldnames.add(mo.getSolrFieldname());
@@ -255,12 +258,14 @@ public class MarcContentHandler implements ContentHandler {
 					// Get all master fields:
 					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
 						String completeFieldname = mabfieldName.getKey().toString(); // E. g. "655$e*$u"
-						String subfieldExistsMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
+						String subfieldExistsMasterTag = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
 						String subfieldExistsMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
-						subfieldExistsMasterFields.add(subfieldExistsMasterDatafield+subfieldExistsMasterSubfield);
+						subfieldExistsMasterFields.add(subfieldExistsMasterTag+subfieldExistsMasterSubfield);
+						subfieldExistsMasterTags.add(subfieldExistsMasterTag);
+						subfieldExistsMasterSubfields.add(subfieldExistsMasterSubfield);
 					}
 
-					ExistsField newExistsField = new ExistsField(subfieldExistsMasterFields, mutableList, subfieldExistsOpearator, isSubfieldExists, isSubfieldNotExists, existsSolrFieldnames);
+					ExistsField newExistsField = new ExistsField(subfieldExistsMasterFields, subfieldExistsMasterTags, subfieldExistsMasterSubfields, mutableList, subfieldExistsOpearator, isSubfieldExists, isSubfieldNotExists, existsSolrFieldnames);
 										
 					existsFields.add(newExistsField);
 				}
@@ -397,7 +402,7 @@ public class MarcContentHandler implements ContentHandler {
 					if (existsMasterFieldName.equals(datafieldTag)) {
 						datafieldContainsExistsFields = true;
 						currentExistsMasterSubfields.add(existsMasterFieldSubfield); // TODO: Could currentExistsMasterSubfields be a Set to avoid duplicates?
-						currentExistsField = existsField;						
+						currentExistsField = existsField;
 						currentExistsSubfields = currentExistsField.getExistsSubfields();
 					}
 				}
@@ -495,6 +500,13 @@ public class MarcContentHandler implements ContentHandler {
 				} else { // Do the default operation
 					existsSubfieldsInDatafield.add(subfieldCode);
 				}
+				
+				for (ExistsField ef : existsFields) {
+					if (ef.getExistsMasterSubfields().contains(subfieldCode)) {
+						currentExistsFields.add(ef);
+					}
+				}
+				
 			}
 
 			// Default operation - no connected, concatenated or exists value
@@ -625,8 +637,15 @@ public class MarcContentHandler implements ContentHandler {
 			// Set all other datafields:
 			for (Mabfield subfieldInDatafield : allSubfieldsInDatafield) {
 				
+				for (ExistsField exf : currentExistsFields) {
+					System.out.println(subfieldInDatafield.getFieldname() + " (" + subfieldInDatafield.getFieldvalue() + "): " + exf.getExistsMasterSubfields());
+				}
+				
 				// Check if field should be skiped or not (subfieldExists/subfieldNotExists): 100$ab$c
 				if (datafieldContainsExistsFields && existsValueRequired) {
+					
+					//System.out.println(subfieldInDatafield + ": " + currentExistsField);
+					
 					String masterSubfield = subfieldInDatafield.getFieldname().substring(7, 8); // Get subfield code
 					skip = this.skipField(currentExistsField, existsSubfieldsInDatafield, currentExistsMasterSubfields, masterSubfield);
 					
@@ -638,6 +657,11 @@ public class MarcContentHandler implements ContentHandler {
 				
 				
 				allFields.add(subfieldInDatafield);
+			}
+			
+			if (datafieldContainsExistsFields && existsValueRequired) {
+				
+				System.out.println("--------------------------- DATAFIELD END ------------------------");
 			}
 
 
@@ -666,6 +690,7 @@ public class MarcContentHandler implements ContentHandler {
 			datafieldContainsExistsFields = false;
 			existsValueRequired = false;
 			currentExistsField = null;
+			currentExistsFields = new LinkedHashSet<ExistsField>();
 			currentExistsSubfields = null;
 			currentExistsMasterSubfields = new ArrayList<String>();
 			currentExistsMasterSubfieldsValues = new HashMap<String, String>();
@@ -677,6 +702,7 @@ public class MarcContentHandler implements ContentHandler {
 			
 			// Reset general variables:
 			allSubfieldsInDatafield = null;
+
 		}
 
 		// If the parser encounters the end of the "record"-tag, add all
