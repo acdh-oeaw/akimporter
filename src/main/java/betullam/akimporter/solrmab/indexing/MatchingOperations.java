@@ -181,7 +181,7 @@ public class MatchingOperations {
 		listOfMatchedFields = new ArrayList<Mabfield>();
 
 		// Remove unnecessary MatchingObjects so that we don't have to iterate over all of them. This saves a lot of time!
-		// A MatchingObject is not necessary if it does not contain the MAB-fieldnumber from the parst MarcXML record.
+		// A MatchingObject is not necessary if it does not contain the MAB-fieldnumber from the parsed MarcXML record.
 		List<MatchingObject> listOfRelevantMatchingObjects = new ArrayList<MatchingObject>();
 		for (MatchingObject matchingObject : listOfMatchingObjects) {
 			String mabFieldNo = mabFieldnameXml.substring(0, 3);
