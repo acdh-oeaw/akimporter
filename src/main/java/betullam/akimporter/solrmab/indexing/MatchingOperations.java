@@ -28,8 +28,6 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,36 +39,211 @@ import main.java.betullam.akimporter.solrmab.Index;
 public class MatchingOperations {
 
 	// ################ OLD #################
-	private List<Mabfield> listOfMatchedFields;
-	private List<Record> newListOfRecords;
-	private List<List<Mabfield>> listOfNewSolrfieldLists;
-	private List<Mabfield> listOfNewFieldsForNewRecord;
-	private Record newRecord;
+	//private List<Mabfield> listOfMatchedFields;
+	//private List<Record> newListOfRecords;
+	//private List<List<Mabfield>> listOfNewSolrfieldLists;
+	//private List<Mabfield> listOfNewFieldsForNewRecord;
+	//private Record newRecord;
 	List<String> multiValuedFields = Index.multiValuedFields;
 	List<Mabfield> customTextFields = Index.customTextFields;
 	Map<String, List<String>> translateFields = Index.translateFields;
 	String fullRecordFieldname = Index.fullrecordFieldname;
 	// ################ OLD #################
-	
-	
+
+
 	// ################ NEW #################
 	private List<Record> rawRecords;
-	private List<MatchingObject> matchingObjects;
+	private List<PropertiesObject> allPropertiesObjects;
 	private List<Record> matchingResult;
-	
+
 	public MatchingOperations() {}
-	
-	public MatchingOperations(List<Record> rawRecords, List<MatchingObject> matchingObjects) {
+
+	public MatchingOperations(List<Record> rawRecords, List<PropertiesObject> allPropertiesObjects) {
 		this.rawRecords = rawRecords;
-		this.matchingObjects = matchingObjects;
+		this.allPropertiesObjects = allPropertiesObjects;
 	}
 	// ################ NEW #################
 
 	private List<Record> matching() {
-		// TODO: Go on HERE!
-		//		 Let's do the same as in matchingOLD but in a new and better way :-)
+		for (Record rawRecord : rawRecords) {
+			for (Controlfield rawControlfield : rawRecord.getControlfields()) {
+				this.matchDatafield(rawControlfield, allPropertiesObjects);
+			}
+			for (Datafield rawDatafield : rawRecord.getDatafields()) {
+				this.matchDatafield(rawDatafield, allPropertiesObjects);
+			}
+		}
+
 		return matchingResult;
 	}
+
+
+
+	/**
+	 * Matching a raw field from the MarcXML file to the Solr field according to the rules in mab.properties.
+	 * 
+	 * @param rawField				Object: The raw field (Datafield or Controlfield) from the MarcXML record
+	 * @param allPropertiesObjects	List<PropertiesObject>: All rules from the mab.properties file as a list of PropertiesObject objects
+	 * @return						??? A list of matched fields for indexing to Solr
+	 */
+	public List<SolrField> matchDatafield(Object rawField, List<PropertiesObject> allPropertiesObjects) {
+
+		// List of SolrField objects for the matching result. This is the return value of this method. It will
+		// contain all the data that we need for the indexing process to Solr.
+		List<SolrField> solrFields = new ArrayList<SolrField>();
+		Controlfield controlfield = null;
+		Datafield datafield = null;
+
+		String type = null;
+		String tag = null;
+		String ind1 = null;
+		String ind2 = null;
+		List<Subfield> subfields = new ArrayList<Subfield>();
+		List<String> rawFieldnames = new ArrayList<String>();
+		if (rawField instanceof Controlfield) {
+			type = "controlfield";
+			controlfield = (Controlfield) rawField;
+			tag = controlfield.getTag();
+			rawFieldnames.add(tag);
+		} else if (rawField instanceof Datafield) {
+			type = "datafield";
+			datafield = (Datafield) rawField;
+			tag = datafield.getTag();
+			ind1 = datafield.getInd1();
+			ind2 = datafield.getInd2();
+			subfields = datafield.getSubfields();
+			for (Subfield subfield : subfields) {
+				rawFieldnames.add(tag+"$"+ind1+ind2+"$"+subfield.getCode());
+			}
+		}
+
+
+		// Remove unnecessary PropertiesObjects so that we don't have to iterate over all of them. This saves a lot of time!
+		// A PropertiesObject is not necessary if it does not contain at least one field from the parsed MarcXML record.
+		List<PropertiesObject> relevantPropertiesObjects = getRelevantPropertiesObjects(type, rawField, allPropertiesObjects);
+
+		if (relevantPropertiesObjects == null) {
+			return null;
+		}
+
+		/*
+		for (MatchingObject relevantMatchingObject : relevantMatchingObjects) {
+			for (Datafield df : relevantMatchingObject.getDatafields()) {
+				if (df.getTag().equals("902")) {
+					System.out.println(relevantMatchingObject.toString());
+				}
+			}
+		}
+		System.out.println("------------------------------------------------------------------------------------------");
+
+		listOfMatchedFields = new ArrayList<Mabfield>();
+		 */
+
+		// TODO: Apply rules (translate, regex, subfieldExists, concatenate, etc.) from mab.properties here and return the result
+		// List of rules:
+		// multiValued
+		// OK: translateValue
+		// OK: translateValueContains
+		// OK: translateValueRegex
+		// defaultValue[VALUE]
+		// regEx[REGEX]
+		// regExStrict[REGEX]
+		// regExReplace[REGEX][REPLACE]
+		// allowDuplicates
+		// connectedSubfields[subfield:subfield:subfield:...:DefaultText]
+		// translateConnectedSubfields[translate.properties]
+		// concatenatedSubfields[subfield:subfield:subfield:...:Separator]
+		// translateConcatenatedSubfields[translate.properties]
+		// subfieldExists[subfield:subfield:subfield:...:AND|OR]
+		// subfieldNotExists[subfield:subfield:subfield:...:AND|OR]
+
+		// TODO: These rules need to be handled elsewhere because they have nothing to do with the raw MarcXML fields:
+		// customText
+
+		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {
+
+			String solrFieldname = relevantPropertiesObject.getSolrFieldname();
+			Map<String, List<String>> propertiesFields = relevantPropertiesObject.getPropertiesFields();
+			boolean hasRegex = relevantPropertiesObject.hasRegex();
+			String regexValue = relevantPropertiesObject.getRegexValue();
+			boolean hasRegexStrict = relevantPropertiesObject.hasRegexStrict();
+			String regexStrictValue = relevantPropertiesObject.getRegexStrictValue();
+			boolean hasRegexReplace = relevantPropertiesObject.hasRegExReplace();
+			String regexReplacePattern = relevantPropertiesObject.getRegexReplaceValues().get(1);
+			String regexReplaceValue = relevantPropertiesObject.getRegexReplaceValues().get(2);
+			boolean allowDuplicates = relevantPropertiesObject.isAllowDuplicates();
+			boolean isTranslateValue = false;
+			boolean isTranslateValueContains = false;
+			boolean isTranslateValueRegex = false;
+			boolean hasConnectedSubfields = false;
+			if (relevantPropertiesObject.hasConnectedSubfields()) {
+				hasConnectedSubfields = true;
+			}
+			boolean hasConcatenatedSubfields = false;
+			String concatenatedSeparator = null;
+			if (relevantPropertiesObject.hasConcatenatedSubfields()) {
+				hasConcatenatedSubfields = true;
+				concatenatedSeparator = relevantPropertiesObject.getConcatenatedSubfieldsSeparator();
+			}
+			/*
+			boolean skip = false;
+			if (checkForSkip) {
+				if (mabField.getSolrFieldnames().contains(relevantPropertiesObject.getSolrFieldname())) {
+					skip = true;
+				}
+			}
+			*/
+			
+			
+			// translateValue, translateValueContains, translateValueRegex
+			if (relevantPropertiesObject.isTranslateValue() || relevantPropertiesObject.isTranslateValueContains() || relevantPropertiesObject.isTranslateValueRegex()) {
+				//System.out.println(relevantPropertiesObject.toString());
+
+				// Treat "normal" translate values
+				Map<String, String> translateProperties = relevantPropertiesObject.getTranslateProperties();
+				String defaultValue = relevantPropertiesObject.getDefaultValue();
+				if (relevantPropertiesObject.isTranslateValue()) {
+					isTranslateValue = true;
+				} else if (relevantPropertiesObject.isTranslateValueContains()) {
+					isTranslateValueContains = true;
+				} else if (relevantPropertiesObject.isTranslateValueRegex()) {
+					isTranslateValueRegex = true;
+				}
+
+				for (Entry<String, List<String>> propertiesField : relevantPropertiesObject.getPropertiesFields().entrySet()) {
+					String fromCharacter = propertiesField.getValue().get(0);
+					String toCharacter = propertiesField.getValue().get(1);
+					
+					if (type.equals("controlfield")) {
+						String rawFieldname = tag;
+						String rawFieldvalue = controlfield.getContent();
+						String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, false, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegexReplace, regexReplacePattern, regexReplaceValue);
+						System.out.println(solrFieldname + ": " + translatedValue);
+					}
+					
+					if (type.equals("datafield")) {
+						for (Subfield subfield : datafield.getSubfields()) {
+							String rawFieldname = tag+"$"+ind1+ind2+"$"+subfield.getCode();
+							String rawFieldvalue = subfield.getContent();
+							String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, false, hasRegex, regexValue, hasRegexStrict, regexStrictValue, hasRegexReplace, regexReplacePattern, regexReplaceValue);
+							System.out.println(solrFieldname + ": " + translatedValue);
+						}
+					}
+					
+				}
+
+
+				SolrField sf = new SolrField();
+				sf.setFieldname(solrFieldname);
+				//sf.setFieldvalue(relevantPropertiesObject);
+
+			}
+		}
+
+		return solrFields;
+	}
+
+
 
 	/**
 	 * This re-works a MarcXML record to records we can use for indexing to Solr.
@@ -81,6 +254,7 @@ public class MatchingOperations {
 	 * 								The rules are defined in the mab.properties file.
 	 * @return						List<Record>: A set of "new" records we can use for indexing to Solr
 	 */
+	/*
 	public List<Record> matchingOLD(List<Record> oldRecordSet, List<MatchingObject> listOfMatchingObjs) {
 
 		newListOfRecords = new ArrayList<Record>();		
@@ -165,8 +339,7 @@ public class MatchingOperations {
 
 		return newListOfRecords;
 	}
-
-
+	 */
 
 	/**
 	 * Matching a MAB field to the Solr field according to the rules in mab.properties.
@@ -175,7 +348,8 @@ public class MatchingOperations {
 	 * @param listOfMatchingObjects	The rules from the mab.properties file
 	 * @return						A list of matched fields for indexing to Solr.
 	 */
-	public List<Mabfield> matchField(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {		
+	/*
+	public List<Mabfield> matchFieldOLD(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {
 
 		String mabFieldnameXml = mabField.getFieldname();
 		listOfMatchedFields = new ArrayList<Mabfield>();
@@ -241,7 +415,7 @@ public class MatchingOperations {
 				}
 			}
 		}
-		
+
 		// Check for skip or don't skip
 		boolean checkForSkip = false;
 		if (mabField.isSkip()) {
@@ -249,7 +423,7 @@ public class MatchingOperations {
 		}
 
 		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
-			
+
 			String solrFieldname = matchingObject.getSolrFieldname();
 			Map<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
 			boolean hasRegex = matchingObject.hasRegex();
@@ -273,18 +447,18 @@ public class MatchingOperations {
 				hasConcatenatedSubfields = true;
 				concatenatedSeparator = mabField.getConcatenatedSeparator();
 			}
-			
+
 			boolean skip = false;
 			if (checkForSkip) {
 				if (mabField.getSolrFieldnames().contains(matchingObject.getSolrFieldname())) {
 					skip = true;
 				}
 			}
-			
-			
+
+
 
 			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
-				
+
 				// Treat "normal" translate values
 				Map<String, String> translateProperties = matchingObject.getTranslateProperties();
 				String defaultValue = matchingObject.getDefaultValue();
@@ -355,12 +529,12 @@ public class MatchingOperations {
 					}
 				}
 			} else {
-				
+
 				for (Entry<String, List<String>> valueToMatchWith : valuesToMatchWith.entrySet()) {
 
 					String mabFieldnameProps = valueToMatchWith.getKey(); // = MAB-Fieldname from mab.properties
 					String mabFieldValue = mabField.getFieldvalue();
-					
+
 					// Use regex if user has defined one:
 					if (hasRegex && regexValue != null) {
 						Pattern pattern = java.util.regex.Pattern.compile(regexValue); // Get everything between square brackets and the brackets themselve (we will remove them later)
@@ -395,7 +569,7 @@ public class MatchingOperations {
 						mabFieldValue = mabFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
 					}
 
-					
+
 					if (mabFieldnameProps.length() == 3) {
 						// Match controlfields. For example for "LDR" (= leader), "AVA", "FMT" (= MH or MU), etc.
 						if (matchControlfield(mabFieldnameXml, mabFieldnameProps)) {
@@ -445,7 +619,7 @@ public class MatchingOperations {
 
 		return listOfMatchedFields;
 	}
-
+	 */
 
 
 	/**
@@ -594,51 +768,52 @@ public class MatchingOperations {
 	 * @param regexReplaceValue							String
 	 * @return											String containing the translated value
 	 */
-	private String getTranslatedValue(String solrFieldname, Mabfield mabField, Map<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean isTranslateConnectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
+	private String getTranslatedValue(String solrFieldname, String rawFieldname, String rawFieldvalue, Map<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean isTranslateConnectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue) {
+				
+		
 		String translateValue = null;
 		String matchedValueXml = null;
-		String fieldNameXml = mabField.getFieldname();
-		String fieldValueXml = mabField.getFieldvalue();
+		
 
 		// Use regex if user has defined one:
 		if (hasRegex && regexValue != null) {
 			Pattern pattern = java.util.regex.Pattern.compile(regexValue);
-			Matcher matcher = pattern.matcher(fieldValueXml);
+			Matcher matcher = pattern.matcher(rawFieldvalue);
 			String regexedMabFieldValue = "";
 			while (matcher.find()) {
 				regexedMabFieldValue = regexedMabFieldValue.concat(matcher.group());
 			}
 			if (!regexedMabFieldValue.trim().isEmpty()) {
-				fieldValueXml = regexedMabFieldValue.trim();
+				rawFieldvalue = regexedMabFieldValue.trim();
 			}
 		}
 
 		// Use regex strict if user has defined one:
 		if (hasRegexStrict && regexStrictValue != null) {
 			Pattern pattern = java.util.regex.Pattern.compile(regexStrictValue);
-			Matcher matcher = pattern.matcher(fieldValueXml);
+			Matcher matcher = pattern.matcher(rawFieldvalue);
 			String regexedStrictMabFieldValue = "";
 			while (matcher.find()) {
 				regexedStrictMabFieldValue = regexedStrictMabFieldValue.concat(matcher.group());
 			}
 			if (!regexedStrictMabFieldValue.trim().isEmpty()) {
-				fieldValueXml = regexedStrictMabFieldValue.trim();
+				rawFieldvalue = regexedStrictMabFieldValue.trim();
 			} else {
 				// Return null ("strict" regex):
-				fieldValueXml = null;
+				rawFieldvalue = null;
 			}
 		}
 
 		// Use regex replace if user has defined one:
 		if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) {
-			fieldValueXml = fieldValueXml.replaceAll(regexReplacePattern, regexReplaceValue).trim();
+			rawFieldvalue = rawFieldvalue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
 		}
 
 
 		// Get characters from the positions the user defined in mab.properties file:
 		// E. g. get "Full" from "Fulltext" if character positions [1-4] was defined.
 		if (fromCount.equals("all") && toCount.equals("all")) {
-			matchedValueXml = fieldValueXml.substring(0, fieldValueXml.length());
+			matchedValueXml = rawFieldvalue.substring(0, rawFieldvalue.length());
 
 		} else {
 
@@ -647,13 +822,13 @@ public class MatchingOperations {
 				intFromCount = (intFromCount-1);
 				int intToCount = Integer.valueOf(toCount); // Ending Index of value to match
 
-				if (intToCount <= fieldValueXml.length()) {
-					matchedValueXml = fieldValueXml.substring(intFromCount, intToCount);
-				} else if (intFromCount <= fieldValueXml.length() && intToCount >= fieldValueXml.length()) {
-					matchedValueXml = fieldValueXml.substring(intFromCount, fieldValueXml.length());
+				if (intToCount <= rawFieldvalue.length()) {
+					matchedValueXml = rawFieldvalue.substring(intFromCount, intToCount);
+				} else if (intFromCount <= rawFieldvalue.length() && intToCount >= rawFieldvalue.length()) {
+					matchedValueXml = rawFieldvalue.substring(intFromCount, rawFieldvalue.length());
 				}
 			} catch (NumberFormatException nfe) {
-				System.err.println("ERROR: Please make sure that you defined [n-n] or [all] for MAB field \"" + mabField.getFieldname() + "\" in your mab.properties for field \"" + solrFieldname +"\". This is normally necessary for translate values.\n");
+				System.err.println("ERROR: Please make sure that you defined [n-n] or [all] for MAB field \"" + rawFieldname + "\" in your mab.properties for field \"" + solrFieldname +"\". This is normally necessary for translate values.\n");
 				System.exit(1);
 			}
 		}
@@ -670,7 +845,7 @@ public class MatchingOperations {
 					String translatePropertyRegex = propKey.substring(propKey.indexOf("|")+1).trim();
 					Pattern pattern = java.util.regex.Pattern.compile(translatePropertyRegex);
 					Matcher matcher = pattern.matcher(matchedValueXml);
-					if (translatePropertyFieldname.equals("any") || fieldNameXml.equals(translatePropertyFieldname)) {
+					if (translatePropertyFieldname.equals("any") || rawFieldname.equals(translatePropertyFieldname)) {
 						if (matcher.find()) {
 							translateValue = translateProperty.getValue();
 						}
@@ -695,28 +870,67 @@ public class MatchingOperations {
 	 * @param allowDuplicates	boolean: Indicate if duplicate values are allowed in Solr multivalued fields (default is false).
 	 */
 	private void addMabfield(String solrFieldname, String solrFieldvalue, boolean allowDuplicates, boolean hasConnectedSubfields, List<String> connectedSubfieldValues, boolean hasConcatenatedSubfields, List<String> concatenatedSubfieldValues, String concatenatedSeparator, boolean skip) {
-		
+
 		if (!skip) { 
 			Mabfield mf = new Mabfield(solrFieldname, solrFieldvalue);		
-			
+
 			mf.setAllowDuplicates(allowDuplicates);
 			if (hasConnectedSubfields && connectedSubfieldValues != null && !connectedSubfieldValues.isEmpty()) {
 				mf.setConnectedValues(connectedSubfieldValues);
 			}
-			
+
 			if (hasConcatenatedSubfields && concatenatedSubfieldValues != null && !concatenatedSubfieldValues.isEmpty()) {
 				mf.setConcatenatedValues(concatenatedSubfieldValues);
 				mf.setConcatenatedSeparator(concatenatedSeparator);
 			}
-			
+
 			mf.setSkip(skip);
-			
-			listOfMatchedFields.add(mf);
+
+			//listOfMatchedFields.add(mf);
 		}
 	}
 
 
+	private List<PropertiesObject> getRelevantPropertiesObjects(String type, Object rawField, List<PropertiesObject> allPropertiesObjects) {
 
+		List<PropertiesObject> relevantPropertiesObjects = new ArrayList<PropertiesObject>();
+
+		// Remove unnecessary Controlfields from PropertiesObjects
+		if (type == "controlfield") {
+			//System.out.println(rawField.toString());
+			Controlfield rawControlfield = ((Controlfield) rawField);
+			for (PropertiesObject propertiesObject : allPropertiesObjects) {
+				for (Controlfield propertiesControlfield : propertiesObject.getControlfields()) {
+					if (propertiesControlfield.equals(rawControlfield)) {
+						//System.out.println("TRUE : " + rawField.toString() + " - " + propertiesControlfield.toString());
+						relevantPropertiesObjects.add(propertiesObject);
+					}
+				}
+			}
+		}
+		// Remove unnecessary Datafields from PropertiesObjects
+		if (type == "datafield") {
+			//System.out.println(rawField.toString());
+			Datafield rawDatafield = ((Datafield) rawField);
+			for (PropertiesObject propertiesObject : allPropertiesObjects) {
+				for (Datafield propertiesDatafield : propertiesObject.getDatafields()) {
+					if (rawDatafield.match(propertiesDatafield)) {
+						relevantPropertiesObjects.add(propertiesObject);
+					}
+				}
+			}
+		}
+
+		// If relevantPropertiesObjects is empty, this means that no corresponding PropertiesObject was found for the raw field from the MarcXML
+		// In this case we will return null. This helps us for error management.
+		if (relevantPropertiesObjects.isEmpty()) {
+			relevantPropertiesObjects = null;
+		}
+
+		return relevantPropertiesObjects;
+	}
+
+	
 	public List<Record> getRawRecords() {
 		return rawRecords;
 	}
@@ -725,12 +939,12 @@ public class MatchingOperations {
 		this.rawRecords = rawRecords;
 	}
 
-	public List<MatchingObject> getMatchingObjects() {
-		return matchingObjects;
+	public List<PropertiesObject> getMatchingObjects() {
+		return allPropertiesObjects;
 	}
 
-	public void setMatchingObjects(List<MatchingObject> matchingObjects) {
-		this.matchingObjects = matchingObjects;
+	public void setMatchingObjects(List<PropertiesObject> propertiesObjects) {
+		this.allPropertiesObjects = propertiesObjects;
 	}
 
 	public List<Record> getMatchingResult() {

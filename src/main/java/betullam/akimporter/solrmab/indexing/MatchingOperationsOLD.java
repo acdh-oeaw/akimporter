@@ -60,7 +60,7 @@ public class MatchingOperationsOLD {
 	 * 								The rules are defined in the mab.properties file.
 	 * @return						List<Record>: A set of "new" records we can use for indexing to Solr
 	 */
-	public List<Record> matching(List<Record> oldRecordSet, List<MatchingObject> listOfMatchingObjs) {
+	public List<Record> matching(List<Record> oldRecordSet, List<PropertiesObject> listOfMatchingObjs) {
 
 		newListOfRecords = new ArrayList<Record>();		
 
@@ -154,20 +154,20 @@ public class MatchingOperationsOLD {
 	 * @param listOfMatchingObjects	The rules from the mab.properties file
 	 * @return						A list of matched fields for indexing to Solr.
 	 */
-	public List<Mabfield> matchField(Mabfield mabField, List<MatchingObject> listOfMatchingObjects) {		
+	public List<Mabfield> matchField(Mabfield mabField, List<PropertiesObject> listOfMatchingObjects) {		
 
 		String mabFieldnameXml = mabField.getFieldname();
 		listOfMatchedFields = new ArrayList<Mabfield>();
 
 		// Remove unnecessary MatchingObjects so that we don't have to iterate over all of them. This saves a lot of time!
 		// A MatchingObject is not necessary if it does not contain the MAB-fieldnumber from the parst MarcXML record.
-		List<MatchingObject> listOfRelevantMatchingObjects = new ArrayList<MatchingObject>();
-		for (MatchingObject matchingObject : listOfMatchingObjects) {
+		List<PropertiesObject> listOfRelevantMatchingObjects = new ArrayList<PropertiesObject>();
+		for (PropertiesObject propertiesObject : listOfMatchingObjects) {
 			String mabFieldNo = mabFieldnameXml.substring(0, 3);
-			boolean containsMabFieldNo = matchingObject.getMabFieldnames().keySet().toString().contains(mabFieldNo);
+			boolean containsMabFieldNo = propertiesObject.getPropertiesFields().keySet().toString().contains(mabFieldNo);
 
 			if (containsMabFieldNo) {
-				listOfRelevantMatchingObjects.add(matchingObject);
+				listOfRelevantMatchingObjects.add(propertiesObject);
 			}
 		}
 
@@ -227,51 +227,51 @@ public class MatchingOperationsOLD {
 			checkForSkip = true;
 		}
 
-		for (MatchingObject matchingObject : listOfRelevantMatchingObjects) {
+		for (PropertiesObject propertiesObject : listOfRelevantMatchingObjects) {
 			
-			String solrFieldname = matchingObject.getSolrFieldname();
-			Map<String, List<String>> valuesToMatchWith = matchingObject.getMabFieldnames();
-			boolean hasRegex = matchingObject.hasRegex();
-			String regexValue = matchingObject.getRegexValue();
-			boolean hasRegexStrict = matchingObject.hasRegexStrict();
-			String regexStrictValue = matchingObject.getRegexStrictValue();
-			boolean hasRegexReplace = matchingObject.hasRegExReplace();
-			String regexReplacePattern = matchingObject.getRegexReplaceValues().get(1);
-			String regexReplaceValue = matchingObject.getRegexReplaceValues().get(2);
-			boolean allowDuplicates = matchingObject.isAllowDuplicates();
+			String solrFieldname = propertiesObject.getSolrFieldname();
+			Map<String, List<String>> valuesToMatchWith = propertiesObject.getPropertiesFields();
+			boolean hasRegex = propertiesObject.hasRegex();
+			String regexValue = propertiesObject.getRegexValue();
+			boolean hasRegexStrict = propertiesObject.hasRegexStrict();
+			String regexStrictValue = propertiesObject.getRegexStrictValue();
+			boolean hasRegexReplace = propertiesObject.hasRegExReplace();
+			String regexReplacePattern = propertiesObject.getRegexReplaceValues().get(1);
+			String regexReplaceValue = propertiesObject.getRegexReplaceValues().get(2);
+			boolean allowDuplicates = propertiesObject.isAllowDuplicates();
 			boolean isTranslateValue = false;
 			boolean isTranslateValueContains = false;
 			boolean isTranslateValueRegex = false;
 			boolean hasConnectedSubfields = false;
-			if (matchingObject.hasConnectedSubfields()) {
+			if (propertiesObject.hasConnectedSubfields()) {
 				hasConnectedSubfields = true;
 			}
 			boolean hasConcatenatedSubfields = false;
 			String concatenatedSeparator = null;
-			if (matchingObject.hasConcatenatedSubfields()) {
+			if (propertiesObject.hasConcatenatedSubfields()) {
 				hasConcatenatedSubfields = true;
 				concatenatedSeparator = mabField.getConcatenatedSeparator();
 			}
 			
 			boolean skip = false;
 			if (checkForSkip) {
-				if (mabField.getSolrFieldnames().contains(matchingObject.getSolrFieldname())) {
+				if (mabField.getSolrFieldnames().contains(propertiesObject.getSolrFieldname())) {
 					skip = true;
 				}
 			}
 			
 			
 
-			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() || matchingObject.isTranslateValueRegex()) {
+			if (propertiesObject.isTranslateValue() || propertiesObject.isTranslateValueContains() || propertiesObject.isTranslateValueRegex()) {
 				
 				// Treat "normal" translate values
-				Map<String, String> translateProperties = matchingObject.getTranslateProperties();
-				String defaultValue = matchingObject.getDefaultValue();
-				if (matchingObject.isTranslateValue()) {
+				Map<String, String> translateProperties = propertiesObject.getTranslateProperties();
+				String defaultValue = propertiesObject.getDefaultValue();
+				if (propertiesObject.isTranslateValue()) {
 					isTranslateValue = true;
-				} else if (matchingObject.isTranslateValueContains()) {
+				} else if (propertiesObject.isTranslateValueContains()) {
 					isTranslateValueContains = true;
-				} else if (matchingObject.isTranslateValueRegex()) {
+				} else if (propertiesObject.isTranslateValueRegex()) {
 					isTranslateValueRegex = true;
 				}
 

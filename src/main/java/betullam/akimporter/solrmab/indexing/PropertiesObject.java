@@ -28,10 +28,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MatchingObject {
+public class PropertiesObject {
 
 	private String solrFieldname; // Solr fieldname (e. g. "autor", "title", "id", etc.)
-	private Map<String, List<String>> mabFieldnames;
+	private Map<String, List<String>> propertiesFields;
+	private List<Datafield> datafields;
+	private List<Controlfield> controlfields;
 	private boolean multiValued;
 	private boolean customText;
 	private boolean getAllFields;
@@ -49,6 +51,7 @@ public class MatchingObject {
 	private Map<String, String> translateSubfieldsProperties;
 	private boolean hasConcatenatedSubfields;
 	private LinkedHashMap<Integer, String> concatenatedSubfields;
+	private String concatenatedSubfieldsSeparator;
 	private boolean translateConcatenatedSubfields;
 	private Map<String, String> translateConcatenatedSubfieldsProperties;
 	private boolean hasRegex;
@@ -65,11 +68,13 @@ public class MatchingObject {
 
 
 
-	public MatchingObject() {}
+	public PropertiesObject() {}
 
-	public MatchingObject(
+	public PropertiesObject(
 			String solrFieldname,
-			Map<String, List<String>> mabFieldnames,
+			Map<String, List<String>> propertiesFields,
+			List<Datafield> datafields,
+			List<Controlfield> controlfields,
 			boolean multiValued,
 			boolean customText,
 			boolean getAllFields,
@@ -87,6 +92,7 @@ public class MatchingObject {
 			Map<String, String> translateSubfieldsProperties,
 			boolean hasConcatenatedSubfields,
 			LinkedHashMap<Integer, String> concatenatedSubfields,
+			String concatenatedSubfieldsSeparator,
 			boolean translateConcatenatedSubfields,
 			Map<String, String> translateConcatenatedSubfieldsProperties,
 			boolean hasRegex,
@@ -103,7 +109,9 @@ public class MatchingObject {
 		) {
 		
 		this.setSolrFieldname(solrFieldname);
-		this.setMabFieldnames(mabFieldnames);
+		this.setPropertiesFields(propertiesFields);
+		this.setDatafields(datafields);
+		this.setControlfields(controlfields);
 		this.setMultiValued(multiValued);
 		this.setCustomText(customText);
 		this.setGetAllFields(getAllFields);
@@ -121,6 +129,7 @@ public class MatchingObject {
 		this.setTranslateSubfieldsProperties(translateSubfieldsProperties);				
 		this.setHasConcatenatedSubfields(hasConcatenatedSubfields);
 		this.setConcatenatedSubfields(concatenatedSubfields);
+		this.setConcatenatedSubfieldsSeparator(concatenatedSubfieldsSeparator);
 		this.setTranslateConcatenatedSubfields(translateConcatenatedSubfields);
 		this.setTranslateConcatenatedSubfieldsProperties(translateConcatenatedSubfieldsProperties);
 		this.setHasRegex(hasRegex);
@@ -144,12 +153,28 @@ public class MatchingObject {
 		this.solrFieldname = solrFieldname;
 	}
 
-	public Map<String, List<String>> getMabFieldnames() {
-		return this.mabFieldnames;
+	public Map<String, List<String>> getPropertiesFields() {
+		return this.propertiesFields;
 	}
 
-	public void setMabFieldnames(Map<String, List<String>> mabFieldnames) {
-		this.mabFieldnames = mabFieldnames;
+	public void setPropertiesFields(Map<String, List<String>> mabFieldnames) {
+		this.propertiesFields = mabFieldnames;
+	}
+
+	public List<Datafield> getDatafields() {
+		return datafields;
+	}
+
+	public void setDatafields(List<Datafield> datafields) {
+		this.datafields = datafields;
+	}
+
+	public List<Controlfield> getControlfields() {
+		return controlfields;
+	}
+
+	public void setControlfields(List<Controlfield> controlfields) {
+		this.controlfields = controlfields;
 	}
 
 	public boolean isMultiValued() {
@@ -287,6 +312,14 @@ public class MatchingObject {
 	public void setConcatenatedSubfields(LinkedHashMap<Integer, String> concatenatedSubfields) {
 		this.concatenatedSubfields = concatenatedSubfields;
 	}
+	
+	public String getConcatenatedSubfieldsSeparator() {
+		return concatenatedSubfieldsSeparator;
+	}
+
+	public void setConcatenatedSubfieldsSeparator(String concatenatedSubfieldsSeparator) {
+		this.concatenatedSubfieldsSeparator = concatenatedSubfieldsSeparator;
+	}
 
 	public boolean isTranslateConcatenatedSubfields() {
 		return translateConcatenatedSubfields;
@@ -394,21 +427,25 @@ public class MatchingObject {
 
 	@Override
 	public String toString() {
-		return "MatchingObject [solrFieldname=" + solrFieldname + ", mabFieldnames=" + mabFieldnames + ", multiValued="
-				+ multiValued + ", customText=" + customText + ", getAllFields=" + getAllFields
-				+ ", allFieldsExceptions=" + allFieldsExceptions + ", getFullRecordAsXML=" + getFullRecordAsXML
-				+ ", translateValue=" + translateValue + ", translateValueContains=" + translateValueContains
-				+ ", translateValueRegex=" + translateValueRegex + ", translateProperties=" + translateProperties
-				+ ", hasDefaultValue=" + hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
+		return "PropertiesObject [solrFieldname=" + solrFieldname + ", propertiesFields=" + propertiesFields
+				+ ", datafields=" + datafields + ", controlfields=" + controlfields + ", multiValued=" + multiValued
+				+ ", customText=" + customText + ", getAllFields=" + getAllFields + ", allFieldsExceptions="
+				+ allFieldsExceptions + ", getFullRecordAsXML=" + getFullRecordAsXML + ", translateValue="
+				+ translateValue + ", translateValueContains=" + translateValueContains + ", translateValueRegex="
+				+ translateValueRegex + ", translateProperties=" + translateProperties + ", hasDefaultValue="
+				+ hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
 				+ hasConnectedSubfields + ", connectedSubfields=" + connectedSubfields
 				+ ", translateConnectedSubfields=" + translateConnectedSubfields + ", translateSubfieldsProperties="
 				+ translateSubfieldsProperties + ", hasConcatenatedSubfields=" + hasConcatenatedSubfields
-				+ ", concatenatedSubfields=" + concatenatedSubfields + ", translateConcatenatedSubfields="
-				+ translateConcatenatedSubfields + ", translateConcatenatedSubfieldsProperties="
-				+ translateConcatenatedSubfieldsProperties + ", hasRegex=" + hasRegex + ", regexValue=" + regexValue
-				+ ", hasRegexStrict=" + hasRegexStrict + ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace="
-				+ hasRegExReplace + ", regexReplaceValues=" + regexReplaceValues + ", allowDuplicates="
-				+ allowDuplicates + ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
+				+ ", concatenatedSubfields=" + concatenatedSubfields + ", concatenatedSubfieldsSeparator="
+				+ concatenatedSubfieldsSeparator + ", translateConcatenatedSubfields=" + translateConcatenatedSubfields
+				+ ", translateConcatenatedSubfieldsProperties=" + translateConcatenatedSubfieldsProperties
+				+ ", hasRegex=" + hasRegex + ", regexValue=" + regexValue + ", hasRegexStrict=" + hasRegexStrict
+				+ ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace=" + hasRegExReplace
+				+ ", regexReplaceValues=" + regexReplaceValues + ", allowDuplicates=" + allowDuplicates
+				+ ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
 				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists + "]";
 	}
+
+	
 }

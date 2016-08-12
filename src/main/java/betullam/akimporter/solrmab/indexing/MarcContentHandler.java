@@ -62,7 +62,7 @@ public class MarcContentHandler implements ContentHandler {
 	private Mabfield mabfieldControlfield;
 	private Mabfield mabfield; // Mabfield is concatenated datafield and subfield
 	private List<Mabfield> allSubfieldsInDatafield;
-	private List<MatchingObject> listOfMatchingObjs;
+	private List<PropertiesObject> listOfMatchingObjs;
 	private SolrServer sServer;
 	private String recordID;
 	private String recordSYS;
@@ -152,13 +152,13 @@ public class MarcContentHandler implements ContentHandler {
 	 * @param timeStamp				String that specifies the starting time of the importing process
 	 * @param print					boolean. True if status messages should be printed to the console.
 	 */
-	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, SolrServer solrServer, String timeStamp, boolean print) {
+	public MarcContentHandler(List<PropertiesObject> listOfMatchingObjs, SolrServer solrServer, String timeStamp, boolean print) {
 		this.listOfMatchingObjs = listOfMatchingObjs;
 		this.sServer = solrServer;
 		this.timeStamp = timeStamp;
 		this.print = print;
 
-		for (MatchingObject mo : listOfMatchingObjs) {
+		for (PropertiesObject mo : listOfMatchingObjs) {
 
 			// Get list of connected fields. We need to check them while parsing the XML.
 			if (mo.hasConnectedSubfields()) {
@@ -178,7 +178,7 @@ public class MarcContentHandler implements ContentHandler {
 					Map<String, String> translateSubfieldsProperties = mo.getTranslateSubfieldsProperties();
 
 					// Get all master fields:
-					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+					for (Entry<String, List<String>> mabfieldName : mo.getPropertiesFields().entrySet()) {
 						String completeFieldname = mabfieldName.getKey().toString();
 						String connectedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
 						String connectedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
@@ -212,7 +212,7 @@ public class MarcContentHandler implements ContentHandler {
 					Map<String, String> translateConcatenatedSubfieldsProperties = mo.getTranslateConcatenatedSubfieldsProperties();
 
 					// Get all master fields:
-					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+					for (Entry<String, List<String>> mabfieldName : mo.getPropertiesFields().entrySet()) {
 						String completeFieldname = mabfieldName.getKey().toString();
 						String concatenatedMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
 						String concatenatedMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
@@ -266,7 +266,7 @@ public class MarcContentHandler implements ContentHandler {
 					}
 
 					// Get all master fields:
-					for (Entry<String, List<String>> mabfieldName : mo.getMabFieldnames().entrySet()) {
+					for (Entry<String, List<String>> mabfieldName : mo.getPropertiesFields().entrySet()) {
 						String completeFieldname = mabfieldName.getKey().toString(); // E. g. "655$e*$u"
 						String subfieldExistsMasterDatafield = completeFieldname.substring(0,3); // Get e. g. "655" out of "655$e*$u"
 						String subfieldExistsMasterSubfield = completeFieldname.substring(completeFieldname.length() - 1); // Get last character which should be the subfield code, e. g. "u" out of "655$e*$u"
@@ -461,8 +461,8 @@ public class MarcContentHandler implements ContentHandler {
 			// Set empty tags and indicators to a character, so that the string to match against is always
 			// of the same length, e. g. "311$ab$c" and "000$**$*". This prevents errors.
 			tag = (tag != null && !tag.isEmpty()) ? tag : "000";
-			ind1 = (ind1 != null && !ind1.isEmpty()) ? ind1 : "*";
-			ind2 = (ind2 != null && !ind2.isEmpty()) ? ind2 : "*";
+			ind1 = (ind1 != null && !ind1.isEmpty()) ? ind1 : "-";
+			ind2 = (ind2 != null && !ind2.isEmpty()) ? ind2 : "-";
 
 			datafield = new Datafield();
 			datafield.setTag(tag);
@@ -954,7 +954,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 			
 
-			System.out.println(record.toString());
+			//System.out.println(record.toString());
 			// ################ NEW #################
 		}
 
@@ -991,7 +991,21 @@ public class MarcContentHandler implements ContentHandler {
 
 
 		// ################ NEW #################
+		// Do the Matching and rewriting (see class "MatchingOperations"):
+		//List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
+		MatchingOperations matchingOperations = new MatchingOperations();
+		matchingOperations.setRawRecords(records);
+		matchingOperations.setMatchingObjects(this.listOfMatchingObjs);
+		List<Record> matchingResult = matchingOperations.getMatchingResult();
+		
+		// Add to Solr-Index:
+		//this.solrAddRecordSet(sServer, newRecordSet);
+		
 		// Clear objects to save memory
+		//SubfieldmatchingResult.clear();
+		matchingResult = null;
+		listOfMatchingObjs.clear();
+		listOfMatchingObjs = null;
 		records.clear();
 		records = null;
 		// ################ NEW #################

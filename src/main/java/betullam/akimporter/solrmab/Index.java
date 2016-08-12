@@ -49,9 +49,12 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import main.java.betullam.akimporter.main.Main;
+import main.java.betullam.akimporter.solrmab.indexing.Controlfield;
+import main.java.betullam.akimporter.solrmab.indexing.Datafield;
 import main.java.betullam.akimporter.solrmab.indexing.Mabfield;
 import main.java.betullam.akimporter.solrmab.indexing.MarcContentHandler;
-import main.java.betullam.akimporter.solrmab.indexing.MatchingObject;
+import main.java.betullam.akimporter.solrmab.indexing.PropertiesObject;
+import main.java.betullam.akimporter.solrmab.indexing.Subfield;
 
 
 public class Index {
@@ -59,7 +62,7 @@ public class Index {
 	private HttpSolrServer solrServer = null;
 	private String mabXMLfile = null;
 	private String mabPropertiesFile = null;
-	private List<MatchingObject> listOfMatchingObjs = null; // Contents from mab.properties file
+	private List<PropertiesObject> listOfMatchingObjs = null; // Contents from mab.properties file
 	private boolean useDefaultMabProperties = true;
 	public String pathToTranslationFiles = null;
 	private boolean print = true;
@@ -189,9 +192,9 @@ public class Index {
 	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
 	 * @return							The rules of defined in mab.properties file represented as a list of MatchingObjects
 	 */
-	private List<MatchingObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
+	private List<PropertiesObject> getMatchingObjects(BufferedInputStream propertiesStream, String pathToTranslationFiles) {
 
-		List<MatchingObject> matchingObjects = new ArrayList<MatchingObject>();
+		List<PropertiesObject> propertiesObjects = new ArrayList<PropertiesObject>();
 
 		try {
 
@@ -203,6 +206,9 @@ public class Index {
 
 			// Loop through properties, put them into MatcingObjects and add them to a List<MatchingObject>:
 			for(String key : mabProperties.stringPropertyNames()) {
+
+				List<Datafield> datafields = new ArrayList<Datafield>();
+				List<Controlfield> controlfields = new ArrayList<Controlfield>();
 				boolean multiValued = false;
 				boolean customText = false;
 				boolean getAllFields = false;
@@ -220,6 +226,7 @@ public class Index {
 				boolean hasConnectedSubfields = false;
 				boolean translateConnectedSubfields = false;
 				LinkedHashMap<Integer, String> concatenatedSubfields = new LinkedHashMap<Integer, String>();
+				String concatenatedSubfieldsSeparator = null;
 				boolean hasConcatenatedSubfields = false;
 				boolean translateConcatenatedSubfields = false;
 				String regexValue = null;
@@ -232,6 +239,7 @@ public class Index {
 				LinkedHashMap<Integer, String> subfieldExists = new LinkedHashMap<Integer, String>();
 				boolean hasSubfieldNotExists = false;
 				LinkedHashMap<Integer, String> subfieldNotExists = new LinkedHashMap<Integer, String>();
+				
 
 
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
@@ -284,7 +292,6 @@ public class Index {
 				List<String> lstValues = new ArrayList<String>();
 				//lstValues.addAll(Arrays.asList(strValues.split("\\s*,\\s*")));
 				lstValues.addAll(Arrays.asList(strValues.split("\\s*(?<!\\\\),\\s*")));
-
 
 
 				// Create a clean list (without square brackets) for option check below. This is in case a translateValue
@@ -446,6 +453,10 @@ public class Index {
 
 						// Get everything between the 2 outermost squarebrackets:
 						concatenatedSubfields = getBracketValues(concatenatedSubfieldsAllBrackets);
+						
+						//System.out.println(concatenatedSubfields.get(1).substring(concatenatedSubfields.get(1).length()-2));
+						List<String> bracketContentAsList = Arrays.asList(concatenatedSubfieldsAllBrackets.replace("[", "").replace("]", "").split(":"));
+						concatenatedSubfieldsSeparator = bracketContentAsList.get(bracketContentAsList.size()-1); // Get last list element. This should be the separator.
 					}	
 				}
 
@@ -649,8 +660,33 @@ public class Index {
 					} else {
 						System.err.println("Error: You need to specify a translation-properties file with the file-ending \".properties\"!");
 					}
-				}				
+				}
 
+				// Create Datafield and Controlfied objects for all fields given in mab.properties
+				for(String lstValueClean : lstValuesClean) {
+					if (lstValueClean.length() == 3) { // It's a controlfield (it has only 3 characters, e. g. SYS)
+						Controlfield controlfield = new Controlfield();
+						controlfield.setTag(lstValueClean);
+						controlfields.add(controlfield);
+					} else if (lstValueClean.length() == 8) { // It should be a datafield (it has 8 characters, e. g. 100$**$a)
+						Datafield datafield = new Datafield();
+						Subfield subfield = new Subfield();
+						ArrayList<Subfield> subfields = new ArrayList<Subfield>();
+						String tag = lstValueClean.substring(0, 3);
+						String ind1 = lstValueClean.substring(4, 5);
+						String ind2 = lstValueClean.substring(5, 6);
+						String subfieldCode = lstValueClean.substring(7, 8);
+						subfield.setCode(subfieldCode);
+						subfields.add(subfield);
+						datafield.setTag(tag);
+						datafield.setInd1(ind1);
+						datafield.setInd2(ind2);
+						datafield.setSubfields(subfields);
+						datafields.add(datafield);
+					}
+				}
+				
+				
 				// Get all default fields (the other fields were removed):
 				for(String lstValue : lstValues) {
 					mabFieldnames.put(lstValue, null);
@@ -659,9 +695,11 @@ public class Index {
 				lstValues.removeAll(fieldsToRemove);
 				fieldsToRemove.clear();
 
-				MatchingObject mo = new MatchingObject(
+				PropertiesObject mo = new PropertiesObject(
 						key,
 						mabFieldnames,
+						datafields,
+						controlfields,
 						multiValued,
 						customText,
 						getAllFields,
@@ -679,6 +717,7 @@ public class Index {
 						translateConnectedSubfieldsProperties,
 						hasConcatenatedSubfields,
 						concatenatedSubfields,
+						concatenatedSubfieldsSeparator,
 						translateConcatenatedSubfields,
 						translateConcatenatedSubfieldsProperties,
 						hasRegex,
@@ -694,11 +733,12 @@ public class Index {
 						subfieldNotExists
 				);
 				
-				matchingObjects.add(mo);
+				//System.out.println(mo);
+				propertiesObjects.add(mo);
 			}
 
 		} catch (IOException e) {
-			matchingObjects = null;			
+			propertiesObjects = null;			
 			System.err.println("\n------------------------------------------------------------------------------------------------------------\n");
 			System.err.println("IOException!");
 			System.err.println("\nSee also StackTrace:\n");
@@ -706,14 +746,14 @@ public class Index {
 			System.err.println("\n-----------------------------------------------------------------------\n");
 		}
 
-		for (MatchingObject matchingObject : matchingObjects) {
-			if (matchingObject.isMultiValued()) {
-				multiValuedFields.add(matchingObject.getSolrFieldname());
+		for (PropertiesObject propertiesObject : propertiesObjects) {
+			if (propertiesObject.isMultiValued()) {
+				multiValuedFields.add(propertiesObject.getSolrFieldname());
 			}
 
-			if (matchingObject.isCustomText()) {
-				String solrFieldName = matchingObject.getSolrFieldname();
-				Map<String, List<String>> customTexts = matchingObject.getMabFieldnames();
+			if (propertiesObject.isCustomText()) {
+				String solrFieldName = propertiesObject.getSolrFieldname();
+				Map<String, List<String>> customTexts = propertiesObject.getPropertiesFields();
 
 				// Make new Mabfield for each custom text and add it to a List of Mabfields, so we can process it later on:
 				for (Entry<String, List<String>> customText : customTexts.entrySet()) {
@@ -721,17 +761,17 @@ public class Index {
 				}
 			}
 
-			if (matchingObject.isTranslateValue() || matchingObject.isTranslateValueContains() | matchingObject.isTranslateValueRegex()) {
-				translateFields = matchingObject.getMabFieldnames();
+			if (propertiesObject.isTranslateValue() || propertiesObject.isTranslateValueContains() | propertiesObject.isTranslateValueRegex()) {
+				translateFields = propertiesObject.getPropertiesFields();
 			}
 
-			if (matchingObject.isGetFullRecordAsXML()) {
-				fullrecordFieldname = matchingObject.getSolrFieldname();
+			if (propertiesObject.isGetFullRecordAsXML()) {
+				fullrecordFieldname = propertiesObject.getSolrFieldname();
 			}
 
 		}
 
-		return matchingObjects;
+		return propertiesObjects;
 	}
 
 
