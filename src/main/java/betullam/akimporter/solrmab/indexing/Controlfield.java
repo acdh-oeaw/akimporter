@@ -24,6 +24,40 @@ public class Controlfield {
 		this.content = content;
 	}
 
+	
+	/**
+	 * Check if a raw controlfield is contained in a properties object (represents a line in mab.properties)
+	 * @param 	propertiesObject	PropertiesObject: A properties object representing a line in mab.properties
+	 * @return						boolean: true if the properties object contains the controlfield this method is applied on, false otherwise
+	 */
+	public boolean isContainedInPropertiesObject(PropertiesObject propertiesObject) {
+
+		// Return false if propertiesObject is null
+		if (propertiesObject == null) {
+			return false;
+		}
+		
+		// Returns false if propertiesObject is no instance of PropertiesObject
+		if (!(propertiesObject instanceof PropertiesObject)) {
+			return false;
+		}
+
+		boolean returnValue = false;
+
+		for (Controlfield propertiesControlfield : propertiesObject.getControlfields()) {
+			if (this.equals(propertiesControlfield)) {
+				returnValue = true;
+			}
+			/*
+			if (propertiesControlfield.getTag().equals(tag)) {
+				returnValue = true;
+			}
+			*/
+		}
+
+		return returnValue;
+	}
+	
 	@Override
 	public String toString() {
 		return "Controlfield [tag=" + tag + ", content=" + content + "]";

@@ -28,19 +28,18 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class Datafield extends Controlfield {
+public class Datafield {
 
-	//private String tag;
+	private String tag;
 	private String ind1;
 	private String ind2;
-	//private List<Mabfield> mabfields;
 	private ArrayList<Subfield> subfields;
 
 	public Datafield() {}
 
 
-	/*
 	public String getTag() {
 		return this.tag;
 	}
@@ -48,7 +47,6 @@ public class Datafield extends Controlfield {
 	public void setTag(String tag) {
 		this.tag = tag;
 	}
-	*/
 
 	public String getInd1() {
 		return this.ind1;
@@ -74,64 +72,6 @@ public class Datafield extends Controlfield {
 		this.subfields = subfields;
 	}
 
-	/*
-	public List<Mabfield> getSubfields() {
-		return this.mabfields;
-	}
-
-	public void setSubfields(List<Mabfield> mabfields) {
-		this.mabfields = mabfields;
-	}
-	 */
-
-	@Override
-	public String toString() {
-		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields + "]";
-	}
-
-
-	// RAW:
-	// Datafield [tag=PER, ind1=*, ind2=*, subfields=[Subfield [code=p, content=Roques, Jean Léon], Subfield [code=d, content=1839-1923], Subfield [code=9, content=(DE-588)134683714]]]
-	// -----------------------
-	// Datafield [tag=902, ind1=-, ind2=1, subfields=[Subfield [code=z, content=Geschichte 1865], Subfield [code=x, content=xxxxx]]]
-
-	// MAB.PROPERTIES:
-	// Datafield [tag=PER, ind1=*, ind2=*, subfields=[Subfield [code=p, content=Roques, Jean Léon]]]
-	// Datafield [tag=PER, ind1=*, ind2=*, subfields=[Subfield [code=d, content=1839-1923]]]
-	// Datafield [tag=PER, ind1=*, ind2=*, subfields=[Subfield [code=9, content=(DE-588)134683714]]]
-	// -----------------------
-	// Datafield [tag=902, ind1=-, ind2=1, subfields=[Subfield [code=z, content=Geschichte 1865], Subfield [code=x, content=xxxxx]]]
-	/**
-	 * Compare method for matching raw datafields from MarcXML with datafields given in mab.properties
-	 * @param		rawDatafield: The raw datafield that was parsed from the MarcXML file
-	 * @return		true if the raw datafield matches with one or multiple fields in mab.properties, false otherwise
-	 */
-	/*
-	public boolean match(Datafield rawDatafield) {
-
-		// Return true if it is the same instance
-		if (this == rawDatafield) {
-			return true;
-		}
-
-		// Return false if Datafield object is null
-		if (rawDatafield == null) {
-			return false;
-		}
-
-		boolean returnValue = false;
-
-		if (rawDatafield.getTag() == tag) {
-			if (ind1 == "*" || rawDatafield.getInd1() == ind1) {
-				if (ind2 == "*" || rawDatafield.getInd2() == ind2) {
-					// Check subfields here
-				}
-			}
-		}
-
-		return returnValue;
-	}
-	 */
 
 	/**
 	 * Compare method for matching datafields given in mab.properties with raw datafields from MarcXML 
@@ -139,25 +79,21 @@ public class Datafield extends Controlfield {
 	 * @return		true if a field in mab.properties matches with raw datafields, false otherwise
 	 */
 	public boolean match(Datafield propertiesDatafield) {
-		
+
 		// Return true if it is the same instance
 		if (this == propertiesDatafield) {
 			return true;
 		}
-		
+
 		// Return false if Datafield object is null
 		if (propertiesDatafield == null) {
 			return false;
 		}
-		
+
 		boolean returnValue = false;
 
-		
-		//System.out.println("Raw Tag : " + tag);
-		//System.out.println("Prop Tag: " + propertiesDatafield.getTag());
-		
 		if (propertiesDatafield.getTag().equals(tag)) {
-			
+
 			if (propertiesDatafield.getInd1().equals("*") || propertiesDatafield.getInd1().equals(ind1)) {
 				if (propertiesDatafield.getInd2().equals("*") || propertiesDatafield.getInd2().equals(ind2)) {
 					for (Subfield rawSubfield : subfields) {
@@ -173,4 +109,87 @@ public class Datafield extends Controlfield {
 
 		return returnValue;
 	}
+
+	/**
+	 * Check if a raw datafield is contained in a properties object (represents a line in mab.properties)
+	 * @param 	propertiesObject	PropertiesObject: A properties object representing a line in mab.properties
+	 * @return						boolean: true if the properties object contains the datafield this method is applied on, false otherwise
+	 */
+	public boolean isContainedInPropertiesObject(PropertiesObject propertiesObject) {
+
+		// Return false if propertiesObject is null
+		if (propertiesObject == null) {
+			return false;
+		}
+		
+		// Returns false if propertiesObject is no instance of PropertiesObject
+		if (!(propertiesObject instanceof PropertiesObject)) {
+			return false;
+		}
+
+		boolean returnValue = false;
+
+		for (Datafield propertiesDatafield : propertiesObject.getDatafields()) {
+			if (propertiesDatafield.getTag().equals(tag)) {
+				if (propertiesDatafield.getInd1().equals("*") || propertiesDatafield.getInd1().equals(ind1)) {
+					if (propertiesDatafield.getInd2().equals("*") || propertiesDatafield.getInd2().equals(ind2)) {
+						for (Subfield rawSubfield : subfields) {
+							for (Subfield propertiesSubfield : propertiesDatafield.getSubfields()) {
+								if (propertiesSubfield.getCode().equals("*") || propertiesSubfield.getCode().equals(rawSubfield.getCode())) {
+									returnValue = true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return returnValue;
+	}
+	
+	public void removeSubfieldByCode(String code) {
+		List<Subfield> subfieldsToRemove = new ArrayList<Subfield>();
+		for (Subfield subfield : subfields) {
+			if (subfield.getCode().equals(code)) {
+				//subfields.remove(subfield);
+				subfieldsToRemove.add(subfield);
+			}
+		}
+		this.subfields.removeAll(subfieldsToRemove);
+	}
+
+
+	/**
+	 * Copy a datafield object for changing values without impacting the original datafield.
+	 * @param originalDatafield		Datafield: A Datafield object which should be copied
+	 * @return				Datafield: A copy of a Datafield object. We can make changes to this copy without affecting the original Datafield object. 
+	 */
+	public static Datafield copy(Datafield originalDatafield) {
+		Datafield newDatafield = new Datafield();
+		newDatafield.tag = originalDatafield.tag;
+		newDatafield.ind1 = originalDatafield.ind1;
+		newDatafield.ind2 = originalDatafield.ind2;
+		
+		ArrayList<Subfield> newSubfields = new ArrayList<Subfield>();
+		for (Subfield originalSubfield : originalDatafield.getSubfields()) {
+			Subfield newSubfield = new Subfield();
+			newSubfield.setCode(originalSubfield.getCode());
+			newSubfield.setContent(originalSubfield.getContent());
+			newSubfields.add(newSubfield);
+		}
+		
+		newDatafield.subfields = newSubfields;
+		
+		return newDatafield;
+	}
+	
+	
+	@Override
+	public String toString() {
+		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields + "]";
+	}
+
+
+
 }

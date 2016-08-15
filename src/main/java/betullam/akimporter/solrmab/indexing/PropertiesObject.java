@@ -106,8 +106,8 @@ public class PropertiesObject {
 			LinkedHashMap<Integer, String> subfieldExists,
 			boolean hasSubfieldNotExists,
 			LinkedHashMap<Integer, String> subfieldNotExists
-		) {
-		
+			) {
+
 		this.setSolrFieldname(solrFieldname);
 		this.setPropertiesFields(propertiesFields);
 		this.setDatafields(datafields);
@@ -312,7 +312,7 @@ public class PropertiesObject {
 	public void setConcatenatedSubfields(LinkedHashMap<Integer, String> concatenatedSubfields) {
 		this.concatenatedSubfields = concatenatedSubfields;
 	}
-	
+
 	public String getConcatenatedSubfieldsSeparator() {
 		return concatenatedSubfieldsSeparator;
 	}
@@ -392,7 +392,7 @@ public class PropertiesObject {
 	public void setAllowDuplicates(boolean allowDuplicates) {
 		this.allowDuplicates = allowDuplicates;
 	}
-	
+
 	public boolean hasSubfieldExists() {
 		return hasSubfieldExists;
 	}
@@ -425,6 +425,32 @@ public class PropertiesObject {
 		this.subfieldNotExists = subfieldNotExists;
 	}
 
+
+	public boolean containsSubfieldOfDatafield(Datafield rawDatafield, Subfield rawSubfield) {
+		boolean returnValue = false;
+
+		String rawTag = rawDatafield.getTag();
+		String rawInd1 = rawDatafield.getInd1();
+		String rawInd2 = rawDatafield.getInd2();
+		String rawSubfieldcode = rawSubfield.getCode();
+
+		for (Datafield propertiesDatafield : this.getDatafields()) {
+			if (propertiesDatafield.getTag().equals(rawTag)) {
+				if (propertiesDatafield.getInd1().equals("*") || propertiesDatafield.getInd1().equals(rawInd1)) {
+					if (propertiesDatafield.getInd2().equals("*") || propertiesDatafield.getInd2().equals(rawInd2)) {
+						for (Subfield propertiesSubfield : propertiesDatafield.getSubfields()) {
+							if (propertiesSubfield.getCode().equals("*") || propertiesSubfield.getCode().equals(rawSubfieldcode)) {
+								returnValue = true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return returnValue;
+	}
+
 	@Override
 	public String toString() {
 		return "PropertiesObject [solrFieldname=" + solrFieldname + ", propertiesFields=" + propertiesFields
@@ -447,5 +473,5 @@ public class PropertiesObject {
 				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists + "]";
 	}
 
-	
+
 }
