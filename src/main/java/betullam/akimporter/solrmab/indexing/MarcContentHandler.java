@@ -175,7 +175,7 @@ public class MarcContentHandler implements ContentHandler {
 					mutableList.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
 					int lastListElement = (mutableList.size()-1); // Get index of last List element
 					boolean isTranslateConnectedSubfields = mo.isTranslateConnectedSubfields();
-					Map<String, String> translateSubfieldsProperties = mo.getTranslateSubfieldsProperties();
+					Map<String, String> translateSubfieldsProperties = mo.getTranslateConnectedSubfieldsProperties();
 
 					// Get all master fields:
 					for (Entry<String, List<String>> mabfieldName : mo.getPropertiesFields().entrySet()) {

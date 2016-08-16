@@ -1,10 +1,7 @@
 /**
  * Datafield class
  *
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
- * 
- * TODO: Check if this class is still necessary!
- * 		 Maybe we could yous Mabfield class instead.
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -35,7 +32,8 @@ public class Datafield {
 	private String tag;
 	private String ind1;
 	private String ind2;
-	private ArrayList<Subfield> subfields;
+	private ArrayList<Subfield> subfields = new ArrayList<Subfield>();
+	private ArrayList<Subfield> passiveSubfields = new ArrayList<Subfield>();
 
 	public Datafield() {}
 
@@ -70,6 +68,14 @@ public class Datafield {
 
 	public void setSubfields(ArrayList<Subfield> subfields) {
 		this.subfields = subfields;
+	}
+
+	public ArrayList<Subfield> getPassiveSubfields() {
+		return passiveSubfields;
+	}
+
+	public void setPassiveSubfields(ArrayList<Subfield> passiveSubfields) {
+		this.passiveSubfields = passiveSubfields;
 	}
 
 
@@ -148,16 +154,16 @@ public class Datafield {
 		return returnValue;
 	}
 	
-	public void removeSubfieldByCode(String code) {
-		List<Subfield> subfieldsToRemove = new ArrayList<Subfield>();
-		for (Subfield subfield : subfields) {
-			if (subfield.getCode().equals(code)) {
-				//subfields.remove(subfield);
-				subfieldsToRemove.add(subfield);
-			}
-		}
-		this.subfields.removeAll(subfieldsToRemove);
+	
+	/**
+	 * Move subfields to a new ArrayList<Subfield> called passiveSubfields and remove them from the default ArrayList<Subfield> called subfields
+	 * @param subfields		ArrayList<Subfield>: An ArrayList of Subfield objects.
+	 */
+	public void moveToPassiveSubfields(ArrayList<Subfield> subfields) {
+		this.setPassiveSubfields(subfields);
+		this.subfields.removeAll(subfields);
 	}
+	
 
 
 	/**
@@ -178,18 +184,24 @@ public class Datafield {
 			newSubfield.setContent(originalSubfield.getContent());
 			newSubfields.add(newSubfield);
 		}
-		
 		newDatafield.subfields = newSubfields;
+		
+		ArrayList<Subfield> newPassiveSubfields = new ArrayList<Subfield>();
+		for (Subfield originalPssiveSubfield : originalDatafield.getPassiveSubfields()) {
+			Subfield newPassiveSubfield = new Subfield();
+			newPassiveSubfield.setCode(originalPssiveSubfield.getCode());
+			newPassiveSubfield.setContent(originalPssiveSubfield.getContent());
+			newPassiveSubfields.add(newPassiveSubfield);
+		}
+		newDatafield.passiveSubfields = newPassiveSubfields;
 		
 		return newDatafield;
 	}
-	
-	
+
 	@Override
 	public String toString() {
-		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields + "]";
+		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields
+				+ ", passiveSubfields=" + passiveSubfields + "]";
 	}
-
-
 
 }

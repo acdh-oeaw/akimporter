@@ -28,11 +28,15 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
 
 import main.java.betullam.akimporter.solrmab.Index;
 
@@ -111,28 +115,6 @@ public class MatchingOperations {
 			return null;
 		}
 
-		/*
-		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {
-			for (Datafield propertiesDatafield : relevantPropertiesObject.getDatafields()) {
-				if (datafield.match(propertiesDatafield)) {
-					System.out.println(datafield);
-				}
-			}
-		}
-		 */
-
-		/*
-		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {
-			for (Datafield df : relevantPropertiesObject.getDatafields()) {
-				if (df.getTag().equals("902")) {
-					System.out.println(relevantPropertiesObject.toString());
-				}
-			}
-		}
-		System.out.println("------------------------------------------------------------------------------------------");
-
-		listOfMatchedFields = new ArrayList<Mabfield>();
-		 */
 
 		// TODO: Apply rules (translate, regex, subfieldExists, concatenate, etc.) from mab.properties here and return the result
 		// List of rules:
@@ -140,12 +122,11 @@ public class MatchingOperations {
 		// OK: translateValueContains
 		// OK: translateValueRegex
 		// OK: defaultValue[VALUE]
-		// regEx[REGEX]
-		// regExStrict[REGEX]
-		// regExReplace[REGEX][REPLACE]
-		// allowDuplicates
-		// connectedSubfields[subfield:subfield:subfield:...:DefaultText]
-		// translateConnectedSubfields[translate.properties]
+		// OK: regEx[REGEX]
+		// OK: regExStrict[REGEX]
+		// OK: regExReplace[REGEX][REPLACE]
+		// OK: connectedSubfields[subfield:subfield:subfield:...:DefaultText]
+		// OK: translateConnectedSubfields[translate.properties]
 		// concatenatedSubfields[subfield:subfield:subfield:...:Separator]
 		// translateConcatenatedSubfields[translate.properties]
 		// subfieldExists[subfield:subfield:subfield:...:AND|OR]
@@ -154,18 +135,14 @@ public class MatchingOperations {
 		// TODO: These rules need to be handled elsewhere because they have nothing to do with the raw MarcXML fields:
 		// multiValued
 		// customText
+		// allowDuplicates
 
-		/*
-		if (datafield != null && datafield.getTag().equals("100")) {
-			System.out.println("Orig: " + datafield.toString());
-			System.out.println("---------------------------------------------------");
-		}
-		 */
 
 
 		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {
 
-			// Check if the raw subfield, for which we want to treat it's content, is listed in the properties object (which represents a line in mab.properties).
+			// Check if the raw subfield, for which we want to treat it's content (apply rules on it), is listed in the properties object
+			// (which represents a line in mab.properties).
 			// Example:
 			// 	We have an XML (raw datafield) like this:
 			//		<datafield ind1="b" ind2="1" tag="100">
@@ -174,18 +151,28 @@ public class MatchingOperations {
 			//			<subfield code="9">(DE-588)119130823</subfield>
 			//			<subfield code="b">[Drehbuch, Regie]</subfield>
 			//		</datafield>
-			//	We have a 2 lines in mab.properties like this:
+			//	We have a line in mab.properties like this:
 			//		author: 100$**$p, 100$**$a, 200$**$p, 200$**$a
-			//	We need to only treat subfield p of the raw datafield, because subfields d, 9 and b are not contained in the line of mab.properties
+			//	We see that we need to only treat subfield "p" (Berri, Claude) of the raw datafield, because subfields "d", "9" and "b" are
+			//	not contained in the "author"-line of mab.properties. But maybe we need the information of these additional subfields later on
+			//	(e. g. for concatenating, connections, etc.). So we move them to another List<Subfield> called "passiveSubfields". We can use
+			//	the subfields from there if we need them.
+			// As we do not want to change the original datafield, because multiple operations (for every relevant properties object) are applied
+			// on it (and for that we always need the original as a starting point), we have to make a copy to which we can apply the rules of each
+			// relevant properties object.
 			Datafield copiedDatafield = null;
 			if (datafield != null) {
 				copiedDatafield = Datafield.copy(datafield);
-				List<Subfield> subfieldsToRemove = new ArrayList<Subfield>();
-				for (Subfield subfield : datafield.getSubfields()) {
-					if (!relevantPropertiesObject.containsSubfieldOfDatafield(datafield, subfield)) {
-						// TODO: MOVE TO OTHER LIST INSTEAD OF REMOVING THE SUBFIELD. WE COULD NEED THE OTHER SUBFIELDS LATER ON
-						copiedDatafield.removeSubfieldByCode(subfield.getCode());
+				ArrayList<Subfield> subfieldsToMove = new ArrayList<Subfield>();
+				for (Subfield copiedSubfield : copiedDatafield.getSubfields()) {
+					if (!relevantPropertiesObject.containsSubfieldOfDatafield(copiedDatafield, copiedSubfield)) {
+						// Move datafields that are not used directly for indexing to a List<Subfield> called passiveSubfields.
+						// We can use these subfields then later on, e. g. for concatenating, connections, skipping, etc.
+						subfieldsToMove.add(copiedSubfield);
 					}
+				}
+				if (subfieldsToMove != null && !subfieldsToMove.isEmpty()) {
+					copiedDatafield.moveToPassiveSubfields(subfieldsToMove);
 				}
 			}
 
@@ -205,6 +192,7 @@ public class MatchingOperations {
 			boolean isTranslateValueContains = false;
 			boolean isTranslateValueRegex = false;
 			boolean hasConnectedSubfields = false;
+			boolean isTranslateConnectedSubfields = relevantPropertiesObject.isTranslateConnectedSubfields();
 			if (relevantPropertiesObject.hasConnectedSubfields()) {
 				hasConnectedSubfields = true;
 			}
@@ -249,10 +237,10 @@ public class MatchingOperations {
 						fieldValues.add(translatedValue);
 					}
 					if (type.equals("datafield")) {
-						String tag = datafield.getTag();
-						String ind1 = datafield.getInd1();
-						String ind2 = datafield.getInd2();
-						for (Subfield subfield : datafield.getSubfields()) {
+						String tag = copiedDatafield.getTag();
+						String ind1 = copiedDatafield.getInd1();
+						String ind2 = copiedDatafield.getInd2();
+						for (Subfield subfield : copiedDatafield.getSubfields()) {
 							String rawFieldname = tag+"$"+ind1+ind2+"$"+subfield.getCode();
 							String rawFieldvalue = subfield.getContent();
 							String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, false, hasRegex, regexPattern, hasRegexStrict, regexStrictPattern, hasRegexReplace, regexReplacePattern, regexReplaceValue);
@@ -273,7 +261,7 @@ public class MatchingOperations {
 					fieldValues.add(regexedValue);
 				}
 				if (type.equals("datafield")) {
-					for (Subfield subfield : datafield.getSubfields()) {
+					for (Subfield subfield : copiedDatafield.getSubfields()) {
 						String rawFieldvalue = subfield.getContent();
 						String regexedValue = getRegexValue(regexPattern, rawFieldvalue);
 						//System.out.println("regexedValue: " + regexedValue);
@@ -292,7 +280,7 @@ public class MatchingOperations {
 					fieldValues.add(regexedStrictValue);
 				}
 				if (type.equals("datafield")) {
-					for (Subfield subfield : datafield.getSubfields()) {
+					for (Subfield subfield : copiedDatafield.getSubfields()) {
 						String rawFieldvalue = subfield.getContent();
 						String regexedStrictValue = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
 						//System.out.println("regexedStrictValue: " + regexedStrictValue);
@@ -310,35 +298,65 @@ public class MatchingOperations {
 					//System.out.println("regexedReplaceValue: " + regexedReplaceValue);
 					fieldValues.add(regexedReplaceValue);
 				}
-
 				if (type.equals("datafield")) {
-
-					//System.out.println(relevantPropertiesObject.getSolrFieldname().toString());
-
 					for (Subfield subfield : copiedDatafield.getSubfields()) {
-
 						String rawFieldvalue = subfield.getContent();
 						String regexedReplaceValue = rawFieldvalue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
-
-						//System.out.println(datafield.getTag() + datafield.getInd1() + datafield.getInd2() + subfield.getCode() + " - " + relevantPropertiesObject.getDatafields());
-						System.out.println("regexedReplaceValue: " + regexedReplaceValue);
-
+						//System.out.println("regexedReplaceValue: " + regexedReplaceValue);
 						fieldValues.add(regexedReplaceValue);
 					}
 				}
-
 			}
+
+
+			// Handle connectedSubfields. This can only apply to datafields, not to controlfields (they do not have any subfields)
+			if (hasConnectedSubfields) {
+				if (type.equals("datafield")) {
+					ArrayList<String> connectedSubfields = getConnectedSubfields(copiedDatafield, relevantPropertiesObject);
+					for (Subfield subfield : copiedDatafield.getSubfields()) {
+						String rawFieldvalue = subfield.getContent();
+						connectedSubfields.add(0, rawFieldvalue);
+						//System.out.println("connectedSubfields: " + connectedSubfields);
+						for (String connectedSubfieldValue : connectedSubfields) {
+							fieldValues.add(connectedSubfieldValue);
+						}
+
+					}
+				}
+			}
+
+
+			// Handle concatenatedSubfields. This can only apply to datafields, not to controlfields (they do not have any subfields)
+			if (hasConcatenatedSubfields) {
+				if (type.equals("datafield")) {
+					for (Subfield subfield : copiedDatafield.getSubfields()) {
+						TODO: Go on here: Get concatenated Subfields and glue them together with the separator!
+						ArrayList<String> concatenatedValue = getConcatenatedSubfields(copiedDatafield, relevantPropertiesObject);
+						
+					}
+				}
+			}
+
+
 
 
 			if (!fieldValues.isEmpty()) {
 				for (String fieldValue : fieldValues) {
 					solrFields.add(new SolrField(solrFieldname, fieldValue));
 				}
-
+				/*
+				for (SolrField solrField : solrFields) {
+					System.out.println(solrField.getFieldname() + ": " + solrField.getFieldvalue());
+				}
+				*/
 			}
 		}
 
-		//System.out.println(solrFields.toString());
+		/*
+		if (!solrFields.isEmpty()) {
+			System.out.println(solrFields.toString());
+		}
+		*/
 
 		return solrFields;
 	}
@@ -682,6 +700,91 @@ public class MatchingOperations {
 		}
 
 		return relevantPropertiesObjects;
+	}
+
+
+	private ArrayList<String> getConnectedSubfields(Datafield datafield, PropertiesObject relevantPropertiesObject) {
+		ArrayList<String> returnValue = new ArrayList<String>();
+		String connectedDefaultValue = null;
+		LinkedHashMap<Integer, String> connectedSubfields = relevantPropertiesObject.getConnectedSubfields();
+		boolean isTranslateConnectedSubfields = relevantPropertiesObject.isTranslateConnectedSubfields();	
+
+		for (Entry<Integer, String> connectedSubfield : connectedSubfields.entrySet()) {
+			List<String> immutableList = Arrays.asList(connectedSubfield.getValue().split("\\s*:\\s*"));
+			List<String> connectedSubfieldsCodes = new ArrayList<String>();
+			connectedSubfieldsCodes.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
+			int lastListElement = (connectedSubfieldsCodes.size()-1); // Get index of last List element
+			connectedDefaultValue = connectedSubfieldsCodes.get(lastListElement); // Last value is always the default value to use
+			connectedSubfieldsCodes.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
+
+			String textToUse = null;
+			for (String connectedSubfieldsCode : connectedSubfieldsCodes) {
+				for (Subfield passiveSubfield : datafield.getPassiveSubfields()) {
+					String passiveSubfieldCode = passiveSubfield.getCode();
+					if (connectedSubfieldsCode.equals(passiveSubfieldCode)) {
+						String subfieldContent = passiveSubfield.getContent();
+						if (subfieldContent != null && !subfieldContent.isEmpty()) {
+							// Set text only if textToUse is not null. Otherwise we would overwrite a value that was added in a loop before.
+							if (textToUse == null) {
+								textToUse = subfieldContent;
+							}
+						}
+					}
+				}
+			}
+
+			// Set default value if no other value was found
+			if (textToUse == null) {
+				textToUse = connectedDefaultValue;
+			}
+
+			if (isTranslateConnectedSubfields) {
+				String solrFieldname = relevantPropertiesObject.getSolrFieldname();
+				Map<String, String> translateConnectedSubfieldsProperties = relevantPropertiesObject.getTranslateConnectedSubfieldsProperties();
+				textToUse = this.getTranslatedValue(solrFieldname, null, textToUse, translateConnectedSubfieldsProperties, "all", "all", connectedDefaultValue, true, false, false, true, false, null, false, null, false, null, null);
+			}
+
+			returnValue.add(textToUse);
+		}
+
+		return returnValue;
+	}
+	
+	private ArrayList<String> getConcatenatedSubfields(Datafield datafield, PropertiesObject relevantPropertiesObject) {
+		ArrayList<String> returnValue = new ArrayList<String>();
+		//ArrayList<String> concatenatedValues = new ArrayList<String>();
+		String concatenatedSubfieldsSeparator = null;
+		LinkedHashMap<Integer, String> concatenatedSubfields = relevantPropertiesObject.getConcatenatedSubfields();
+		
+		for (Entry<Integer, String> concatenatedSubfield : concatenatedSubfields.entrySet()) {
+			List<String> immutableList = Arrays.asList(concatenatedSubfield.getValue().split("\\s*:\\s*"));
+			List<String> concatenatedSubfieldsCodes = new ArrayList<String>();
+			concatenatedSubfieldsCodes.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
+			int lastListElement = (concatenatedSubfieldsCodes.size()-1); // Get index of last List element
+			concatenatedSubfieldsSeparator = concatenatedSubfieldsCodes.get(lastListElement); // Last value is always the separator to use
+			concatenatedSubfieldsCodes.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
+			
+			for (String concatenatedSubfieldsCode : concatenatedSubfieldsCodes) {
+				for (Subfield passiveSubfield : datafield.getPassiveSubfields()) {
+					String passiveSubfieldCode = passiveSubfield.getCode();
+					if (concatenatedSubfieldsCode.equals(passiveSubfieldCode)) {
+						String subfieldContent = passiveSubfield.getContent();
+						if (subfieldContent != null && !subfieldContent.isEmpty()) {
+							returnValue.add(subfieldContent);
+						}
+					}
+				}
+			}
+			
+			System.out.println(returnValue.toString());
+			
+			/*
+			 * String concatValue = StringUtils.join(concatValues, separator); // Join concatenated value(s) with the given separator character
+						String valueToAdd = fieldValue + separator + concatValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
+			 */
+		}
+		
+		return returnValue;
 	}
 
 

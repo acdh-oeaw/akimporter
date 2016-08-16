@@ -48,7 +48,7 @@ public class PropertiesObject {
 	private boolean hasConnectedSubfields;
 	private LinkedHashMap<Integer, String> connectedSubfields;
 	private boolean translateConnectedSubfields;
-	private Map<String, String> translateSubfieldsProperties;
+	private Map<String, String> translateConnectedSubfieldsProperties;
 	private boolean hasConcatenatedSubfields;
 	private LinkedHashMap<Integer, String> concatenatedSubfields;
 	private String concatenatedSubfieldsSeparator;
@@ -89,7 +89,7 @@ public class PropertiesObject {
 			boolean hasConnectedSubfields,
 			LinkedHashMap<Integer, String> connectedSubfields,
 			boolean translateConnectedSubfields,
-			Map<String, String> translateSubfieldsProperties,
+			Map<String, String> translateConnectedSubfieldsProperties,
 			boolean hasConcatenatedSubfields,
 			LinkedHashMap<Integer, String> concatenatedSubfields,
 			String concatenatedSubfieldsSeparator,
@@ -126,7 +126,7 @@ public class PropertiesObject {
 		this.setHasConnectedSubfields(hasConnectedSubfields);
 		this.setConnectedSubfields(connectedSubfields);		
 		this.setTranslateConnectedSubfields(translateConnectedSubfields);
-		this.setTranslateSubfieldsProperties(translateSubfieldsProperties);				
+		this.setTranslateConnectedSubfieldsProperties(translateConnectedSubfieldsProperties);				
 		this.setHasConcatenatedSubfields(hasConcatenatedSubfields);
 		this.setConcatenatedSubfields(concatenatedSubfields);
 		this.setConcatenatedSubfieldsSeparator(concatenatedSubfieldsSeparator);
@@ -281,12 +281,12 @@ public class PropertiesObject {
 		this.translateConnectedSubfields = translateConnectedSubfields;
 	}
 
-	public Map<String, String> getTranslateSubfieldsProperties() {
-		return translateSubfieldsProperties;
+	public Map<String, String> getTranslateConnectedSubfieldsProperties() {
+		return translateConnectedSubfieldsProperties;
 	}
 
-	public void setTranslateSubfieldsProperties(Map<String, String> translateSubfieldsProperties) {
-		this.translateSubfieldsProperties = translateSubfieldsProperties;
+	public void setTranslateConnectedSubfieldsProperties(Map<String, String> translateConnectedSubfieldsProperties) {
+		this.translateConnectedSubfieldsProperties = translateConnectedSubfieldsProperties;
 	}
 
 	public boolean hasConnectedSubfields() {
@@ -461,10 +461,11 @@ public class PropertiesObject {
 				+ translateValueRegex + ", translateProperties=" + translateProperties + ", hasDefaultValue="
 				+ hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
 				+ hasConnectedSubfields + ", connectedSubfields=" + connectedSubfields
-				+ ", translateConnectedSubfields=" + translateConnectedSubfields + ", translateSubfieldsProperties="
-				+ translateSubfieldsProperties + ", hasConcatenatedSubfields=" + hasConcatenatedSubfields
-				+ ", concatenatedSubfields=" + concatenatedSubfields + ", concatenatedSubfieldsSeparator="
-				+ concatenatedSubfieldsSeparator + ", translateConcatenatedSubfields=" + translateConcatenatedSubfields
+				+ ", translateConnectedSubfields=" + translateConnectedSubfields
+				+ ", translateConnectedSubfieldsProperties=" + translateConnectedSubfieldsProperties
+				+ ", hasConcatenatedSubfields=" + hasConcatenatedSubfields + ", concatenatedSubfields="
+				+ concatenatedSubfields + ", concatenatedSubfieldsSeparator=" + concatenatedSubfieldsSeparator
+				+ ", translateConcatenatedSubfields=" + translateConcatenatedSubfields
 				+ ", translateConcatenatedSubfieldsProperties=" + translateConcatenatedSubfieldsProperties
 				+ ", hasRegex=" + hasRegex + ", regexValue=" + regexValue + ", hasRegexStrict=" + hasRegexStrict
 				+ ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace=" + hasRegExReplace
@@ -472,6 +473,6 @@ public class PropertiesObject {
 				+ ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
 				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists + "]";
 	}
-
+	
 
 }
