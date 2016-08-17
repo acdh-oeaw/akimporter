@@ -1,5 +1,5 @@
 /**
- * Mabfield class
+ * SolrField class
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
@@ -24,25 +24,30 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public class SolrField {
 
 	private String fieldname;
-	private String fieldvalue;
-	private List<String> connectedValues;
-	private List<String> concatenatedValues;
-	private String concatenatedSeparator;
+	private ArrayList<String> fieldvalues;
+	private boolean isMultivalued;
 
 	
 	public SolrField() {}
 
-	public SolrField(String fieldname, String fieldvalue) {
+	/**
+	 * SolrField constructor
+	 * 
+	 * @param fieldname			String
+	 * @param fieldvalues		ArrayList<String>
+	 * @param isMultivalued		boolean
+	 */
+	public SolrField(String fieldname, ArrayList<String> fieldvalues, boolean isMultivalued) {
 		this.setFieldname(fieldname);
-		this.setFieldvalue(fieldvalue);
+		this.setFieldvalues(fieldvalues);
+		this.setMultivalued(isMultivalued);
 	}
 
-	
 	public String getFieldname() {
 		return this.fieldname;
 	}
@@ -51,43 +56,27 @@ public class SolrField {
 		this.fieldname = fieldname;
 	}
 
-	public String getFieldvalue() {
-		return this.fieldvalue;
+	public ArrayList<String> getFieldvalues() {
+		return fieldvalues;
 	}
 
-	public void setFieldvalue(String fieldvalue) {
-		this.fieldvalue = fieldvalue;
-	}
-	
-	public List<String> getConnectedValues() {
-		return connectedValues;
+	public void setFieldvalues(ArrayList<String> fieldvalues) {
+		this.fieldvalues = fieldvalues;
 	}
 
-	public void setConnectedValues(List<String> connectedValues) {
-		this.connectedValues = connectedValues;
+	public boolean isMultivalued() {
+		return isMultivalued;
 	}
 
-	public List<String> getConcatenatedValues() {
-		return concatenatedValues;
+	public void setMultivalued(boolean isMultivalued) {
+		this.isMultivalued = isMultivalued;
 	}
 
-	public void setConcatenatedValues(List<String> concatenatedValues) {
-		this.concatenatedValues = concatenatedValues;
-	}
-	
-	public String getConcatenatedSeparator() {
-		return concatenatedSeparator;
-	}
-
-	public void setConcatenatedSeparator(String concatenatedSeparator) {
-		this.concatenatedSeparator = concatenatedSeparator;
-	}
-
-	
 	@Override
 	public String toString() {
-		return "SolrField [fieldname=" + fieldname + ", fieldvalue=" + fieldvalue + ", connectedValues="
-				+ connectedValues + ", concatenatedValues=" + concatenatedValues + ", concatenatedSeparator="
-				+ concatenatedSeparator + "]";
+		return "SolrField [fieldname=" + fieldname + ", fieldvalues=" + fieldvalues + ", isMultivalued=" + isMultivalued
+				+ "]";
 	}
+	
+	
 }

@@ -46,8 +46,8 @@ public class MatchingOperationsOLD {
 	private List<Mabfield> listOfNewFieldsForNewRecord;
 	private Record newRecord;
 	List<String> multiValuedFields = Index.multiValuedFields;
-	List<Mabfield> customTextFields = Index.customTextFields;
-	Map<String, List<String>> translateFields = Index.translateFields;
+	//List<Mabfield> customTextFields = Index.customTextFields;
+	//Map<String, List<String>> translateFields = Index.translateFields;
 	String fullRecordFieldname = Index.fullrecordFieldname;
 
 
@@ -88,9 +88,11 @@ public class MatchingOperationsOLD {
 				}
 			}
 
+			/*
 			for (Mabfield customTextField : customTextFields) {
 				listOfNewFieldsForNewRecord.add(customTextField);
 			}
+			*/
 
 			// DeDuplication of none-multivalued SolrFields:
 			HashSet<Mabfield> dedupSolrSet = new HashSet<Mabfield>();
