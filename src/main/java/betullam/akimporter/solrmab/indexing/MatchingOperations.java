@@ -98,7 +98,7 @@ public class MatchingOperations {
 				allSolrFieldsOfRecord.addAll(Index.customTextFields);
 			}
 
-			
+			// Consolidate SolrFields (put values for same SolrField in one Map)
 			Map<String, SolrField> consolidatedSolrFields = new TreeMap<String, SolrField>();
 			for (SolrField solrfield : allSolrFieldsOfRecord) {
 				if (!consolidatedSolrFields.containsKey(solrfield.getFieldname())) { // Its not already in our Map!
@@ -111,11 +111,23 @@ public class MatchingOperations {
 				}
 			}
 			
-
-			/*
+			// Handle non-multivalued fields
+			for (Entry consolidatedSolrField : consolidatedSolrFields.entrySet()) {
+				SolrField solrfield = (SolrField)consolidatedSolrField.getValue();
+				if (!solrfield.isMultivalued()) {
+					String strFirstValue = solrfield.getFieldvalues().get(0); // Get first value of SolrField values and use it as the value for indexing
+					ArrayList<String> firstValue = new ArrayList<String>();
+					firstValue.add(strFirstValue);
+					solrfield.setFieldvalues(firstValue);
+				}
+			}
+			
+			// TODO: Handle allowDuplicates
+			
+			
 			for (Entry<String, SolrField> entry : consolidatedSolrFields.entrySet()) {
 				System.out.println(entry.toString());
-			}*/
+			}
 			
 		}
 		
@@ -157,10 +169,6 @@ public class MatchingOperations {
 		if (relevantPropertiesObjects == null) {
 			return null;
 		}
-
-		// TODO: These rules need to be handled elsewhere because they have nothing to do with the raw MarcXML fields:
-		// multiValued
-		// allowDuplicates
 
 
 
@@ -268,7 +276,7 @@ public class MatchingOperations {
 						if (type.equals("controlfield")) {
 							String rawFieldname = controlfield.getTag();
 							String rawFieldvalue = controlfield.getContent();
-							String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, false, hasRegex, regexPattern, hasRegexStrict, regexStrictPattern, hasRegexReplace, regexReplacePattern, regexReplaceValue, false);
+							String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, hasRegex, regexPattern, hasRegexStrict, regexStrictPattern, hasRegexReplace, regexReplacePattern, regexReplaceValue, false);
 							//System.out.println("translatedValue: " + translatedValue);
 							if (translatedValue != null) {
 								fieldValues.add(translatedValue);
@@ -281,7 +289,7 @@ public class MatchingOperations {
 							for (Subfield subfield : copiedDatafield.getSubfields()) {
 								String rawFieldname = tag+"$"+ind1+ind2+"$"+subfield.getCode();
 								String rawFieldvalue = subfield.getContent();
-								String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, false, hasRegex, regexPattern, hasRegexStrict, regexStrictPattern, hasRegexReplace, regexReplacePattern, regexReplaceValue, false);
+								String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, hasRegex, regexPattern, hasRegexStrict, regexStrictPattern, hasRegexReplace, regexReplacePattern, regexReplaceValue, false);
 								//System.out.println("translatedValue: " + translatedValue);
 								if (translatedValue != null) {
 									fieldValues.add(translatedValue);
@@ -547,21 +555,19 @@ public class MatchingOperations {
 	 * @param isTranslateValueContains					boolean
 	 * @param isTranslateValueRegex						boolean
 	 * @param hasRegex									boolean
-	 * @param isTranslateConnectedSubfields				boolean
 	 * @param regexValue								String
 	 * @param hasRegexStrict							hasRegexStrict
 	 * @param regexStrictValue							String
 	 * @param hasRegexReplace							boolean
 	 * @param regexReplacePattern						String
 	 * @param regexReplaceValue							String
+	 * @param useRawFieldvalueIfNoMatch					boolean
 	 * @return											String containing the translated value
 	 */
-	private String getTranslatedValue(String solrFieldname, String rawFieldname, String rawFieldvalue, Map<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean isTranslateConnectedSubfields, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue, boolean useRawFieldvalueIfNoMatch) {
-
+	private String getTranslatedValue(String solrFieldname, String rawFieldname, String rawFieldvalue, Map<String, String> translateProperties, String fromCount, String toCount, String translateDefaultValue, boolean isTranslateValue, boolean isTranslateValueContains, boolean isTranslateValueRegex, boolean hasRegex, String regexValue, boolean hasRegexStrict, String regexStrictValue, boolean hasRegexReplace, String regexReplacePattern, String regexReplaceValue, boolean useRawFieldvalueIfNoMatch) {
 
 		String translateValue = null;
 		String matchedValueXml = null;
-
 
 		// Use regex if user has defined one:
 		if (hasRegex && regexValue != null) {
@@ -790,16 +796,13 @@ public class MatchingOperations {
 			if (textToUse == null) {
 				textToUse = connectedDefaultValue;
 			}
-
-			System.out.println(textToUse);
 			
 			if (isTranslateConnectedSubfields) {
 				String solrFieldname = relevantPropertiesObject.getSolrFieldname();
 				Map<String, String> translateConnectedSubfieldsProperties = relevantPropertiesObject.getTranslateConnectedSubfieldsProperties();
-				textToUse = this.getTranslatedValue(solrFieldname, null, textToUse, translateConnectedSubfieldsProperties, "all", "all", connectedDefaultValue, false, false, false, true, false, null, false, null, false, null, null, false);
+				textToUse = this.getTranslatedValue(solrFieldname, null, textToUse, translateConnectedSubfieldsProperties, "all", "all", connectedDefaultValue, true, false, false, false, null, false, null, false, null, null, true);
+
 			}
-			
-			System.out.println(textToUse + "\n");
 
 			returnValue.add(textToUse);
 		}
@@ -830,7 +833,7 @@ public class MatchingOperations {
 							if (isTranslateConcatenatedSubfields) {
 								String solrFieldname = relevantPropertiesObject.getSolrFieldname();
 								Map<String, String> translateConcatenatedSubfieldsProperties = relevantPropertiesObject.getTranslateConcatenatedSubfieldsProperties();
-								textToUse = this.getTranslatedValue(solrFieldname, null, textToUse, translateConcatenatedSubfieldsProperties, "all", "all", textToUse, true, false, false, false, false, null, false, null, false, null, null, true);
+								textToUse = this.getTranslatedValue(solrFieldname, null, textToUse, translateConcatenatedSubfieldsProperties, "all", "all", textToUse, true, false, false, false, null, false, null, false, null, null, true);
 							}
 							returnValue.add(textToUse);
 						}

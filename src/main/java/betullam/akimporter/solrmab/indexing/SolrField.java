@@ -31,6 +31,7 @@ public class SolrField {
 	private String fieldname;
 	private ArrayList<String> fieldvalues;
 	private boolean isMultivalued;
+	private boolean allowDuplicates;
 
 	
 	public SolrField() {}
@@ -41,11 +42,13 @@ public class SolrField {
 	 * @param fieldname			String
 	 * @param fieldvalues		ArrayList<String>
 	 * @param isMultivalued		boolean
+	 * @param allowDuplicates	boolean
 	 */
-	public SolrField(String fieldname, ArrayList<String> fieldvalues, boolean isMultivalued) {
+	public SolrField(String fieldname, ArrayList<String> fieldvalues, boolean isMultivalued, boolean allowDuplicates) {
 		this.setFieldname(fieldname);
 		this.setFieldvalues(fieldvalues);
 		this.setMultivalued(isMultivalued);
+		this.setAllowDuplicates(allowDuplicates);
 	}
 
 	public String getFieldname() {
@@ -72,11 +75,17 @@ public class SolrField {
 		this.isMultivalued = isMultivalued;
 	}
 
+	public boolean allowDuplicates() {
+		return allowDuplicates;
+	}
+
+	public void setAllowDuplicates(boolean allowDuplicates) {
+		this.allowDuplicates = allowDuplicates;
+	}
+
 	@Override
 	public String toString() {
 		return "SolrField [fieldname=" + fieldname + ", fieldvalues=" + fieldvalues + ", isMultivalued=" + isMultivalued
-				+ "]";
+				+ ", allowDuplicates=" + allowDuplicates + "]";
 	}
-	
-	
 }
