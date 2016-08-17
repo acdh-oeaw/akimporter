@@ -127,7 +127,7 @@ public class MatchingOperations {
 		// OK: regExReplace[REGEX][REPLACE]
 		// OK: connectedSubfields[subfield:subfield:subfield:...:DefaultText]
 		// OK: translateConnectedSubfields[translate.properties]
-		// concatenatedSubfields[subfield:subfield:subfield:...:Separator]
+		// OK: concatenatedSubfields[subfield:subfield:subfield:...:Separator]
 		// translateConcatenatedSubfields[translate.properties]
 		// subfieldExists[subfield:subfield:subfield:...:AND|OR]
 		// subfieldNotExists[subfield:subfield:subfield:...:AND|OR]
@@ -329,15 +329,27 @@ public class MatchingOperations {
 			// Handle concatenatedSubfields. This can only apply to datafields, not to controlfields (they do not have any subfields)
 			if (hasConcatenatedSubfields) {
 				if (type.equals("datafield")) {
+					ArrayList<String> concatenatedValues = getConcatenatedSubfields(copiedDatafield, relevantPropertiesObject.getConcatenatedSubfields());
+					String concatenatedSubfieldsSeparator = relevantPropertiesObject.getConcatenatedSubfieldsSeparator();
+					
 					for (Subfield subfield : copiedDatafield.getSubfields()) {
-						TODO: Go on here: Get concatenated Subfields and glue them together with the separator!
-						ArrayList<String> concatenatedValue = getConcatenatedSubfields(copiedDatafield, relevantPropertiesObject);
-						
+						String valueToAdd = null;
+						String subfieldContent = subfield.getContent();
+						if (concatenatedValues != null) {
+							
+							String concatenatedValue = StringUtils.join(concatenatedValues, concatenatedSubfieldsSeparator); // Join concatenated value(s) with the given separator character
+							valueToAdd = subfieldContent + concatenatedSubfieldsSeparator + concatenatedValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
+						} else {
+							valueToAdd = subfieldContent; // If there are not values for concatenation, add the single subfield content.
+						}
+						fieldValues.add(valueToAdd);
 					}
 				}
 			}
 
+			
 
+			// TODO: Add the normal field values (the ones we do not need to apply any rules) here!
 
 
 			if (!fieldValues.isEmpty()) {
@@ -348,15 +360,21 @@ public class MatchingOperations {
 				for (SolrField solrField : solrFields) {
 					System.out.println(solrField.getFieldname() + ": " + solrField.getFieldvalue());
 				}
-				*/
+				 */
 			}
 		}
 
+
+		if (type.equals("datafield") && datafield.getTag().equals("902")) {
+			if (!solrFields.isEmpty()) {
+				System.out.println(solrFields.toString());
+			}
+		}
 		/*
 		if (!solrFields.isEmpty()) {
 			System.out.println(solrFields.toString());
 		}
-		*/
+		 */
 
 		return solrFields;
 	}
@@ -749,21 +767,17 @@ public class MatchingOperations {
 
 		return returnValue;
 	}
-	
-	private ArrayList<String> getConcatenatedSubfields(Datafield datafield, PropertiesObject relevantPropertiesObject) {
+
+	private ArrayList<String> getConcatenatedSubfields(Datafield datafield, LinkedHashMap<Integer, String> concatenatedSubfields) {
 		ArrayList<String> returnValue = new ArrayList<String>();
-		//ArrayList<String> concatenatedValues = new ArrayList<String>();
-		String concatenatedSubfieldsSeparator = null;
-		LinkedHashMap<Integer, String> concatenatedSubfields = relevantPropertiesObject.getConcatenatedSubfields();
-		
+
 		for (Entry<Integer, String> concatenatedSubfield : concatenatedSubfields.entrySet()) {
 			List<String> immutableList = Arrays.asList(concatenatedSubfield.getValue().split("\\s*:\\s*"));
 			List<String> concatenatedSubfieldsCodes = new ArrayList<String>();
 			concatenatedSubfieldsCodes.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
 			int lastListElement = (concatenatedSubfieldsCodes.size()-1); // Get index of last List element
-			concatenatedSubfieldsSeparator = concatenatedSubfieldsCodes.get(lastListElement); // Last value is always the separator to use
 			concatenatedSubfieldsCodes.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
-			
+
 			for (String concatenatedSubfieldsCode : concatenatedSubfieldsCodes) {
 				for (Subfield passiveSubfield : datafield.getPassiveSubfields()) {
 					String passiveSubfieldCode = passiveSubfield.getCode();
@@ -775,15 +789,12 @@ public class MatchingOperations {
 					}
 				}
 			}
-			
-			System.out.println(returnValue.toString());
-			
-			/*
-			 * String concatValue = StringUtils.join(concatValues, separator); // Join concatenated value(s) with the given separator character
-						String valueToAdd = fieldValue + separator + concatValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
-			 */
 		}
-		
+
+		if (returnValue.isEmpty()) {
+			returnValue = null;
+		}
+
 		return returnValue;
 	}
 
