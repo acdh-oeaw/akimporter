@@ -386,6 +386,7 @@ public class MarcContentHandler implements ContentHandler {
 				}
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
+				// TODO: Change hardecoded fieldname "indexTimestamp_str" to fieldname specified in .properties file.
 				doc.addField("indexTimestamp_str", solrRecord.getIndexTimestamp());
 
 				// Add the allfields field to the document if it is used
@@ -395,7 +396,7 @@ public class MarcContentHandler implements ContentHandler {
 				
 				// Add the fullRecord field to the document if it is used
 				if (getFullRecordAsXML) {
-					doc.addField(fullrecordField, fullrecordXmlString);
+					doc.addField(fullrecordField, solrRecord.getFullRecord());
 				}
 				
 				// Add the document to the collection of documents:

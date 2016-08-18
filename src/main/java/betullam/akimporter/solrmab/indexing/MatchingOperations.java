@@ -137,8 +137,8 @@ public class MatchingOperations {
 				solrfields.add(solrfield);
 			}
 
+			
 			SolrRecord solrRecord = new SolrRecord(rawRecord.getRecordID(), rawRecord.getRecordSYS(), rawRecord.getIndexTimestamp(), solrfields, rawRecord.getFullRecord());
-
 			matchingResult.add(solrRecord);
 		}
 
