@@ -1,5 +1,5 @@
 /**
- * Datafield class
+ * Datafield class. Represents a datafield from a MarcXML record.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
@@ -25,7 +25,6 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Datafield {
 
@@ -35,13 +34,14 @@ public class Datafield {
 	private ArrayList<Subfield> subfields = new ArrayList<Subfield>();
 	private ArrayList<Subfield> passiveSubfields = new ArrayList<Subfield>();
 
+	
 	public Datafield() {}
-
 
 	public String getTag() {
 		return this.tag;
 	}
 
+	
 	public void setTag(String tag) {
 		this.tag = tag;
 	}
@@ -203,5 +203,4 @@ public class Datafield {
 		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields
 				+ ", passiveSubfields=" + passiveSubfields + "]";
 	}
-
 }

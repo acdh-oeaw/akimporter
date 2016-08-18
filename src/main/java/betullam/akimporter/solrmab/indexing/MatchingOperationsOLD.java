@@ -41,10 +41,10 @@ import main.java.betullam.akimporter.solrmab.Index;
 public class MatchingOperationsOLD {
 
 	private List<Mabfield> listOfMatchedFields;
-	private List<Record> newListOfRecords;
+	private List<RawRecord> newListOfRecords;
 	private List<List<Mabfield>> listOfNewSolrfieldLists;
 	private List<Mabfield> listOfNewFieldsForNewRecord;
-	private Record newRecord;
+	private RawRecord newRecord;
 	List<String> multiValuedFields = Index.multiValuedFields;
 	//List<Mabfield> customTextFields = Index.customTextFields;
 	//Map<String, List<String>> translateFields = Index.translateFields;
@@ -60,16 +60,16 @@ public class MatchingOperationsOLD {
 	 * 								The rules are defined in the mab.properties file.
 	 * @return						List<Record>: A set of "new" records we can use for indexing to Solr
 	 */
-	public List<Record> matching(List<Record> oldRecordSet, List<PropertiesObject> listOfMatchingObjs) {
+	public List<RawRecord> matching(List<RawRecord> oldRecordSet, List<PropertiesObject> listOfMatchingObjs) {
 
-		newListOfRecords = new ArrayList<Record>();		
+		newListOfRecords = new ArrayList<RawRecord>();		
 
-		for (Record oldRecord : oldRecordSet) {			
+		for (RawRecord oldRecord : oldRecordSet) {			
 
 			String fullRecordAsXml = null;
 			listOfNewSolrfieldLists = new ArrayList<List<Mabfield>>();
 			listOfNewFieldsForNewRecord = new ArrayList<Mabfield>();
-			newRecord = new Record();			
+			newRecord = new RawRecord();			
 
 			for (Mabfield oldMabField : oldRecord.getMabfields()) {
 				if (!oldMabField.getFieldname().equals(fullRecordFieldname)) {

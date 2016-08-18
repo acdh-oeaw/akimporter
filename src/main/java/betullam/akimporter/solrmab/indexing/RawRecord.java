@@ -1,8 +1,8 @@
 /**
- * Record class.
- * Represents a MAB record including some additional information.
+ * RawRecord class.
+ * Represents an XML record including some additional information.
  * 
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -27,41 +27,18 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.List;
 
-public class Record {
+public class RawRecord {
 
-	private List<Mabfield> mabfields;
-	private List<Controlfield> controlfields;
-	private List<Datafield> datafields;
 	private String recordID;
 	private String recordSYS;
 	private String indexTimestamp;
+	private List<Controlfield> controlfields;
+	private List<Datafield> datafields;
+	private String fullRecord;
 	
 
-	public Record() {}
+	public RawRecord() {}
 	
-	public List<Mabfield> getMabfields() {
-		return mabfields;
-	}
-
-	public void setMabfields(List<Mabfield> mabfields) {
-		this.mabfields = mabfields;
-	}
-	
-	public List<Controlfield> getControlfields() {
-		return controlfields;
-	}
-
-	public void setControlfields(List<Controlfield> controlfields) {
-		this.controlfields = controlfields;
-	}
-
-	public List<Datafield> getDatafields() {
-		return datafields;
-	}
-
-	public void setDatafields(List<Datafield> datafields) {
-		this.datafields = datafields;
-	}
 
 	public String getRecordID() {
 		return recordID;
@@ -86,10 +63,35 @@ public class Record {
 	public void setIndexTimestamp(String indexTimestamp) {
 		this.indexTimestamp = indexTimestamp;
 	}
+	
+	public List<Controlfield> getControlfields() {
+		return controlfields;
+	}
+
+	public void setControlfields(List<Controlfield> controlfields) {
+		this.controlfields = controlfields;
+	}
+
+	public List<Datafield> getDatafields() {
+		return datafields;
+	}
+
+	public void setDatafields(List<Datafield> datafields) {
+		this.datafields = datafields;
+	}
+
+	public String getFullRecord() {
+		return fullRecord;
+	}
+
+	public void setFullRecord(String fullRecord) {
+		this.fullRecord = fullRecord;
+	}
 
 	@Override
 	public String toString() {
-		return "Record [mabfields=" + mabfields + ", controlfields=" + controlfields + ", datafields=" + datafields
-				+ ", recordID=" + recordID + ", recordSYS=" + recordSYS + ", indexTimestamp=" + indexTimestamp + "]";
+		return "RawRecord [recordID=" + recordID + ", recordSYS=" + recordSYS + ", indexTimestamp=" + indexTimestamp
+				+ ", controlfields=" + controlfields + ", datafields=" + datafields + ", fullRecord=" + fullRecord
+				+ "]";
 	}
 }
