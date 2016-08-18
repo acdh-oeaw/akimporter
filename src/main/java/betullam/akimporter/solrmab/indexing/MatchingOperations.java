@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -60,7 +61,7 @@ public class MatchingOperations {
 	// ################ NEW #################
 	private List<Record> rawRecords;
 	private List<PropertiesObject> allPropertiesObjects;
-	private List<Record> matchingResult;
+	
 
 	public MatchingOperations() {}
 
@@ -71,9 +72,10 @@ public class MatchingOperations {
 	// ################ NEW #################
 
 	private List<Record> matching() {
-
+		List<Record> matchingResult = new ArrayList<Record>();
 
 		for (Record rawRecord : rawRecords) {
+			
 			List<SolrField> allSolrFieldsOfRecord = new ArrayList<SolrField>();
 			List<SolrField> newSolrFields = new ArrayList<SolrField>(); 
 
@@ -122,13 +124,31 @@ public class MatchingOperations {
 				}
 			}
 			
-			// TODO: Handle allowDuplicates
+			// Handle allowDuplicates
+			for (Entry consolidatedSolrField : consolidatedSolrFields.entrySet()) {
+				SolrField solrfield = (SolrField)consolidatedSolrField.getValue();
+				ArrayList<String> solrfieldValues = solrfield.getFieldvalues();
+				//LinkedHashSet<String> dedupSolrfieldValues = new LinkedHashSet<String>();
+				ArrayList<String> dedupSolrfieldValues = new ArrayList<String>();
+				if (solrfield.isMultivalued() && !solrfield.allowDuplicates() && solrfieldValues.size() > 1) {
+					// Remove duplicate values because they are not allowed for these Solr fields
+					for (String fieldValue : solrfieldValues) {
+						if (!dedupSolrfieldValues.contains(fieldValue)) {
+							dedupSolrfieldValues.add(fieldValue);
+						}
+					}
+					solrfield.setFieldvalues(dedupSolrfieldValues);
+				}
+			}
 			
-			
+			/*
 			for (Entry<String, SolrField> entry : consolidatedSolrFields.entrySet()) {
 				System.out.println(entry.toString());
 			}
-			
+			*/
+			Record solrRecord = new Record();
+			//solrRecord.set
+			//matchingResult.
 		}
 		
 
@@ -192,6 +212,7 @@ public class MatchingOperations {
 			boolean hasSubfieldNotExists = relevantPropertiesObject.hasSubfieldNotExists();
 			boolean skipField = false;
 			boolean isMultivalued = relevantPropertiesObject.isMultiValued();
+			boolean allowDuplicates = relevantPropertiesObject.isAllowDuplicates();
 
 			// Check if the raw subfield, for which we want to treat it's content (apply rules on it), is listed in the properties object
 			// (which represents a line in mab.properties).
@@ -248,8 +269,8 @@ public class MatchingOperations {
 				SolrField solrField = new SolrField();
 				solrField.setFieldname(solrFieldname);
 				solrField.setMultivalued(isMultivalued);
+				solrField.setAllowDuplicates(allowDuplicates);
 				
-
 				// Check if an option should be applied to the current field. If yes, go on an apply the option(s). If no, just use the content from the raw field as it is.
 				boolean hasPropertiesOption = false;
 				if (isTranslateValue || isTranslateValueContains || isTranslateValueRegex || hasRegex || hasRegexStrict || hasRegexReplace || hasConnectedSubfields || hasConcatenatedSubfields) {

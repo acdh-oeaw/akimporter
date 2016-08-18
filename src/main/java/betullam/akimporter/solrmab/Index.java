@@ -600,7 +600,7 @@ public class Index {
 					for(String lstValue : lstValues) {
 						ArrayList<String> solrFieldvalue = new ArrayList<String>();
 						solrFieldvalue.add(lstValue);
-						customTextFields.add(new SolrField(key, solrFieldvalue, multiValued));
+						customTextFields.add(new SolrField(key, solrFieldvalue, multiValued, allowDuplicates));
 						//mabFieldnames.put(lstValue, null);
 						fieldsToRemove.add(lstValue);
 					}
