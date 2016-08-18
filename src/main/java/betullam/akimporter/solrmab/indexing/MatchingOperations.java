@@ -1,6 +1,5 @@
 /**
  * Matching raw XML fields to respective Solr fields.
- * 
  * This is where some of the data processing is done to
  * get the values in shape before indexing them to Solr.
  * 
@@ -55,6 +54,12 @@ public class MatchingOperations {
 		this.allPropertiesObjects = allPropertiesObjects;
 	}
 
+	
+	/**
+	 * Match a List of RawRecord objects to a List of of SolrRecord objects.
+	 * 
+	 * @return	List<SolrRecord>: The SolrRecord objects with the processed data.
+	 */
 	private List<SolrRecord> matching() {
 
 		List<SolrRecord> matchingResult = new ArrayList<SolrRecord>();
@@ -134,12 +139,6 @@ public class MatchingOperations {
 
 			SolrRecord solrRecord = new SolrRecord(rawRecord.getRecordID(), rawRecord.getRecordSYS(), rawRecord.getIndexTimestamp(), solrfields, rawRecord.getFullRecord());
 
-			/*
-			for (SolrField sf : solrfields) {
-				System.out.println(sf.toString());
-			}
-			*/
-
 			matchingResult.add(solrRecord);
 		}
 
@@ -149,11 +148,12 @@ public class MatchingOperations {
 
 
 	/**
-	 * Matching a raw field from the MarcXML file to the Solr field according to the rules in mab.properties.
+	 * Matching a raw field from the MarcXML file to a Solr field according to the rules in mab.properties (this file could be called
+	 * differently but it must be a .properties file).
 	 * 
-	 * @param rawField				Object: The raw field (Datafield or Controlfield) from the MarcXML record
+	 * @param rawField				Datafield or Controlfield: The raw field (Datafield object or Controlfield object) that was parsed from the MarcXML record
 	 * @param allPropertiesObjects	List<PropertiesObject>: All rules from the mab.properties file as a list of PropertiesObject objects
-	 * @return						??? A list of matched fields for indexing to Solr
+	 * @return						List<SolrField>: A list of one or multiple SolrField object(s). Each raw field could match to none, one or mutliple Solr field(s). 
 	 */
 	public List<SolrField> matchField(Object rawField, List<PropertiesObject> allPropertiesObjects) {
 
@@ -175,12 +175,9 @@ public class MatchingOperations {
 		// Remove unnecessary PropertiesObjects so that we don't have to iterate over all of them. This saves a lot of time!
 		// A PropertiesObject is not necessary if it does not contain at least one field from the parsed MarcXML record.
 		List<PropertiesObject> relevantPropertiesObjects = getRelevantPropertiesObjects(type, rawField, allPropertiesObjects);
-
 		if (relevantPropertiesObjects == null) {
 			return null;
 		}
-
-
 
 		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {
 
@@ -239,7 +236,6 @@ public class MatchingOperations {
 				}
 			}
 
-
 			// Handle hasSubfieldExists. This can only apply to datafields, not to controlfields (they do not have any subfields)
 			if (hasSubfieldExists) {
 				if (type.equals("datafield")) {
@@ -253,7 +249,6 @@ public class MatchingOperations {
 					skipField = skipField(copiedDatafield, relevantPropertiesObject, false, true);
 				}
 			}
-
 
 			if (!skipField) {
 				SolrField solrField = new SolrField();
@@ -309,7 +304,6 @@ public class MatchingOperations {
 						}
 					}
 
-
 					// Handle regEx, but only if we do not have a translate value. For values that needs to be translated, regexing is done within the translation process.
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasRegex && regexPattern != null)) {
 						if (type.equals("controlfield")) {
@@ -327,7 +321,6 @@ public class MatchingOperations {
 							}
 						}
 					}
-
 
 					// Handle regExStrict, but only if we do not have a translate value. For values that needs to be translated, regexing is done within the translation process.
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasRegexStrict && regexStrictPattern != null)) {
@@ -347,7 +340,6 @@ public class MatchingOperations {
 						}
 					}
 
-
 					// Handle regExReplace, but only if we do not have a translate value. For values that needs to be translated, regexing is done within the translation process.
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty())) {
 						if (type.equals("controlfield")) {
@@ -366,7 +358,6 @@ public class MatchingOperations {
 						}
 					}
 
-
 					// Handle connectedSubfields, but only if we do not have a translate value. Translations are treated differently for connectedSubfields.
 					// This can only apply to datafields, not to controlfields (they do not have any subfields).
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields)) {
@@ -383,7 +374,6 @@ public class MatchingOperations {
 							}
 						}
 					}
-
 
 					// Handle concatenatedSubfields, but only if we do not have a translate value. Translations are treated differently for concatenatedSubfields.
 					// This can only apply to datafields, not to controlfields (they do not have any subfields).
@@ -415,14 +405,11 @@ public class MatchingOperations {
 					}
 				}
 
-
 				if (solrField != null && !fieldValues.isEmpty()) {
 					solrField.setFieldvalues(fieldValues);
 					solrFields.add(solrField);
-					//System.out.println(solrField);
 				}
 			}
-
 		}
 
 		return solrFields;
@@ -430,7 +417,51 @@ public class MatchingOperations {
 
 
 	/**
-	 * Getting the value of a translation file.
+	 * Get the relevant PropertiesObject objects for the given raw field (Controlfield or Datafield). All PropertiesObject objects that do
+	 * not match to a raw field (Controlfield or Datafield) will would produce an overhead and would waste a lot of ressources and time.
+	 * 
+	 * @param type						String: Only "controlfield" or "datafield" are possible
+	 * @param rawField					Controlfield or Datafield: A Controlfield object or a Datafield object
+	 * @param allPropertiesObjects		List<PropertiesObject>: A list of all PropertiesObject objects
+	 * @return							List<PropertiesObject>: A list of all relevant PropertiesObject objects
+	 */
+	private List<PropertiesObject> getRelevantPropertiesObjects(String type, Object rawField, List<PropertiesObject> allPropertiesObjects) {
+
+		List<PropertiesObject> relevantPropertiesObjects = new ArrayList<PropertiesObject>();
+
+		// Remove unnecessary Controlfields from PropertiesObjects
+		if (type.equals("controlfield")) {
+			Controlfield rawControlfield = ((Controlfield) rawField);
+			for (PropertiesObject propertiesObject : allPropertiesObjects) {
+				if (rawControlfield.isContainedInPropertiesObject(propertiesObject)) {
+					relevantPropertiesObjects.add(propertiesObject);
+				}
+			}
+		}
+
+		// Remove unnecessary Datafields from PropertiesObjects
+		if (type.equals("datafield")) {
+			Datafield rawDatafield = ((Datafield) rawField);
+			for (PropertiesObject propertiesObject : allPropertiesObjects) {
+				if (rawDatafield.isContainedInPropertiesObject(propertiesObject)) {
+					relevantPropertiesObjects.add(propertiesObject);
+				}
+			}
+		}
+
+		// If relevantPropertiesObjects is empty, this means that no corresponding PropertiesObject was found for the raw field from the MarcXML
+		// In this case we will return null. This helps us for error management.
+		if (relevantPropertiesObjects.isEmpty()) {
+			relevantPropertiesObjects = null;
+		}
+
+		return relevantPropertiesObjects;
+	}
+	
+	
+	/**
+	 * Getting the translated value that was translated with the help of a translation file.
+	 * 
 	 * @param solrFieldname								String: Name of Solr field 
 	 * @param rawFieldname								Raw fieldname, e. g. 100$ab$c
 	 * @param rawFieldvalue								Raw fieldvalue from XML record
@@ -547,6 +578,14 @@ public class MatchingOperations {
 		return translateValue;
 	}
 
+	
+	/**
+	 * Get a regexed value. If the regex does not match, return the original value (= rawFieldvalue)
+	 * 
+	 * @param regexPattern		String: The regex pattern
+	 * @param rawFieldvalue		String: The value that should be regexed
+	 * @return					String: The regexed value or the rawFieldvalue if the regex does not match
+	 */
 	private String getRegexValue(String regexPattern, String rawFieldvalue) {
 		String returnValue = null;
 		Pattern pattern = java.util.regex.Pattern.compile(regexPattern);
@@ -566,6 +605,13 @@ public class MatchingOperations {
 		return returnValue;
 	}
 
+	
+	/**
+	 * Get a regexed value. If the regex does not match, return null.
+	 * @param regexPattern		String: The regex pattern
+	 * @param rawFieldvalue		String: The value that should be regexed
+	 * @return					String: The regexed value or null if the regex does not match
+	 */
 	private String getRegexStrictValue(String regexPattern, String rawFieldvalue) {
 		Pattern pattern = java.util.regex.Pattern.compile(regexPattern);
 		Matcher matcher = pattern.matcher(rawFieldvalue);
@@ -584,40 +630,13 @@ public class MatchingOperations {
 	}
 
 
-	private List<PropertiesObject> getRelevantPropertiesObjects(String type, Object rawField, List<PropertiesObject> allPropertiesObjects) {
-
-		List<PropertiesObject> relevantPropertiesObjects = new ArrayList<PropertiesObject>();
-
-		// Remove unnecessary Controlfields from PropertiesObjects
-		if (type.equals("controlfield")) {
-			Controlfield rawControlfield = ((Controlfield) rawField);
-			for (PropertiesObject propertiesObject : allPropertiesObjects) {
-				if (rawControlfield.isContainedInPropertiesObject(propertiesObject)) {
-					relevantPropertiesObjects.add(propertiesObject);
-				}
-			}
-		}
-
-		// Remove unnecessary Datafields from PropertiesObjects
-		if (type.equals("datafield")) {
-			Datafield rawDatafield = ((Datafield) rawField);
-			for (PropertiesObject propertiesObject : allPropertiesObjects) {
-				if (rawDatafield.isContainedInPropertiesObject(propertiesObject)) {
-					relevantPropertiesObjects.add(propertiesObject);
-				}
-			}
-		}
-
-		// If relevantPropertiesObjects is empty, this means that no corresponding PropertiesObject was found for the raw field from the MarcXML
-		// In this case we will return null. This helps us for error management.
-		if (relevantPropertiesObjects.isEmpty()) {
-			relevantPropertiesObjects = null;
-		}
-
-		return relevantPropertiesObjects;
-	}
-
-
+	/**
+	 * Get all connected subfields for a datafield.
+	 * 
+	 * @param datafield					Datafield: The Datafield object for which we want to get the connected subfields.
+	 * @param relevantPropertiesObject	PropertiesObject: The PropertiesObject object that contains the rules for the connected subfields.
+	 * @return							ArrayList<String>: A list of the connected subfields in the right order.
+	 */
 	private ArrayList<String> getConnectedSubfields(Datafield datafield, PropertiesObject relevantPropertiesObject) {
 		ArrayList<String> returnValue = new ArrayList<String>();
 		String connectedDefaultValue = null;
@@ -657,16 +676,21 @@ public class MatchingOperations {
 				String solrFieldname = relevantPropertiesObject.getSolrFieldname();
 				Map<String, String> translateConnectedSubfieldsProperties = relevantPropertiesObject.getTranslateConnectedSubfieldsProperties();
 				textToUse = this.getTranslatedValue(solrFieldname, null, textToUse, translateConnectedSubfieldsProperties, "all", "all", connectedDefaultValue, true, false, false, false, null, false, null, false, null, null, true);
-
 			}
 
 			returnValue.add(textToUse);
 		}
-
 		return returnValue;
 	}
 
 
+	/**
+	 * Get all concatenated subfields for a datafield.
+	 * 
+	 * @param datafield					Datafield: The Datafield object for which we want to get the concatenated subfields.
+	 * @param relevantPropertiesObject	PropertiesObject: The PropertiesObject object that contains the rules for the concatenated subfields.
+	 * @return							ArrayList<String>: A list of the concatenated subfields in the right order.
+	 */
 	private ArrayList<String> getConcatenatedSubfields(Datafield datafield, PropertiesObject relevantPropertiesObject) {
 		ArrayList<String> returnValue = new ArrayList<String>();
 		LinkedHashMap<Integer, String> concatenatedSubfields = relevantPropertiesObject.getConcatenatedSubfields();
@@ -707,6 +731,15 @@ public class MatchingOperations {
 
 
 
+	/**
+	 * Check if a field should be skipped because one or more given subfields do exist or not exist.
+	 * 
+	 * @param datafield						Datafield: The Datafield object for which we want to check if we skip it or not.
+	 * @param relevantPropertiesObject		PropertiesObject: The PropertiesObject object that contains the rules for skiping fields.
+	 * @param isExists						boolean: True if we need to check for the existance of a subfield, false otherwise (see also isNotExists)
+	 * @param isNotExists					boolean: True if we need to check for the non-existance of a subfield, false otherwise (see also isExists)
+	 * @return								boolean: True if the field should be skipped (will not be added to the index), false otherwise (will be added to the index)
+	 */
 	private boolean skipField(Datafield datafield, PropertiesObject relevantPropertiesObject, boolean isExists, boolean isNotExists) {
 		boolean skipField = false;
 		LinkedHashMap<Integer, String> subfieldsToCheck = null;
@@ -772,7 +805,7 @@ public class MatchingOperations {
 	}
 
 	public List<SolrRecord> getSolrRecords() {
-		return this.matching(); // The matching() method sets the matching result
+		return this.matching(); // The matching() method sets the result that should be returnd to MarcContentHandler for indexing.
 	}
 
 }

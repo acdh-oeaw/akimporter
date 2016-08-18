@@ -1,7 +1,8 @@
 /**
- * Handles the contents of the MarcXML files.
- * This is where some of the data processing is done to
- * get the values in shape before indexing them to Solr.
+ * Parses the contents of the MarcXML files. The contens are handed over to
+ * a class that applies the rules defined in mab.properties (could also be
+ * called differently, but it must be a .properties file). There, the records
+ * are processed and given back. Then they will be indexed to Solr.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
@@ -45,11 +46,16 @@ import org.xml.sax.SAXException;
 
 public class MarcContentHandler implements ContentHandler {
 
-	// ################ OLD #################
-	List<Mabfield> allFields;
-	private String nodeContent;
 	private RawRecord rawRecord;
-	private List<PropertiesObject> listOfMatchingObjs;
+	private ArrayList<RawRecord> rawRecords;
+	private Controlfield controlfield;
+	private ArrayList<Controlfield> controlfields;
+	private Datafield datafield;
+	private ArrayList<Datafield> datafields;
+	private Subfield subfield;
+	private ArrayList<Subfield> subfields;
+	private String nodeContent;
+	private List<PropertiesObject> propertiesObjects;
 	private SolrServer sServer;
 	private String recordID;
 	private String recordSYS;
@@ -57,17 +63,9 @@ public class MarcContentHandler implements ContentHandler {
 	private boolean is001Datafield;
 	private boolean isSYS;
 	private boolean print = true;
-	int counter = 0;
-	long startTime;
-	long endTime;
-	String timeStamp;
-	int NO_OF_DOCS = 500;
-
-	String controlfieldTag;
-	String datafieldTag;
-	String datafieldInd1;
-	String datafieldInd2;
-	String subfieldCode;
+	private int counter = 0;
+	private String timeStamp;
+	private int NO_OF_DOCS = 500;
 	
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
@@ -78,36 +76,24 @@ public class MarcContentHandler implements ContentHandler {
 	private boolean getFullRecordAsXML = false;
 	private String fullrecordField = null;
 	private String fullrecordXmlString = null;
-	// ################ OLD #################
-
-
-	// ################ NEW #################
-	List<RawRecord> rawRecords;
-	private Controlfield controlfield;
-	private ArrayList<Controlfield> controlfields;
-	private Datafield datafield;
-	private ArrayList<Datafield> datafields;
-	private Subfield subfield;
-	private ArrayList<Subfield> subfields;
-	// ################ NEW #################
 
 
 	/**
 	 * Constructor of MarcContentHandler.
 	 * This is the starting point of reading and processing the XML file(s) containing MARC records.
 	 * 
-	 * @param listOfMatchingObjs	List<MatchingObject>. A MatchingObject contains information about matching MAB fields to Solr fields.
+	 * @param propertiesObjects		List<PropertiesObject>. A PropertiesObject contains information about matching raw MarcXML fields to Solr fields.
 	 * @param solrServer			SolrServer object that represents the Solr server to which the data should be indexed 
 	 * @param timeStamp				String that specifies the starting time of the importing process
 	 * @param print					boolean. True if status messages should be printed to the console.
 	 */
-	public MarcContentHandler(List<PropertiesObject> listOfMatchingObjs, SolrServer solrServer, String timeStamp, boolean print) {
-		this.listOfMatchingObjs = listOfMatchingObjs;
+	public MarcContentHandler(List<PropertiesObject> propertiesObjects, SolrServer solrServer, String timeStamp, boolean print) {
+		this.propertiesObjects = propertiesObjects;
 		this.sServer = solrServer;
 		this.timeStamp = timeStamp;
 		this.print = print;
 
-		for (PropertiesObject mo : listOfMatchingObjs) {
+		for (PropertiesObject mo : propertiesObjects) {
 
 			// Get allfields if it is set
 			if (mo.isGetAllFields()) {
@@ -125,41 +111,36 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-
 	/**
-	 * Executed when encountering the start element of the XML file.
+	 * Executed when encountering the start element of the XML file.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void startDocument() throws SAXException {
-
-		// For tracking the elapsed time:
-		startTime = System.currentTimeMillis();
-
-		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
+		// On document start, create a new list to hold all parsed XML records
 		rawRecords = new ArrayList<RawRecord>();
 	}
 
 
 	/**
 	 * Executed when encountering the start element of an XML tag.
-	 * 
 	 * Reading and processing XML attributes is done here.
-	 * Reading of element content (text) is processed in endElement().
+	 * Reading of element content (text) is done in endElement() method.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attribs) throws SAXException {
 
-		// Empty node content (text), else, there will be problems with html-encoded characters (&lt;) at character()-method:
+		// Cleare the node content (= text of XML element). If not, there will be problems with html-encoded characters (&lt;) at character()-method:
 		nodeContent = "";
 
 		// If the parser encounters the start of the "record"-tag, create new List to hold the fields of
 		// this record and a new record-object to add these list:
 		if(localName.equals("record")) {
-			allFields = new ArrayList<Mabfield>();
-			rawRecord = new RawRecord(); // A new record
+			rawRecord = new RawRecord(); // A new RawRecord object
 			controlfields = new ArrayList<Controlfield>(); // All controlfields of the record
 			datafields = new ArrayList<Datafield>(); // All datafields of the record
-			fullrecordXmlString = null; // Reset for new record
+			fullrecordXmlString = null; // Reset the String for the fullRecord field for a new record
 			if (getFullRecordAsXML) {
 				fullrecordXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><collection><record>"; // Begin new XML for the current record
 			}
@@ -172,7 +153,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
-		// If the parser encounters the start of a "controlfield"-tag, create a new mabfield-object, get the XML-attributes, set them on the object and add it to the "record"-object:
+		// If the parser encounters the start of a "controlfield"-tag, create a new Controlfield object, get the XML attributes and set them on the object
 		if(localName.equals("controlfield")) {
 			String tag = attribs.getValue("tag").trim();
 			controlfield = new Controlfield();
@@ -184,6 +165,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
+		// If the parser encounters the start of a "datafield"-tag, create a new Datafield object, get the XML attributes and set them on the object
 		if(localName.equals("datafield")) {
 			String tag = attribs.getValue("tag").trim();
 			String ind1 = attribs.getValue("ind1").trim();
@@ -200,7 +182,7 @@ public class MarcContentHandler implements ContentHandler {
 			datafield.setInd1(ind1);
 			datafield.setInd2(ind2);
 
-			subfields = new ArrayList<Subfield>(); // All subfields of the datafield
+			subfields = new ArrayList<Subfield>(); // List to hold all subfields of the datafield
 
 			is001Datafield = (tag.equals("001")) ? true : false;
 			if (getFullRecordAsXML) {
@@ -209,6 +191,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 
+		// If the parser encounters the start of a "subfield"-tag, create a new Subfield object, get the XML attributes and set them on the object
 		if(localName.equals("subfield")) {
 			String code = attribs.getValue("code").trim();
 			code = (code != null && !code.isEmpty()) ? code : "-";
@@ -222,18 +205,17 @@ public class MarcContentHandler implements ContentHandler {
 	}
 
 
-
 	/**
 	 * Executed when encountering the end element of an XML tag.
-	 * 
-	 * Reading and processing XML attributes is done here.
 	 * Reading of element content (text) is done here (see also characters() method).
+	 * Reading and processing XML attributes is done in startElement() method.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 		String content = nodeContent.toString();
 
-		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
+		// Parser encounters the end of the "leader"-tag (only necessary if we need to get the full record as XML)
 		if (getFullRecordAsXML) {
 			if(localName.equals("leader")) {
 				String leaderText = nodeContent.toString();
@@ -241,7 +223,7 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
-
+		// Parser encounters the end of a "controlfield"-tag, so our Controlfield object can be treated here
 		if(localName.equals("controlfield") ) {
 			controlfield.setContent(content);
 			controlfields.add(controlfield);
@@ -257,6 +239,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 
+		// Parser encounters the end of a "subfield"-tag, so our Subfield object can be treated here
 		if(localName.equals("subfield")) {
 			subfield.setContent(content);
 			subfields.add(subfield);
@@ -269,7 +252,7 @@ public class MarcContentHandler implements ContentHandler {
 		}
 
 
-
+		// Parser encounters the end of a "datafield"-tag, so our Datafield object can be treated here
 		if(localName.equals("datafield")) {
 			datafield.setSubfields(subfields);
 			datafields.add(datafield);
@@ -278,9 +261,8 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
-		// If the parser encounters the end of the "record"-tag, add all
-		// leader-, controlfield- and datafield-objects to the record-object and add the
-		// record-object to the list of all records:
+		// If the parser encounters the end of the "record"-tag, add all controlfield-objects, datafield-objects and some other information
+		// to the rawRecord object and add the it to the list of all raw records
 		if(localName.equals("record")) {
 
 			counter = counter + 1;	
@@ -299,42 +281,33 @@ public class MarcContentHandler implements ContentHandler {
 
 			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
 
-			// Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
-			// it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
-			// If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but at this point,
-			// only 700 are indexed. The 33 remaining records will be indexed in endDocument() function.
+			// Every n-th record, match the XML records to the Solr records. We then get an appropirate List of SolrRecord object and can index
+			// it's values to Solr. Then we will empty all objects (clear and set to "null") to save memory and go on with the next n records.
+			// If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. modulo (NO_OF_DOCS) is set to 100
+			// and we have 733 records, but at this point, only 700 are indexed. The 33 remaining records will be indexed in endDocument() method.
 			if (counter % NO_OF_DOCS == 0) {
 
-				// Do the Matching and rewriting (see class "MatchingOperations"):
-				//List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
+				// Do the matching and rewriting (see class "MatchingOperations"):
 				MatchingOperations matchingOperations = new MatchingOperations();
 				matchingOperations.setRawRecords(rawRecords);
-				matchingOperations.setPropertiesObjects(listOfMatchingObjs);
+				matchingOperations.setPropertiesObjects(propertiesObjects);
 				List<SolrRecord> solrRecords = matchingOperations.getSolrRecords();
 
 				// Add to Solr-Index:
 				this.solrAddRecordSet(sServer, solrRecords);
 
-				// Set all Objects to "null" to save memory
+				// Set all relevant Objects to "null" to save memory
+				matchingOperations = null;
 				rawRecords.clear();
 				rawRecords = null;
 				rawRecords = new ArrayList<RawRecord>();
 				solrRecords.clear();
 				solrRecords = null;
-				allFields.clear();
-				allFields = null;
 			}
-
-
-			//System.out.println(record.toString());
 		}
-
 	}
 
 
-	/**
-	 * Executed when encountering the end element of the XML file.
-	 */
 	@Override
 	public void endDocument() throws SAXException {
 
@@ -342,32 +315,29 @@ public class MarcContentHandler implements ContentHandler {
 		//+++++++++++++++ Add the remaining rest of the records to the index (see modulo-operation with "%"-operator in endElement()) +++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-		// Do the Matching and rewriting (see class "MatchingOperations"):
-		//List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
+		// Do the matching and rewriting (see class "MatchingOperations"):
 		MatchingOperations matchingOperations = new MatchingOperations();
 		matchingOperations.setRawRecords(rawRecords);
-		matchingOperations.setPropertiesObjects(this.listOfMatchingObjs);
+		matchingOperations.setPropertiesObjects(this.propertiesObjects);
 		List<SolrRecord> solrRecords = matchingOperations.getSolrRecords();
 
 		// Add to Solr-Index:
 		this.solrAddRecordSet(sServer, solrRecords);
 
-		// Clear objects to save memory
-		//SubfieldmatchingResult.clear();
+		// Set all relevant Objects to "null" to save memory
+		matchingOperations = null;
 		rawRecords.clear();
 		rawRecords = null;
 		solrRecords.clear();
 		solrRecords = null;
-		allFields.clear();
-		allFields = null;
-		listOfMatchingObjs.clear();
-		listOfMatchingObjs = null;
-
+		propertiesObjects.clear();
+		propertiesObjects = null;
 	}
 
 
 	/**
-	 * Reads the content of the current XML element:
+	 * Reads the content of the current XML element.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
@@ -376,8 +346,11 @@ public class MarcContentHandler implements ContentHandler {
 
 
 	/**
-	 * This method contains the code that actually adds a set of Record objects
-	 * (see Record class) to the specified Solr server.
+	 * This method contains the code that actually adds a set of SolrRecord objects
+	 * (see SolrRecord class) to the specified Solr server.
+	 *
+	 * @param sServer			SolrServer: The Solr server to which the data should be indexed.
+	 * @param solrRecordSet		List<SolrRecord>: A list of SolrRecord objects that should be indexed.
 	 */
 	public void solrAddRecordSet(SolrServer sServer, List<SolrRecord> solrRecordSet) {
 		try {
@@ -445,11 +418,20 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
-
+	
 	/**
-	 * Unused methods of ContentHandler class.
-	 * We just define them without any content.
+	 * Prints the specified text to the console if "print" is true.
+	 * 
+	 * @param print		boolean\t true if the text should be print
+	 * @param text		String: a text message to print.
 	 */
+	private void print(boolean print, String text) {
+		if (print) {
+			System.out.print(text);
+		}
+	}
+
+	
 	@Override
 	public void endPrefixMapping(String arg0) throws SAXException {}
 
@@ -467,19 +449,4 @@ public class MarcContentHandler implements ContentHandler {
 
 	@Override
 	public void startPrefixMapping(String arg0, String arg1) throws SAXException {}
-
-
-	/**
-	 * Prints the specified text to the console if "print" is true.
-	 * 
-	 * @param print	boolean: true if the text should be print
-	 * @param text	String: a text message to print.
-	 */
-	private void print(boolean print, String text) {
-		if (print) {
-			System.out.print(text);
-		}
-	}
-
-
 }

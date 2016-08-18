@@ -1,6 +1,7 @@
 /**
- * SolrRecord class.
- * Represents a Solr record including some additional information.
+ * SolrRecord class. This is used for indexing to Solr.
+ * Includes all record data for indexing and some additional
+ * information.
  * 
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 

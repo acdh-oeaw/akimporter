@@ -55,6 +55,7 @@ import main.java.betullam.akimporter.solrmab.indexing.PropertiesObject;
 import main.java.betullam.akimporter.solrmab.indexing.SolrField;
 import main.java.betullam.akimporter.solrmab.indexing.Subfield;
 
+// TODO: This file is a mess. Clean it up!
 
 public class Index {
 
@@ -71,10 +72,7 @@ public class Index {
 	private String timeStamp = null;
 	private SolrMabHelper smHelper = null;
 	private boolean isIndexingSuccessful = false;
-	public static List<String> multiValuedFields = new ArrayList<String>();
 	public static List<SolrField> customTextFields = new ArrayList<SolrField>();
-	//public static Map<String, List<String>> translateFields = new HashMap<String, List<String>>();
-	public static String fullrecordFieldname = null;
 
 
 	public Index(String mabXmlFile, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
@@ -298,7 +296,6 @@ public class Index {
 				// "lstValues.contains("translateValueContains") would not match with translateValueContains[MyDefaultText].
 				// Also if regex[REGEX] is used. It would not match with the square brackets!
 				List<String> lstValuesClean = new ArrayList<String>();
-				//lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*,\\s*")));
 				lstValuesClean.addAll(Arrays.asList(strValuesClean.split("\\s*(?<!\\\\),\\s*")));
 
 				// Check for options and prepare values
@@ -452,8 +449,6 @@ public class Index {
 
 						// Get everything between the 2 outermost squarebrackets:
 						concatenatedSubfields = getBracketValues(concatenatedSubfieldsAllBrackets);
-
-						//System.out.println(concatenatedSubfields.get(1).substring(concatenatedSubfields.get(1).length()-2));
 						List<String> bracketContentAsList = Arrays.asList(concatenatedSubfieldsAllBrackets.replace("[", "").replace("]", "").split(":"));
 						concatenatedSubfieldsSeparator = bracketContentAsList.get(bracketContentAsList.size()-1); // Get last list element. This should be the separator.
 					}	
@@ -601,7 +596,6 @@ public class Index {
 						ArrayList<String> solrFieldvalue = new ArrayList<String>();
 						solrFieldvalue.add(lstValue);
 						customTextFields.add(new SolrField(key, solrFieldvalue, multiValued, allowDuplicates));
-						//mabFieldnames.put(lstValue, null);
 						fieldsToRemove.add(lstValue);
 					}
 					lstValues.removeAll(fieldsToRemove);
@@ -751,16 +745,6 @@ public class Index {
 			System.err.println("\n-----------------------------------------------------------------------\n");
 		}
 
-		for (PropertiesObject propertiesObject : propertiesObjects) {
-			if (propertiesObject.isMultiValued()) {
-				multiValuedFields.add(propertiesObject.getSolrFieldname());
-			}
-
-			if (propertiesObject.isGetFullRecordAsXML()) {
-				fullrecordFieldname = propertiesObject.getSolrFieldname();
-			}
-
-		}
 
 		return propertiesObjects;
 	}

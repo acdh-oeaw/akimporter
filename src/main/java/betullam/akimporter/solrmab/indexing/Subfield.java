@@ -1,5 +1,5 @@
 /**
- * Subfield class. Represents a subfield from a MarcXML record.
+ * Subfield class. Represents a subfield of a MarcXML record.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 

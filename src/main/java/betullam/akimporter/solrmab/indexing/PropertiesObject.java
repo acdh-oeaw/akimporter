@@ -1,5 +1,5 @@
 /**
- * MatchingObject class.
+ * PropertiesObject class.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
@@ -30,7 +30,7 @@ import java.util.Map;
 
 public class PropertiesObject {
 
-	private String solrFieldname; // Solr fieldname (e. g. "autor", "title", "id", etc.)
+	private String solrFieldname;
 	private Map<String, List<String>> propertiesFields;
 	private List<Datafield> datafields;
 	private List<Controlfield> controlfields;
@@ -65,7 +65,6 @@ public class PropertiesObject {
 	private LinkedHashMap<Integer, String> subfieldExists;
 	private boolean hasSubfieldNotExists;
 	private LinkedHashMap<Integer, String> subfieldNotExists;
-
 
 
 	public PropertiesObject() {}
@@ -145,6 +144,7 @@ public class PropertiesObject {
 		this.setSubfieldNotExists(subfieldNotExists);
 	}
 
+	
 	public String getSolrFieldname() {
 		return this.solrFieldname;
 	}
@@ -426,6 +426,15 @@ public class PropertiesObject {
 	}
 
 
+	/**
+	 * Check if a given subfield is used in the current PropertiesObject. In other words: This method checks if the subfield
+	 * is targeted by this rule (= PropertiesObject). If not, we can skip it in the MatchingOperations which saves us some
+	 * ressources and time.
+	 * 
+	 * @param rawDatafield	Datafield: The datafield with the subfield we need to check.
+	 * @param rawSubfield	Subfield: The subfield we need to check.
+	 * @return				boolean: True if the Subfield is used in the PropertiesObject (do not skip), false other wise (can be skipped) 
+	 */
 	public boolean containsSubfieldOfDatafield(Datafield rawDatafield, Subfield rawSubfield) {
 		boolean returnValue = false;
 
@@ -473,6 +482,4 @@ public class PropertiesObject {
 				+ ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
 				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists + "]";
 	}
-	
-
 }

@@ -36,14 +36,6 @@ public class SolrField {
 	
 	public SolrField() {}
 
-	/**
-	 * SolrField constructor
-	 * 
-	 * @param fieldname			String
-	 * @param fieldvalues		ArrayList<String>
-	 * @param isMultivalued		boolean
-	 * @param allowDuplicates	boolean
-	 */
 	public SolrField(String fieldname, ArrayList<String> fieldvalues, boolean isMultivalued, boolean allowDuplicates) {
 		this.setFieldname(fieldname);
 		this.setFieldvalues(fieldvalues);
@@ -51,6 +43,7 @@ public class SolrField {
 		this.setAllowDuplicates(allowDuplicates);
 	}
 
+	
 	public String getFieldname() {
 		return this.fieldname;
 	}

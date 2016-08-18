@@ -1,5 +1,5 @@
 /**
- * Controlfield class. Represents a controlfield from a MarcXML record.
+ * Controlfield class. Represents a controlfield of a MarcXML record.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 

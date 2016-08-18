@@ -1,5 +1,5 @@
 /**
- * Datafield class. Represents a datafield from a MarcXML record.
+ * Datafield class. Represents a datafield of a MarcXML record.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
