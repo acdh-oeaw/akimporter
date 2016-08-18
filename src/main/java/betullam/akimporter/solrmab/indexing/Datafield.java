@@ -1,10 +1,7 @@
 /**
- * Datafield class
+ * Datafield class. Represents a datafield of a MarcXML record.
  *
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
- * 
- * TODO: Check if this class is still necessary!
- * 		 Maybe we could yous Mabfield class instead.
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -27,26 +24,28 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public class Datafield {
 
 	private String tag;
 	private String ind1;
 	private String ind2;
-	private List<Mabfield> mabfields;
+	private ArrayList<Subfield> subfields = new ArrayList<Subfield>();
+	private ArrayList<Subfield> passiveSubfields = new ArrayList<Subfield>();
 
+	
 	public Datafield() {}
-
 
 	public String getTag() {
 		return this.tag;
 	}
 
+	
 	public void setTag(String tag) {
 		this.tag = tag;
 	}
-	
+
 	public String getInd1() {
 		return this.ind1;
 	}
@@ -54,7 +53,7 @@ public class Datafield {
 	public void setInd1(String ind1) {
 		this.ind1 = ind1;
 	}
-	
+
 	public String getInd2() {
 		return this.ind2;
 	}
@@ -63,12 +62,145 @@ public class Datafield {
 		this.ind2 = ind2;
 	}
 
-	public List<Mabfield> getSubfields() {
-		return this.mabfields;
+	public ArrayList<Subfield> getSubfields() {
+		return subfields;
 	}
 
-	public void setSubfields(List<Mabfield> mabfields) {
-		this.mabfields = mabfields;
+	public void setSubfields(ArrayList<Subfield> subfields) {
+		this.subfields = subfields;
+	}
+
+	public ArrayList<Subfield> getPassiveSubfields() {
+		return passiveSubfields;
+	}
+
+	public void setPassiveSubfields(ArrayList<Subfield> passiveSubfields) {
+		this.passiveSubfields = passiveSubfields;
+	}
+
+
+	/**
+	 * Compare method for matching datafields given in mab.properties with raw datafields from MarcXML 
+	 * @param		propertiesDatafield: The datafield that was parsed from the mab.properties file
+	 * @return		true if a field in mab.properties matches with raw datafields, false otherwise
+	 */
+	public boolean match(Datafield propertiesDatafield) {
+
+		// Return true if it is the same instance
+		if (this == propertiesDatafield) {
+			return true;
+		}
+
+		// Return false if Datafield object is null
+		if (propertiesDatafield == null) {
+			return false;
+		}
+
+		boolean returnValue = false;
+
+		if (propertiesDatafield.getTag().equals(tag)) {
+
+			if (propertiesDatafield.getInd1().equals("*") || propertiesDatafield.getInd1().equals(ind1)) {
+				if (propertiesDatafield.getInd2().equals("*") || propertiesDatafield.getInd2().equals(ind2)) {
+					for (Subfield rawSubfield : subfields) {
+						for (Subfield propertiesSubfield : propertiesDatafield.getSubfields()) {
+							if (propertiesSubfield.getCode().equals("*") || propertiesSubfield.getCode().equals(rawSubfield.getCode())) {
+								returnValue = true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return returnValue;
+	}
+
+	/**
+	 * Check if a raw datafield is contained in a properties object (represents a line in mab.properties)
+	 * @param 	propertiesObject	PropertiesObject: A properties object representing a line in mab.properties
+	 * @return						boolean: true if the properties object contains the datafield this method is applied on, false otherwise
+	 */
+	public boolean isContainedInPropertiesObject(PropertiesObject propertiesObject) {
+
+		// Return false if propertiesObject is null
+		if (propertiesObject == null) {
+			return false;
+		}
+		
+		// Returns false if propertiesObject is no instance of PropertiesObject
+		if (!(propertiesObject instanceof PropertiesObject)) {
+			return false;
+		}
+
+		boolean returnValue = false;
+
+		for (Datafield propertiesDatafield : propertiesObject.getDatafields()) {
+			if (propertiesDatafield.getTag().equals(tag)) {
+				if (propertiesDatafield.getInd1().equals("*") || propertiesDatafield.getInd1().equals(ind1)) {
+					if (propertiesDatafield.getInd2().equals("*") || propertiesDatafield.getInd2().equals(ind2)) {
+						for (Subfield rawSubfield : subfields) {
+							for (Subfield propertiesSubfield : propertiesDatafield.getSubfields()) {
+								if (propertiesSubfield.getCode().equals("*") || propertiesSubfield.getCode().equals(rawSubfield.getCode())) {
+									returnValue = true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return returnValue;
 	}
 	
+	
+	/**
+	 * Move subfields to a new ArrayList<Subfield> called passiveSubfields and remove them from the default ArrayList<Subfield> called subfields
+	 * @param subfields		ArrayList<Subfield>: An ArrayList of Subfield objects.
+	 */
+	public void moveToPassiveSubfields(ArrayList<Subfield> subfields) {
+		this.setPassiveSubfields(subfields);
+		this.subfields.removeAll(subfields);
+	}
+	
+
+
+	/**
+	 * Copy a datafield object for changing values without impacting the original datafield.
+	 * @param originalDatafield		Datafield: A Datafield object which should be copied
+	 * @return				Datafield: A copy of a Datafield object. We can make changes to this copy without affecting the original Datafield object. 
+	 */
+	public static Datafield copy(Datafield originalDatafield) {
+		Datafield newDatafield = new Datafield();
+		newDatafield.tag = originalDatafield.tag;
+		newDatafield.ind1 = originalDatafield.ind1;
+		newDatafield.ind2 = originalDatafield.ind2;
+		
+		ArrayList<Subfield> newSubfields = new ArrayList<Subfield>();
+		for (Subfield originalSubfield : originalDatafield.getSubfields()) {
+			Subfield newSubfield = new Subfield();
+			newSubfield.setCode(originalSubfield.getCode());
+			newSubfield.setContent(originalSubfield.getContent());
+			newSubfields.add(newSubfield);
+		}
+		newDatafield.subfields = newSubfields;
+		
+		ArrayList<Subfield> newPassiveSubfields = new ArrayList<Subfield>();
+		for (Subfield originalPssiveSubfield : originalDatafield.getPassiveSubfields()) {
+			Subfield newPassiveSubfield = new Subfield();
+			newPassiveSubfield.setCode(originalPssiveSubfield.getCode());
+			newPassiveSubfield.setContent(originalPssiveSubfield.getContent());
+			newPassiveSubfields.add(newPassiveSubfield);
+		}
+		newDatafield.passiveSubfields = newPassiveSubfields;
+		
+		return newDatafield;
+	}
+
+	@Override
+	public String toString() {
+		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields
+				+ ", passiveSubfields=" + passiveSubfields + "]";
+	}
 }

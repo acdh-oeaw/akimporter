@@ -1,7 +1,8 @@
 /**
- * Handles the contents of the MarcXML files.
- * This is where some of the data processing is done to
- * get the values in shape before indexing them to Solr.
+ * Parses the contents of the MarcXML files. The contens are handed over to
+ * a class that applies the rules defined in mab.properties (could also be
+ * called differently, but it must be a .properties file). There, the records
+ * are processed and given back. Then they will be indexed to Solr.
  *
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
@@ -28,20 +29,12 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
@@ -53,15 +46,16 @@ import org.xml.sax.SAXException;
 
 public class MarcContentHandler implements ContentHandler {
 
-	MatchingOperations matchingOps = new MatchingOperations();
-	List<Mabfield> allFields;
-	List<Record> allRecords;
+	private RawRecord rawRecord;
+	private ArrayList<RawRecord> rawRecords;
+	private Controlfield controlfield;
+	private ArrayList<Controlfield> controlfields;
+	private Datafield datafield;
+	private ArrayList<Datafield> datafields;
+	private Subfield subfield;
+	private ArrayList<Subfield> subfields;
 	private String nodeContent;
-	private Record record;
-	private Mabfield controlfield;
-	private Mabfield datafield; // Datafield is concatenated datafield and subfield
-	private List<Mabfield> allSubfieldsInDatafield;
-	private List<MatchingObject> listOfMatchingObjs;
+	private List<PropertiesObject> propertiesObjects;
 	private SolrServer sServer;
 	private String recordID;
 	private String recordSYS;
@@ -69,6 +63,7 @@ public class MarcContentHandler implements ContentHandler {
 	private boolean is001Datafield;
 	private boolean isSYS;
 	private boolean print = true;
+<<<<<<< HEAD
 	int counter = 0;
 	long startTime;
 	long endTime;
@@ -119,6 +114,11 @@ public class MarcContentHandler implements ContentHandler {
 	Set<String> existsSubfieldsInDatafield = new HashSet<String>();
 	List<String> existsSolrFieldnames = new ArrayList<String>();
 	boolean skip = false;
+=======
+	private int counter = 0;
+	private String timeStamp;
+	private int NO_OF_DOCS = 500;
+>>>>>>> refs/remotes/origin/SubfieldExists2-NewDatafieldConcept
 	
 	// Variables for allfields:
 	private boolean hasAllFieldsField = false;
@@ -135,17 +135,18 @@ public class MarcContentHandler implements ContentHandler {
 	 * Constructor of MarcContentHandler.
 	 * This is the starting point of reading and processing the XML file(s) containing MARC records.
 	 * 
-	 * @param listOfMatchingObjs	List<MatchingObject>. A MatchingObject contains information about matching MAB fields to Solr fields.
+	 * @param propertiesObjects		List<PropertiesObject>. A PropertiesObject contains information about matching raw MarcXML fields to Solr fields.
 	 * @param solrServer			SolrServer object that represents the Solr server to which the data should be indexed 
 	 * @param timeStamp				String that specifies the starting time of the importing process
 	 * @param print					boolean. True if status messages should be printed to the console.
 	 */
-	public MarcContentHandler(List<MatchingObject> listOfMatchingObjs, SolrServer solrServer, String timeStamp, boolean print) {
-		this.listOfMatchingObjs = listOfMatchingObjs;
+	public MarcContentHandler(List<PropertiesObject> propertiesObjects, SolrServer solrServer, String timeStamp, boolean print) {
+		this.propertiesObjects = propertiesObjects;
 		this.sServer = solrServer;
 		this.timeStamp = timeStamp;
 		this.print = print;
 
+<<<<<<< HEAD
 		for (MatchingObject mo : listOfMatchingObjs) {
 
 			// Get list of connected fields. We need to check them while parsing the XML.
@@ -271,6 +272,9 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 
+=======
+		for (PropertiesObject mo : propertiesObjects) {
+>>>>>>> refs/remotes/origin/SubfieldExists2-NewDatafieldConcept
 
 			// Get allfields if it is set
 			if (mo.isGetAllFields()) {
@@ -285,44 +289,39 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordField = mo.getSolrFieldname(); // Get Solr field to which the full record (as XML) should be indexed
 			}
 		}
-
 	}
 
 
-
 	/**
-	 * Executed when encountering the start element of the XML file.
+	 * Executed when encountering the start element of the XML file.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void startDocument() throws SAXException {
-
-		// For tracking the elapsed time:
-		startTime = System.currentTimeMillis();
-
-		// On document-start, crate new list to hold all parsed AlephMARCXML-records:
-		allRecords = new ArrayList<Record>();
+		// On document start, create a new list to hold all parsed XML records
+		rawRecords = new ArrayList<RawRecord>();
 	}
 
 
 	/**
 	 * Executed when encountering the start element of an XML tag.
-	 * 
 	 * Reading and processing XML attributes is done here.
-	 * Reading of element content (text) is processed in endElement().
+	 * Reading of element content (text) is done in endElement() method.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attribs) throws SAXException {
 
-		// Empty node content (text), else, there will be problems with html-encoded characters (&lt;) at
-		// character()-method:
+		// Cleare the node content (= text of XML element). If not, there will be problems with html-encoded characters (&lt;) at character()-method:
 		nodeContent = "";
 
 		// If the parser encounters the start of the "record"-tag, create new List to hold the fields of
 		// this record and a new record-object to add these list:
 		if(localName.equals("record")) {
-			allFields = new ArrayList<Mabfield>();
-			record = new Record();
-			fullrecordXmlString = null; // Reset for new record
+			rawRecord = new RawRecord(); // A new RawRecord object
+			controlfields = new ArrayList<Controlfield>(); // All controlfields of the record
+			datafields = new ArrayList<Datafield>(); // All datafields of the record
+			fullrecordXmlString = null; // Reset the String for the fullRecord field for a new record
 			if (getFullRecordAsXML) {
 				fullrecordXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><collection><record>"; // Begin new XML for the current record
 			}
@@ -335,33 +334,42 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
-		// If the parser encounters the start of a "controlfield"-tag, create a new mabfield-object, get the XML-attributes, set them on the object and add it to the "record"-object:
+		// If the parser encounters the start of a "controlfield"-tag, create a new Controlfield object, get the XML attributes and set them on the object
 		if(localName.equals("controlfield")) {
-			controlfieldTag = attribs.getValue("tag");
-			isSYS = (controlfieldTag.equals("SYS")) ? true : false;
-			controlfield = new Mabfield();
-			controlfield.setFieldname(controlfieldTag);
-			is001Controlfield = (controlfieldTag.equals("001")) ? true : false;
+			String tag = attribs.getValue("tag").trim();
+			controlfield = new Controlfield();
+			controlfield.setTag(tag);
+			isSYS = (tag.equals("SYS")) ? true : false;
+			is001Controlfield = (tag.equals("001")) ? true : false;
 			if (getFullRecordAsXML) {
-				fullrecordXmlString += "<controlfield tag=\""+controlfieldTag+"\">";
+				fullrecordXmlString += "<controlfield tag=\""+tag+"\">";
 			}
 		}
 
+		// If the parser encounters the start of a "datafield"-tag, create a new Datafield object, get the XML attributes and set them on the object
 		if(localName.equals("datafield")) {
-			allSubfieldsInDatafield = new ArrayList<Mabfield>();
-			datafieldTag = attribs.getValue("tag").trim();
-			datafieldInd1 = attribs.getValue("ind1").trim();
-			datafieldInd2 = attribs.getValue("ind2").trim();
+			String tag = attribs.getValue("tag").trim();
+			String ind1 = attribs.getValue("ind1").trim();
+			String ind2 = attribs.getValue("ind2").trim();
 
 			// Set empty tags and indicators to a character, so that the string to match against is always
 			// of the same length, e. g. "311$ab$c" and "000$**$*". This prevents errors.
-			datafieldTag = (datafieldTag != null && !datafieldTag.isEmpty()) ? datafieldTag : "000";
-			datafieldInd1 = (datafieldInd1 != null && !datafieldInd1.isEmpty()) ? datafieldInd1 : "*";
-			datafieldInd2 = (datafieldInd2 != null && !datafieldInd2.isEmpty()) ? datafieldInd2 : "*";
-			is001Datafield = (datafieldTag.equals("001")) ? true : false;
+			tag = (tag != null && !tag.isEmpty()) ? tag : "000";
+			ind1 = (ind1 != null && !ind1.isEmpty()) ? ind1 : "-";
+			ind2 = (ind2 != null && !ind2.isEmpty()) ? ind2 : "-";
+
+			datafield = new Datafield();
+			datafield.setTag(tag);
+			datafield.setInd1(ind1);
+			datafield.setInd2(ind2);
+
+			subfields = new ArrayList<Subfield>(); // List to hold all subfields of the datafield
+
+			is001Datafield = (tag.equals("001")) ? true : false;
 			if (getFullRecordAsXML) {
-				fullrecordXmlString += "<datafield tag=\""+datafieldTag+"\" ind1=\""+datafieldInd1+"\" ind2=\""+datafieldInd2+"\">";
+				fullrecordXmlString += "<datafield tag=\""+tag+"\" ind1=\""+ind1+"\" ind2=\""+ind2+"\">";
 			}
+<<<<<<< HEAD
 
 			// Connected fields
 			for (Connectedfield connectedField : connectedFields) {
@@ -408,38 +416,36 @@ public class MarcContentHandler implements ContentHandler {
 				}
 			}
 
+=======
+>>>>>>> refs/remotes/origin/SubfieldExists2-NewDatafieldConcept
 		}
 
 
+		// If the parser encounters the start of a "subfield"-tag, create a new Subfield object, get the XML attributes and set them on the object
 		if(localName.equals("subfield")) {
-			subfieldCode = attribs.getValue("code").trim();
-			subfieldCode = (subfieldCode != null && !subfieldCode.isEmpty()) ? subfieldCode : "-";
+			String code = attribs.getValue("code").trim();
+			code = (code != null && !code.isEmpty()) ? code : "-";
+			subfield = new Subfield();
+			subfield.setCode(code);
 			if (getFullRecordAsXML) {
-				fullrecordXmlString += "<subfield code=\""+subfieldCode+"\">";
+				fullrecordXmlString += "<subfield code=\""+code+"\">";
 			}
-			String datafieldName = datafieldTag + "$" + datafieldInd1 + datafieldInd2 + "$" + subfieldCode;
-
-			// Create a new mabfield so that we can concentenate a datafield and a subfield to a mabfield
-			// E. g.: Datafield = 100$**, Subfield = r, Subfield content = AC123456789
-			//        Result: mabfield name = 100$**$r, mabfield value = AC123456789
-			datafield = new Mabfield();
-			datafield.setFieldname(datafieldName);
 		}
 
 	}
 
 
-
 	/**
 	 * Executed when encountering the end element of an XML tag.
-	 * 
-	 * Reading and processing XML attributes is done here.
 	 * Reading of element content (text) is done here (see also characters() method).
+	 * Reading and processing XML attributes is done in startElement() method.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
+		String content = nodeContent.toString();
 
-		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
+		// Parser encounters the end of the "leader"-tag (only necessary if we need to get the full record as XML)
 		if (getFullRecordAsXML) {
 			if(localName.equals("leader")) {
 				String leaderText = nodeContent.toString();
@@ -447,28 +453,30 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
+		// Parser encounters the end of a "controlfield"-tag, so our Controlfield object can be treated here
 		if(localName.equals("controlfield") ) {
-			String controlfieldText = nodeContent.toString();
-			controlfield.setFieldvalue(controlfieldText);
-			allFields.add(controlfield);
+			controlfield.setContent(content);
+			controlfields.add(controlfield);
 			if (getFullRecordAsXML) {
-				fullrecordXmlString += StringEscapeUtils.escapeXml10(controlfieldText)+"</controlfield>";
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(content)+"</controlfield>";
 			}
 			if (isSYS == true) {
-				recordSYS = controlfieldText;
+				recordSYS = content;
 			}
 			if (is001Controlfield == true && is001Datafield == false) {
-				recordID = controlfieldText;
+				recordID = content;
 			}
 		}
 
 
+		// Parser encounters the end of a "subfield"-tag, so our Subfield object can be treated here
 		if(localName.equals("subfield")) {
-
-			String subfieldText = nodeContent.toString();
+			subfield.setContent(content);
+			subfields.add(subfield);
 			if (getFullRecordAsXML) {
-				fullrecordXmlString += StringEscapeUtils.escapeXml10(subfieldText).trim()+"</subfield>";
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(content).trim()+"</subfield>";
 			}
+<<<<<<< HEAD
 
 
 			if (datafieldContainsConnectedFields) { // There could be a connected subfield within the datafield, but we don't know yet if it really exists. For that, we have to wait for the end of the datafield tag in endElement().
@@ -515,18 +523,22 @@ public class MarcContentHandler implements ContentHandler {
 				allSubfieldsInDatafield.add(datafield);
 			}
 
+=======
+>>>>>>> refs/remotes/origin/SubfieldExists2-NewDatafieldConcept
 			if (is001Datafield == true && is001Controlfield == false) {
-				recordID = subfieldText;
+				recordID = content;
 			}
 		}
 
-		
 
+		// Parser encounters the end of a "datafield"-tag, so our Datafield object can be treated here
 		if(localName.equals("datafield")) {
-
+			datafield.setSubfields(subfields);
+			datafields.add(datafield);
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "</datafield>";
 			}
+<<<<<<< HEAD
 
 
 			// Set the connected datafields:
@@ -703,60 +715,57 @@ public class MarcContentHandler implements ContentHandler {
 			// Reset general variables:
 			allSubfieldsInDatafield = null;
 
+=======
+>>>>>>> refs/remotes/origin/SubfieldExists2-NewDatafieldConcept
 		}
 
-		// If the parser encounters the end of the "record"-tag, add all
-		// leader-, controlfield- and datafield-objects to the record-object and add the
-		// record-object to the list of all records:
+		// If the parser encounters the end of the "record"-tag, add all controlfield-objects, datafield-objects and some other information
+		// to the rawRecord object and add the it to the list of all raw records
 		if(localName.equals("record")) {
 
-			// End XML representation of the current record for "fullrecord" Solr field:
+			counter = counter + 1;	
+			rawRecord.setRecordID(recordID);
+			rawRecord.setRecordSYS(recordSYS);
+			rawRecord.setIndexTimestamp(timeStamp);
+			rawRecord.setControlfields(controlfields);
+			rawRecord.setDatafields(datafields);
+			
 			if (getFullRecordAsXML) {
 				fullrecordXmlString += "</record></collection>";
-				Mabfield fullRecordAsXML = new Mabfield();
-				fullRecordAsXML.setFieldname(fullrecordField);
-				fullRecordAsXML.setFieldvalue(fullrecordXmlString);
-				allFields.add(fullRecordAsXML);
+				rawRecord.setFullRecord(fullrecordXmlString);
 			}
-
-			counter = counter + 1;
-			record.setMabfields(allFields);
-			record.setRecordID(recordID);
-			record.setRecordSYS(recordSYS);
-			record.setIndexTimestamp(timeStamp);
-
-			allRecords.add(record);
+			
+			rawRecords.add(rawRecord);
 
 			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
 
-			/** Every n-th record, match the Mab-Fields to the Solr-Fields, write an appropirate object, loop through the object and index
-			 * it's values to Solr, then empty all objects (clear and set to "null") to save memory and go on with the next n records.
-			 * If there is a rest, do it in the endDocument()-Method. E. g. modulo is set to 100 and we have 733 records, but at this point,
-			 * only 700 are indexed. The 33 remaining records will be indexed in endDocument() function.
-			 */
+			// Every n-th record, match the XML records to the Solr records. We then get an appropirate List of SolrRecord object and can index
+			// it's values to Solr. Then we will empty all objects (clear and set to "null") to save memory and go on with the next n records.
+			// If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. modulo (NO_OF_DOCS) is set to 100
+			// and we have 733 records, but at this point, only 700 are indexed. The 33 remaining records will be indexed in endDocument() method.
 			if (counter % NO_OF_DOCS == 0) {
 
-				// Do the Matching and rewriting (see class "MatchingOperations"):
-				List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
+				// Do the matching and rewriting (see class "MatchingOperations"):
+				MatchingOperations matchingOperations = new MatchingOperations();
+				matchingOperations.setRawRecords(rawRecords);
+				matchingOperations.setPropertiesObjects(propertiesObjects);
+				List<SolrRecord> solrRecords = matchingOperations.getSolrRecords();
 
 				// Add to Solr-Index:
-				this.solrAddRecordSet(sServer, newRecordSet);
+				this.solrAddRecordSet(sServer, solrRecords);
 
-				// Set all Objects to "null" to save memory
-				allRecords.clear();
-				allRecords = null;
-				allRecords = new ArrayList<Record>();
-				allFields.clear();
-				allFields = null;
-				newRecordSet = null;
+				// Set all relevant Objects to "null" to save memory
+				matchingOperations = null;
+				rawRecords.clear();
+				rawRecords = null;
+				rawRecords = new ArrayList<RawRecord>();
+				solrRecords.clear();
+				solrRecords = null;
 			}
 		}
 	}
 
 
-	/**
-	 * Executed when encountering the end element of the XML file.
-	 */
 	@Override
 	public void endDocument() throws SAXException {
 
@@ -764,25 +773,29 @@ public class MarcContentHandler implements ContentHandler {
 		//+++++++++++++++ Add the remaining rest of the records to the index (see modulo-operation with "%"-operator in endElement()) +++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-		// Do the Matching and rewriting (see class "MatchingOperations"):
-		List<Record> newRecordSet = matchingOps.matching(allRecords, listOfMatchingObjs);
+		// Do the matching and rewriting (see class "MatchingOperations"):
+		MatchingOperations matchingOperations = new MatchingOperations();
+		matchingOperations.setRawRecords(rawRecords);
+		matchingOperations.setPropertiesObjects(this.propertiesObjects);
+		List<SolrRecord> solrRecords = matchingOperations.getSolrRecords();
 
 		// Add to Solr-Index:
-		this.solrAddRecordSet(sServer, newRecordSet);
+		this.solrAddRecordSet(sServer, solrRecords);
 
-		// Clear Objects to save memory
-		allRecords.clear();
-		allRecords = null;
-		newRecordSet.clear();
-		newRecordSet = null;
-		listOfMatchingObjs.clear();
-		listOfMatchingObjs = null;
-
+		// Set all relevant Objects to "null" to save memory
+		matchingOperations = null;
+		rawRecords.clear();
+		rawRecords = null;
+		solrRecords.clear();
+		solrRecords = null;
+		propertiesObjects.clear();
+		propertiesObjects = null;
 	}
 
 
 	/**
-	 * Reads the content of the current XML element:
+	 * Reads the content of the current XML element.<br><br>
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
@@ -791,77 +804,58 @@ public class MarcContentHandler implements ContentHandler {
 
 
 	/**
-	 * This method contains the code that actually adds a set of Record objects
-	 * (see Record class) to the specified Solr server.
+	 * This method contains the code that actually adds a set of SolrRecord objects
+	 * (see SolrRecord class) to the specified Solr server.
+	 *
+	 * @param sServer			SolrServer: The Solr server to which the data should be indexed.
+	 * @param solrRecordSet		List<SolrRecord>: A list of SolrRecord objects that should be indexed.
 	 */
-	public void solrAddRecordSet(SolrServer sServer, List<Record> recordSet) {
+	public void solrAddRecordSet(SolrServer sServer, List<SolrRecord> solrRecordSet) {
 		try {
 
 			// Create a collection of all documents:
 			Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
 
-			for (Record record : recordSet) {
+			for (SolrRecord solrRecord : solrRecordSet) {
 
 				// Create a document:
 				SolrInputDocument doc = new SolrInputDocument();
 
-
 				// Create a HashSet for the allfields field if one is defined.
-				// We do that do prevent duplicated values
+				// We use a Set to prevent duplicate values
 				Set<String> allfieldsSet = null;
 				if (hasAllFieldsField) {
 					allfieldsSet = new HashSet<String>();
 				}
 
+				// Add values to the Solr record
+				for (SolrField sf : solrRecord.getSolrFields()) {
 
-				for (Mabfield mf : record.getMabfields()) {
-
-					String fieldName = mf.getFieldname();
-					String fieldValue = mf.getFieldvalue();
-					List<String> connValues = mf.getConnectedValues();
-					List<String> concatValues = mf.getConcatenatedValues();					
-
-					// Add the concatenated value(s) to the document if one exists:
-					if (concatValues != null && !concatValues.isEmpty()) {
-						String separator = mf.getConcatenatedSeparator();
-						String concatValue = StringUtils.join(concatValues, separator); // Join concatenated value(s) with the given separator character
-						String valueToAdd = fieldValue + separator + concatValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
-						doc.addField(fieldName, valueToAdd);
-					} else {
-						// Add fieldname and standard field value to the document, but only if we do not have a concatenated value.
-						// If we would do that, we would add the standard field value AND the concatenated value (but the standard field
-						// value is already included there). This is the difference to the connected value(s):
-						doc.addField(fieldName, fieldValue);
-
-						// Add the connected value(s) additionally to the standard field value (this is the difference to the concatenated values):
-						if (connValues != null && !connValues.isEmpty()) {
-							for (String connValue : connValues) {
-								doc.addField(fieldName, connValue);
-							}
-						}
-					}
+					String fieldName = sf.getFieldname();
+					List<String> fieldValues = sf.getFieldvalues();
+					doc.addField(fieldName, fieldValues);
 
 					// Add values to the "allfields" field, except for the exception values defined in mab.properties:
 					if (hasAllFieldsField) {
 						if (!allFieldsExceptions.contains(fieldName)) {
-							allfieldsSet.add(fieldValue);
-							if (connValues != null && !connValues.isEmpty()) {
-								for (String connValue : connValues) {
-									allfieldsSet.add(connValue);
-								}
-							}
+							allfieldsSet.addAll(fieldValues);
 						}
 					}
 				}
 
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
-				doc.addField("indexTimestamp_str", record.getIndexTimestamp());
+				doc.addField("indexTimestamp_str", solrRecord.getIndexTimestamp());
 
 				// Add the allfields field to the document if it is used
 				if (hasAllFieldsField) {
 					doc.addField(allfieldsField, allfieldsSet);
 				}
-
+				
+				// Add the fullRecord field to the document if it is used
+				if (getFullRecordAsXML) {
+					doc.addField(fullrecordField, fullrecordXmlString);
+				}
+				
 				// Add the document to the collection of documents:
 				docs.add(doc);
 			}
@@ -882,11 +876,20 @@ public class MarcContentHandler implements ContentHandler {
 		}
 	}
 
-
+	
 	/**
-	 * Unused methods of ContentHandler class.
-	 * We just define them without any content.
+	 * Prints the specified text to the console if "print" is true.
+	 * 
+	 * @param print		boolean\t true if the text should be print
+	 * @param text		String: a text message to print.
 	 */
+	private void print(boolean print, String text) {
+		if (print) {
+			System.out.print(text);
+		}
+	}
+
+	
 	@Override
 	public void endPrefixMapping(String arg0) throws SAXException {}
 
@@ -904,53 +907,4 @@ public class MarcContentHandler implements ContentHandler {
 
 	@Override
 	public void startPrefixMapping(String arg0, String arg1) throws SAXException {}
-
-
-	/**
-	 * Prints the specified text to the console if "print" is true.
-	 * 
-	 * @param print	boolean: true if the text should be print
-	 * @param text	String: a text message to print.
-	 */
-	private void print(boolean print, String text) {
-		if (print) {
-			System.out.print(text);
-		}
-	}
-
-
-	// Check if field should be skiped or not (subfieldExists/subfieldNotExists): 
-	private boolean skipField(ExistsField currentExistsField, Set<String> existsSubfieldsInDatafield, List<String> currentExistsMasterSubfields, String currentMasterSubfieldCode) {
-		
-		boolean skip = false;
-				
-		if (currentExistsMasterSubfields.contains(currentMasterSubfieldCode)) {	
-			
-			String existsOperator = currentExistsField.getExistsOperator();
-			List<String> existsSubfields = currentExistsField.getExistsSubfields();
-	
-			if (existsOperator.equals("AND")) {
-				// Set existsSubfieldsInDatafield contains all elements from list existsSubfields
-				if (currentExistsField.isSubfieldExists() && !existsSubfieldsInDatafield.containsAll(existsSubfields)) {
-					//System.out.println("Exists, AND: " + existsSubfieldsInDatafield + " contains not all " + existsSubfields);
-					skip = true;
-				} else if (currentExistsField.isSubfieldNotExists() && existsSubfieldsInDatafield.containsAll(existsSubfields)) { // OK
-					//System.out.println("Exists Not, AND: " + existsSubfieldsInDatafield + " contains all " + existsSubfields);
-					skip = true;
-				}
-			} else if (existsOperator.equals("OR")) {
-				// Set existsSubfieldsInDatafield contains no element from list existsSubfields
-				if (currentExistsField.isSubfieldExists() && Collections.disjoint(existsSubfieldsInDatafield, existsSubfields)) {
-					//System.out.println("Exists, OR: " + existsSubfieldsInDatafield + " has not elements of " + existsSubfields);
-					skip = true;
-				} else if (currentExistsField.isSubfieldNotExists() && !Collections.disjoint(existsSubfieldsInDatafield, existsSubfields)) {
-					//System.out.println("Exists Not, OR: " + existsSubfieldsInDatafield + " has elements of " + existsSubfields);
-					skip = true;
-				}
-			}
-		}
-				
-		return skip;
-	}
-
 }
