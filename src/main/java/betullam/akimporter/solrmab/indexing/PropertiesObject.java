@@ -65,6 +65,7 @@ public class PropertiesObject {
 	private LinkedHashMap<Integer, String> subfieldExists;
 	private boolean hasSubfieldNotExists;
 	private LinkedHashMap<Integer, String> subfieldNotExists;
+	LinkedHashMap<String, List<String>> applyToFields;
 
 
 	public PropertiesObject() {}
@@ -104,7 +105,8 @@ public class PropertiesObject {
 			boolean hasSubfieldExists,
 			LinkedHashMap<Integer, String> subfieldExists,
 			boolean hasSubfieldNotExists,
-			LinkedHashMap<Integer, String> subfieldNotExists
+			LinkedHashMap<Integer, String> subfieldNotExists,
+			LinkedHashMap<String, List<String>> applyToFields
 			) {
 
 		this.setSolrFieldname(solrFieldname);
@@ -142,9 +144,10 @@ public class PropertiesObject {
 		this.setSubfieldExists(subfieldExists);
 		this.setHasSubfieldNotExists(hasSubfieldNotExists);
 		this.setSubfieldNotExists(subfieldNotExists);
+		this.setApplyToFields(applyToFields);
 	}
 
-	
+
 	public String getSolrFieldname() {
 		return this.solrFieldname;
 	}
@@ -425,6 +428,14 @@ public class PropertiesObject {
 		this.subfieldNotExists = subfieldNotExists;
 	}
 
+	public LinkedHashMap<String, List<String>> getApplyToFields() {
+		return applyToFields;
+	}
+
+	public void setApplyToFields(LinkedHashMap<String, List<String>> applyToFields) {
+		this.applyToFields = applyToFields;
+	}
+
 
 	/**
 	 * Check if a given subfield is used in the current PropertiesObject. In other words: This method checks if the subfield
@@ -460,6 +471,7 @@ public class PropertiesObject {
 		return returnValue;
 	}
 
+
 	@Override
 	public String toString() {
 		return "PropertiesObject [solrFieldname=" + solrFieldname + ", propertiesFields=" + propertiesFields
@@ -480,6 +492,7 @@ public class PropertiesObject {
 				+ ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace=" + hasRegExReplace
 				+ ", regexReplaceValues=" + regexReplaceValues + ", allowDuplicates=" + allowDuplicates
 				+ ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
-				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists + "]";
+				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists
+				+ ", applyToFields=" + applyToFields + "]";
 	}
 }

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -236,7 +237,7 @@ public class Index {
 				LinkedHashMap<Integer, String> subfieldExists = new LinkedHashMap<Integer, String>();
 				boolean hasSubfieldNotExists = false;
 				LinkedHashMap<Integer, String> subfieldNotExists = new LinkedHashMap<Integer, String>();
-
+				LinkedHashMap<String, List<String>> applyToFields = new LinkedHashMap<String, List<String>>();
 
 
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
@@ -416,7 +417,7 @@ public class Index {
 
 				if (lstValuesClean.contains("translateConnectedSubfields")) {
 					int index = lstValuesClean.indexOf("translateConnectedSubfields");
-					String translateConnectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. translateConnectedSubfields[translate.properties]
+					String translateConnectedSubfieldsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. translateConnectedSubfields[translate.properties]					
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					translateConnectedSubfields = true;
@@ -439,6 +440,7 @@ public class Index {
 					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
 					hasConcatenatedSubfields = true;
+
 					if (concatenatedSubfieldsString != null) {
 						// Extract the text in the square brackets:
 						Pattern patternConcatenatedSubfields = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between the first and last squary brackets
@@ -449,10 +451,26 @@ public class Index {
 
 						// Get everything between the 2 outermost squarebrackets:
 						concatenatedSubfields = getBracketValues(concatenatedSubfieldsAllBrackets);
-						List<String> bracketContentAsList = Arrays.asList(concatenatedSubfieldsAllBrackets.replace("[", "").replace("]", "").split(":"));
-						concatenatedSubfieldsSeparator = bracketContentAsList.get(bracketContentAsList.size()-1); // Get last list element. This should be the separator.
-					}	
+						
+						// Get applyToFields and add them to a LinkedHashMap<String, List<String>> that we will
+						// pass on with the current PropertiesObject to the MatchingOperations.
+						List<String> concatenatedSubfieldsApplyToFields = getApplyToFields(concatenatedSubfields);
+						if (concatenatedSubfieldsApplyToFields != null) {
+							applyToFields.put("concatenatedSubfields", concatenatedSubfieldsApplyToFields);
+							concatenatedSubfields = removeApplyToFields(concatenatedSubfields);
+							
+							// Get separator value:
+							List<String> bracketContentAsList = Arrays.asList(concatenatedSubfields.get(1).replace("[", "").replace("]", "").split(":"));
+							concatenatedSubfieldsSeparator = bracketContentAsList.get(bracketContentAsList.size()-1); // Get last list element. This should be the separator.
+							
+						} else {
+							// Get separator value:
+							List<String> bracketContentAsList = Arrays.asList(concatenatedSubfieldsAllBrackets.replace("[", "").replace("]", "").split(":"));
+							concatenatedSubfieldsSeparator = bracketContentAsList.get(bracketContentAsList.size()-1); // Get last list element. This should be the separator.
+						}
+					}
 				}
+
 
 				if (lstValuesClean.contains("translateConcatenatedSubfields")) {
 					int index = lstValuesClean.indexOf("translateConcatenatedSubfields");
@@ -487,6 +505,14 @@ public class Index {
 
 						// Get everything between the 2 outermost squarebrackets:
 						subfieldExists = getBracketValues(subfieldExistsAllBrackets);
+						
+						// Get applyToFields and add them to a LinkedHashMap<String, List<String>> that we will
+						// pass on with the current PropertiesObject to the MatchingOperations.
+						List<String> subfieldExistsApplyToFields = getApplyToFields(subfieldExists);
+						if (subfieldExistsApplyToFields != null) {
+							applyToFields.put("subfieldExists", subfieldExistsApplyToFields);
+							subfieldExists = removeApplyToFields(subfieldExists);
+						}
 					}	
 				}
 
@@ -506,8 +532,17 @@ public class Index {
 
 						// Get everything between the 2 outermost squarebrackets:
 						subfieldNotExists = getBracketValues(subfieldNotExistsAllBrackets);
+						
+						// Get applyToFields and add them to a LinkedHashMap<String, List<String>> that we will
+						// pass on with the current PropertiesObject to the MatchingOperations.
+						List<String> subfieldNotExistsApplyToFields = getApplyToFields(subfieldNotExists);
+						if (subfieldNotExistsApplyToFields != null) {
+							applyToFields.put("subfieldNotExists", subfieldNotExistsApplyToFields);
+							subfieldNotExists = removeApplyToFields(subfieldNotExists);
+						}
 					}	
 				}
+				
 
 				if (lstValuesClean.contains("regEx")) {
 					String regexValueString = null;
@@ -657,6 +692,11 @@ public class Index {
 						System.err.println("Error: You need to specify a translation-properties file with the file-ending \".properties\"!");
 					}
 				}
+				
+				// Set applyToField to null if no applyToField exists. This is just to avoid overhead.
+				if (applyToFields.isEmpty()) {
+					applyToFields = null;
+				}
 
 				// Create Datafield and Controlfied objects for all fields given in mab.properties
 				for(String lstValueClean : lstValuesClean) {
@@ -727,11 +767,10 @@ public class Index {
 							hasSubfieldExists,
 							subfieldExists,
 							hasSubfieldNotExists,
-							subfieldNotExists
+							subfieldNotExists,
+							applyToFields
 							);
 
-
-					//System.out.println(mo);
 					propertiesObjects.add(mo);
 				}
 			}
@@ -840,4 +879,45 @@ public class Index {
 
 		return bracketValues;
 	}
+
+	
+	/**
+	 * Get the applyToFields option from the bracket values.
+	 * 
+	 * @param bracketValues		LinkedHashMap<Integer, String>: The bracket values from whicht the applyToFields option should be gotten
+	 * @return					List<String>: A list of the applyToFields
+	 */
+	private List<String> getApplyToFields(LinkedHashMap<Integer, String> bracketValues) {
+		List<String> applyToFields = new ArrayList<String>();
+		
+		for (Entry<Integer, String> bracketValueEntry : bracketValues.entrySet()) {
+			String bracketValue = bracketValueEntry.getValue();
+			
+			if (bracketValue.startsWith("applyToFields[")) {
+				String applyToFieldsAsString = getBracketValues(bracketValue).get(1);
+				applyToFields = Arrays.asList(applyToFieldsAsString.split("\\s*:\\s*")); // "applyToFields" as List<String>
+			} else {
+				applyToFields = null; // option "applyToFields" is not specified
+			}
+		}
+		return applyToFields;
+	}
+	
+	
+	/**
+	 * Removes the "applyToFields" option from bracket values.
+	 * @param bracketValues		LinkedHashMap<Integer, String>: The bracket values from which the applyToFields option should be removed.
+	 * @return					LinkedHashMap<Integer, String>: Bracket values without applyToFields option
+	 */
+	private LinkedHashMap<Integer, String> removeApplyToFields(LinkedHashMap<Integer, String> bracketValues) {
+		for (Entry<Integer, String> bracketValueEntry : bracketValues.entrySet()) {
+			String bracketValue = bracketValueEntry.getValue();
+			int bracketKey = bracketValueEntry.getKey();
+			if (bracketValue.startsWith("applyToFields[")) {
+				bracketValues.remove(bracketKey);
+			}
+		}
+		return bracketValues;
+	}
+
 }

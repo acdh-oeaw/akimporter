@@ -25,6 +25,7 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Datafield {
 
@@ -76,6 +77,10 @@ public class Datafield {
 
 	public void setPassiveSubfields(ArrayList<Subfield> passiveSubfields) {
 		this.passiveSubfields = passiveSubfields;
+	}
+	
+	public void addPassiveSubfields(ArrayList<Subfield> passiveSubfields) {
+		this.passiveSubfields.addAll(passiveSubfields);
 	}
 
 
@@ -156,16 +161,32 @@ public class Datafield {
 	
 	
 	/**
-	 * Move subfields to a new ArrayList<Subfield> called passiveSubfields and remove them from the default ArrayList<Subfield> called subfields
+	 * Move subfields to a new ArrayList<Subfield> called "passiveSubfields" and remove them from the default ArrayList<Subfield> called "subfields".
 	 * @param subfields		ArrayList<Subfield>: An ArrayList of Subfield objects.
 	 */
 	public void moveToPassiveSubfields(ArrayList<Subfield> subfields) {
-		this.setPassiveSubfields(subfields);
+		this.addPassiveSubfields(subfields);
 		this.subfields.removeAll(subfields);
 	}
 	
 
+	/**
+	 * Get subfields of a Datafield by subfield codes.
+	 * 
+	 * @param subfieldCodes		List<String>: The subfield codes of the subfields that should be returned.
+	 * @return					ArrayList<Subfield>: A list of subfields with the given subfield codes.
+	 */
+	public ArrayList<Subfield> getSubfieldsByCodes(List<String> subfieldCodes) {
+		ArrayList<Subfield> returnValue = new ArrayList<Subfield>();
+		for (Subfield subfield : subfields) {
+			if (subfieldCodes.contains(subfield.getCode())) {
+				returnValue.add(subfield);
+			}
+		}
+		return returnValue;
+	}
 
+	
 	/**
 	 * Copy a datafield object for changing values without impacting the original datafield.
 	 * @param originalDatafield		Datafield: A Datafield object which should be copied

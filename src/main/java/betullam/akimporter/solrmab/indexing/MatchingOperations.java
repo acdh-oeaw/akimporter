@@ -54,7 +54,7 @@ public class MatchingOperations {
 		this.allPropertiesObjects = allPropertiesObjects;
 	}
 
-	
+
 	/**
 	 * Match a List of RawRecord objects to a List of of SolrRecord objects.
 	 * 
@@ -137,7 +137,7 @@ public class MatchingOperations {
 				solrfields.add(solrfield);
 			}
 
-			
+
 			SolrRecord solrRecord = new SolrRecord(rawRecord.getRecordID(), rawRecord.getRecordSYS(), rawRecord.getIndexTimestamp(), solrfields, rawRecord.getFullRecord());
 			matchingResult.add(solrRecord);
 		}
@@ -155,7 +155,7 @@ public class MatchingOperations {
 	 * @param allPropertiesObjects	List<PropertiesObject>: All rules from the mab.properties file as a list of PropertiesObject objects
 	 * @return						List<SolrField>: A list of one or multiple SolrField object(s). Each raw field could match to none, one or mutliple Solr field(s). 
 	 */
-	public List<SolrField> matchField(Object rawField, List<PropertiesObject> allPropertiesObjects) {
+	private List<SolrField> matchField(Object rawField, List<PropertiesObject> allPropertiesObjects) {
 
 		// List of SolrField objects for the matching result. This is the return value of this method. It will
 		// contain all the data that we need for the indexing process to Solr.
@@ -200,6 +200,7 @@ public class MatchingOperations {
 			boolean skipField = false;
 			boolean isMultivalued = relevantPropertiesObject.isMultiValued();
 			boolean allowDuplicates = relevantPropertiesObject.isAllowDuplicates();
+			boolean hasApplyToFields = (relevantPropertiesObject.getApplyToFields() != null && !relevantPropertiesObject.getApplyToFields().isEmpty()) ? true : false;
 
 			// Check if the raw subfield, for which we want to treat it's content (apply rules on it), is listed in the properties object
 			// (which represents a line in mab.properties).
@@ -379,16 +380,60 @@ public class MatchingOperations {
 					// This can only apply to datafields, not to controlfields (they do not have any subfields).
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConcatenatedSubfields)) {
 						if (type.equals("datafield")) {
-							ArrayList<String> concatenatedValues = getConcatenatedSubfields(copiedDatafield, relevantPropertiesObject);
+
+							Datafield datafieldToUse = copiedDatafield;
+							boolean apply = true;
+							if (hasApplyToFields) {
+								apply = false;
+								List<String> applyToFields = relevantPropertiesObject.getApplyToFields().get("concatenatedSubfields");
+								List<Datafield> applyToFieldsAsDatafields = getApplyToFieldsAsDatafields(applyToFields);
+
+								for (Datafield applyToFieldAsDatafield : applyToFieldsAsDatafields) {
+									if (copiedDatafield.match(applyToFieldAsDatafield)) { // Get the subfields that are concerned for the rule
+
+										// If we have an "applyToFields" option we need to move all subfields in the bracket of concatenatedSubfields[z:h:x:\\, ] to
+										// "passiveSubfields". In this example this would be subfields "z", "h" and "x". This is because there could be still an "active"
+										// subfield "z", "h" or "x" that would not be used for concatenating and instead would be treated as a "main" subfield.
+										// This has to be done BEFORE getConcatenatedSubfields!
+
+										// Copy again the datafield to which to rule should be applied as we may need the other datafield
+										// with the subfields we will move for other operations.
+										Datafield applyToDatafield = Datafield.copy(copiedDatafield);
+										
+
+										// Get all "subfieldcode" from the bracket of concatenatedSubfields[subfieldcode:subfieldcode:subfieldcode:separator]
+										List<String> subfieldsInBracketImmutable = Arrays.asList(relevantPropertiesObject.getConcatenatedSubfields().get(1).split("\\s*:\\s*"));
+										List<String> subfieldsInBracketMutable = new ArrayList<String>();
+										subfieldsInBracketMutable.addAll(subfieldsInBracketImmutable); // Create CHANGEABLE/MUTABLE List
+										int lastListElement = (subfieldsInBracketMutable.size()-1);
+										subfieldsInBracketMutable.remove(lastListElement); // Remove separator value from MUTABLE List (this would not be possible for immutable Lists)
+
+										// Get the subfields in the brackets (e. g. "z", "h" or "x" in concatenatedSubfields[z:h:x:\\, ]) from the applyToDatafields as ArrayList<Subfield>
+										ArrayList<Subfield> subfieldsToMove = applyToDatafield.getSubfieldsByCodes(subfieldsInBracketMutable);
+
+										// Move the subfields to passive subfields
+										applyToDatafield.moveToPassiveSubfields(subfieldsToMove);
+
+										datafieldToUse = applyToDatafield;
+										apply = true;
+									}
+								}
+							}
+
+							ArrayList<String> concatenatedValues = getConcatenatedSubfields(datafieldToUse, relevantPropertiesObject);
 							String concatenatedSubfieldsSeparator = relevantPropertiesObject.getConcatenatedSubfieldsSeparator();
-							for (Subfield subfield : copiedDatafield.getSubfields()) {
+							for (Subfield subfield : datafieldToUse.getSubfields()) {
 								String valueToAdd = null;
 								String rawFieldvalue = subfield.getContent();
-								if (concatenatedValues != null) {
-									String concatenatedValue = StringUtils.join(concatenatedValues, concatenatedSubfieldsSeparator); // Join concatenated value(s) with the given separator character
-									valueToAdd = rawFieldvalue + concatenatedSubfieldsSeparator + concatenatedValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
+								if (apply) {
+									if (concatenatedValues != null) {
+										String concatenatedValue = StringUtils.join(concatenatedValues, concatenatedSubfieldsSeparator); // Join concatenated value(s) with the given separator character
+										valueToAdd = rawFieldvalue + concatenatedSubfieldsSeparator + concatenatedValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
+									} else {
+										valueToAdd = rawFieldvalue; // If there are not values for concatenation, add the original subfield content.
+									}
 								} else {
-									valueToAdd = rawFieldvalue; // If there are not values for concatenation, add the original subfield content.
+									valueToAdd = rawFieldvalue; // If the rule should not be applied to this subfield, add the original subfield content.
 								}
 								fieldValues.add(valueToAdd);
 							}
@@ -457,8 +502,8 @@ public class MatchingOperations {
 
 		return relevantPropertiesObjects;
 	}
-	
-	
+
+
 	/**
 	 * Getting the translated value that was translated with the help of a translation file.
 	 * 
@@ -578,7 +623,7 @@ public class MatchingOperations {
 		return translateValue;
 	}
 
-	
+
 	/**
 	 * Get a regexed value. If the regex does not match, return the original value (= rawFieldvalue)
 	 * 
@@ -605,7 +650,7 @@ public class MatchingOperations {
 		return returnValue;
 	}
 
-	
+
 	/**
 	 * Get a regexed value. If the regex does not match, return null.
 	 * @param regexPattern		String: The regex pattern
@@ -701,8 +746,7 @@ public class MatchingOperations {
 			List<String> concatenatedSubfieldsCodes = new ArrayList<String>();
 			concatenatedSubfieldsCodes.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
 			int lastListElement = (concatenatedSubfieldsCodes.size()-1); // Get index of last List element
-			concatenatedSubfieldsCodes.remove(lastListElement); // Remove the default value so that only the subfield codes will remain
-
+			concatenatedSubfieldsCodes.remove(lastListElement); // Remove the separator value so that only the subfield codes will remain
 			for (String concatenatedSubfieldsCode : concatenatedSubfieldsCodes) {
 				for (Subfield passiveSubfield : datafield.getPassiveSubfields()) {
 					String passiveSubfieldCode = passiveSubfield.getCode();
@@ -786,6 +830,34 @@ public class MatchingOperations {
 		return skipField;
 	}
 
+	
+	/**
+	 * Get a list of Datafield object from a List of fieldnames.
+	 * 
+	 * @param applyToFields		List<String>: A list of fieldnames
+	 * @return					List<Datafield>: A list of datafield objects
+	 */
+	private List<Datafield> getApplyToFieldsAsDatafields(List<String> applyToFields) {
+		List<Datafield> applyToFieldsAsDatafields = new ArrayList<Datafield>();
+		for (String applyToField : applyToFields) {			
+			Datafield datafield = new Datafield();
+			Subfield subfield = new Subfield();
+			ArrayList<Subfield> subfields = new ArrayList<Subfield>();
+			String tag = applyToField.substring(0, 3);
+			String ind1 = applyToField.substring(4, 5);
+			String ind2 = applyToField.substring(5, 6);
+			String subfieldCode = applyToField.substring(7, 8);
+			subfield.setCode(subfieldCode);
+			subfields.add(subfield);
+			datafield.setTag(tag);
+			datafield.setInd1(ind1);
+			datafield.setInd2(ind2);
+			datafield.setSubfields(subfields);
+			applyToFieldsAsDatafields.add(datafield);
+		}
+
+		return applyToFieldsAsDatafields;
+	}
 
 
 	public List<RawRecord> getRawRecords() {
