@@ -559,6 +559,11 @@ public class Main {
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
 				break;
 			}
+			
+			case "index_sampledata": {
+				new Import(true, iSolr, iDefaultMabProperties, iCustomMabProperties);
+				break;
+			}
 
 			default: {
 				HelpFormatter helpFormatter = new HelpFormatter();
@@ -1350,6 +1355,13 @@ public class Main {
 				.desc("Sets flag of existance to authority and merges authority data into bibliographic data. Can be used with -a, -A, -u.\nExample: java -jar AkImporter.jar -a -m")
 				.build();
 
+		// index_sampledata (index sample data)
+		Option oIndexSampleData = Option
+				.builder()
+				.required(false)
+				.longOpt("index_sampledata")
+				.desc("Index sample data from AK Bibliothek Wien")
+				.build();
 
 		optionGroup.addOption(oAkTest);
 		optionGroup.addOption(oImport);
@@ -1364,6 +1376,7 @@ public class Main {
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
+		optionGroup.addOption(oIndexSampleData);
 		optionGroup.setRequired(true);
 		options.addOptionGroup(optionGroup);
 		options.addOption(oVerbose);

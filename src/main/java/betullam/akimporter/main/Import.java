@@ -1,7 +1,7 @@
 /**
  * Import to Solr from MarcXML with MAB fields.
  *
- * Copyright (C) AK Bibliothek Wien 2015, Michael Birkner
+ * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
  * This file is part of AkImporter.
  * 
@@ -68,6 +68,7 @@ public class Import {
 	private boolean isIndexingSuccessful = false;
 	private boolean isRelateSuccessful = false;
 	private boolean isWithCliArgs = false;
+	private boolean indexSampleData = false;
 
 
 	/**
@@ -112,8 +113,29 @@ public class Import {
 		this.optimize = optimize;
 		this.print = print;
 		this.startImporting();
-
 	}
+	
+	// Constructor for indexing sample data:
+	public Import(boolean indexSampleData, String solrUrl, boolean defaultMabProps, String pathToCustomMabProps) {
+		typeOfDataset = "1";
+		isMergeOk = "Y";
+		isXmlCleanOk = "Y";
+		isIndexingOk = "Y";
+		
+		this.indexSampleData = true;
+		this.isWithCliArgs = true;
+		this.typeOfDataset = "1";
+		this.pathToMabXmlFile = null;
+		this.pathToMultipleXmlFolder = null;
+		this.isValidationOk = "S";
+		this.solrServerAddress = solrUrl;	
+		this.useDefaultMabPropertiesFile = (defaultMabProps) ? "D" : "C";
+		this.pathToMabPropertiesFile = (defaultMabProps) ? null : pathToCustomMabProps;
+		this.optimize = true;
+		this.print = true;
+		this.startImporting();
+	}
+	
 
 	/**
 	 * Actually starts the importing process.
@@ -288,8 +310,14 @@ public class Import {
 					startTime = System.currentTimeMillis();
 					
 					// Index metadata so Solr
-					Index index = new Index(pathToMabXmlFile, this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
-					isIndexingSuccessful = index.isIndexingSuccessful();
+					if (indexSampleData) {
+						Index index = new Index(true, this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, true, true);
+						isIndexingSuccessful = index.isIndexingSuccessful();
+					} else {
+						Index index = new Index(pathToMabXmlFile, this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
+						isIndexingSuccessful = index.isIndexingSuccessful();
+					}
+					
 
 					// Connect child and parent volumes:
 					Relate relate = new Relate(this.solrServer, this.timeStamp, false, this.print);

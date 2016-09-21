@@ -74,10 +74,26 @@ public class Index {
 	private SolrMabHelper smHelper = null;
 	private boolean isIndexingSuccessful = false;
 	public static List<SolrField> customTextFields = new ArrayList<SolrField>();
+	private boolean indexSampleData = false;
 
-
+	// Default Constructor
 	public Index(String mabXmlFile, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
 		this.mabXMLfile = mabXmlFile;
+		this.solrServer = solrServer;
+		this.useDefaultMabProperties = useDefaultMabProperties;
+		this.mabPropertiesFile = mabPropertiesFile;
+		this.pathToTranslationFiles = pathToTranslationFiles;
+		this.timeStamp = timeStamp;
+		this.optimizeSolr = optimizeSolr;
+		this.print = print;
+		this.smHelper = new SolrMabHelper(solrServer);
+
+		this.startIndexing();
+	};
+	
+	// Constructor for indexing sample data:
+	public Index(boolean indexSampleData, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
+		this.indexSampleData = indexSampleData;
 		this.solrServer = solrServer;
 		this.useDefaultMabProperties = useDefaultMabProperties;
 		this.mabPropertiesFile = mabPropertiesFile;
@@ -119,8 +135,15 @@ public class Index {
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
 			// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
-			FileReader reader = new FileReader(mabXMLfile);
-			InputSource inputSource = new InputSource(reader);
+			InputSource inputSource = null;
+			if (indexSampleData) {
+				BufferedInputStream xmlSampleDataStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/sampledata_aksearch.xml"));	
+				inputSource = new InputSource(xmlSampleDataStream);
+			} else {
+				FileReader reader = new FileReader(mabXMLfile);
+				inputSource = new InputSource(reader);
+			}
+			
 
 			// Set ContentHandler:
 			MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.timeStamp, this.print);
