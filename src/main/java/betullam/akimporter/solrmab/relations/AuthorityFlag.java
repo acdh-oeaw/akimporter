@@ -133,6 +133,9 @@ public class AuthorityFlag {
 			// Delete wrong authority records (see explanation at method):
 			deleteAuhtorityWithoutHeading();
 			
+			// Delete authority records without flag of existance (save a loooot of disk space and memory)
+			deleteAuhtorityWithoutFlag();
+			
 			try {
 				// Commit the changes
 				this.solrServerAuthority.commit();
@@ -219,6 +222,22 @@ public class AuthorityFlag {
 		try {
 			this.smHelper.print(this.print, "\nDeleting wrong authority records");
 			solrServerAuthority.deleteByQuery("-heading:*");
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Deletes authority records that don't have a "flag of existance". That means, that all authority records, that are not used in
+	 * the bibliographic records, are deleted from the authority index. This avoids a huge overhead in the Solr authority index which
+	 * would use a lot of RAM. The difference could be millions of records.
+	 */
+	private void deleteAuhtorityWithoutFlag() {
+		try {
+			this.smHelper.print(this.print, "\nDeleting authority records without flag of existance.");
+			solrServerAuthority.deleteByQuery("-existsInBiblio_str:\"true\"");
 		} catch (SolrServerException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
