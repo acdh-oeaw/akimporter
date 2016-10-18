@@ -75,11 +75,35 @@ public class OaiUpdater {
 	long indexTimestamp;
 	SolrMabHelper smHelper = new SolrMabHelper();
 
+	
+	public void oaiGenericUpdate(
+			String oaiUrl,
+			String format,
+			String set,
+			String destinationPath,
+			String oaiDatefile,
+			String oaiPropertiesFile,
+			String solrServerBiblio,
+			boolean print,
+			boolean optimize
+			) {
+		this.indexTimestamp = new Date().getTime();
+		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
+
+		smHelper.print(print, "\n-------------------------------------------");
+		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		
+		// First start of downloading and mergeing XML files from OAI interface:
+		String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, 0, print);
+
+	}
+	
+	
 	/**
 	 * Starting the harvesting and index process of authority records.
 	 * 
 	 * @param oaiUrl					String representing an URL to an OAI interface
-	 * @param format					Format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
+	 * @param format					String representing the format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
 	 * @param set						String representing the set of the OAI interface you want to harvest
 	 * @param destinationPath			String representing a path to a local directory where the downloaded data should be stored (e. g. /home/username/oai_data)
 	 * @param oaiDatefile				String representing a path to a .properties file with at least a "from" date/time in format YYYY-MM-DDTHH:MM:SSZ. It could also contain an "until" date/time. Example: /path/to/oai_date-time_file.properties
@@ -87,10 +111,12 @@ public class OaiUpdater {
 	 * @param customAuthProps			If using custom properties for authority indexing, a String representing the path to a .properties file, e. g. /home/username/my_authority.properties
 	 * @param solrServerAuth			String indicating the URL incl. core name of the Solr authority index (e. g. http://localhost:8080/solr/authority)
 	 * @param solrServerBiblio			String indicating the URL incl. core name of the Solr bibliographic index (e. g. http://localhost:8080/solr/biblio)
+	 * @param entities					String indicating the authority entities (Persons, Corporation, Subjects, ...)
+	 * @param merge						boolean indicating whether to merge the authority data into the bibliographic data or not
 	 * @param print						boolean indicating whether to print status messages or not
 	 * @param optimize					boolean indicating whether to optimize the solr index not
 	 */
-	public void oaiUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
+	public void oaiGndUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
 		
 		boolean isAuthorityUpdateSuccessful = false;
 		this.indexTimestamp = new Date().getTime();

@@ -180,7 +180,7 @@ public class Main {
 
 			case "k": { // FOR TESTING ONLY
 				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
-				
+
 				/*
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
 				System.out.println("Start re-importing ongoing data updates ...");
@@ -216,10 +216,10 @@ public class Main {
 						optimize
 						);
 				auth.indexAuthority();
-				*/
+				 */
 				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
-	
-				
+
+
 				/*
 				// Test case-insensitivity flag for regex:
 				String testString = "Der Teststring";
@@ -228,8 +228,8 @@ public class Main {
 				Matcher matcher = pattern.matcher(testString);
 				String result = (matcher.find()) ? matcher.group().replace("[", "").replace("]", "").trim() : null;
 				System.out.println(result);
-				*/
-				
+				 */
+
 				break;
 			}
 
@@ -523,7 +523,7 @@ public class Main {
 					} else {
 						OaiUpdater oaiUpdater = new OaiUpdater();
 
-						oaiUpdater.oaiUpdate(
+						oaiUpdater.oaiGndUpdate(
 								aUpdateOaiUrl,
 								aUpdateFormat,
 								aUpdateOaiSet,
@@ -553,13 +553,55 @@ public class Main {
 						);
 				break;
 			}
+			
+			case "O": {
+				
+				System.out.println("Starting OAI harvesting ...");
+				//options.getOption("O").getOp
+				String oaiName = cmd.getOptionValue("O");
+				
+				System.out.println("OAI Name: " + oaiName);
+				
+				String oaiUrl = importerProperties.getProperty("oai." + oaiName + ".url");
+				String format = importerProperties.getProperty("oai." + oaiName + ".format");
+				String set = importerProperties.getProperty("oai." + oaiName + ".set");
+				String destinationPath = importerProperties.getProperty("oai." + oaiName + ".destinationPath");
+				String oaiDatefile = importerProperties.getProperty("oai." + oaiName + ".dateFile");
+				String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
+				String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
+				
+				/*
+				System.out.println("OAI oaiUrl: " + oaiUrl);
+				System.out.println("OAI format: " + format);
+				System.out.println("OAI set: " + set);
+				System.out.println("OAI destinationPath: " + destinationPath);
+				System.out.println("OAI oaiDatefile: " + oaiDatefile);
+				System.out.println("OAI oaiPropertiesFile: " + oaiPropertiesFile);
+				System.out.println("OAI solrServerBiblio: " + solrServerBiblio);
+				*/
+
+				
+				OaiUpdater oaiUpdater = new OaiUpdater();
+				oaiUpdater.oaiGenericUpdate(
+						oaiUrl,
+						format,
+						set,
+						destinationPath,
+						oaiDatefile,
+						oaiPropertiesFile,
+						solrServerBiblio,
+						print,
+						optimize);
+						
+				break;
+			}
 
 			case "h": {
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
 				break;
 			}
-			
+
 			case "index_sampledata": {
 				new Import(true, iSolr, iDefaultMabProperties, iCustomMabProperties);
 				break;
@@ -869,7 +911,7 @@ public class Main {
 					// Get the filename with the help of RegEx:
 					//Pattern patternPropFile = java.util.regex.Pattern.compile("[^\\s,;]*\\.properties"); // No (^) whitespaces (\\s), commas or semicolons (,;) before ".properties"-string.
 					Pattern patternPropFile = java.util.regex.Pattern.compile("[a-zA-Z0-9]+\\.properties");
-					
+
 					Matcher matcherPropFile = patternPropFile.matcher("");
 					for(String lstVal : lstValue) {
 						matcherPropFile.reset(lstVal);
@@ -1355,6 +1397,16 @@ public class Main {
 				.desc("Sets flag of existance to authority and merges authority data into bibliographic data. Can be used with -a, -A, -u.\nExample: java -jar AkImporter.jar -a -m")
 				.build();
 
+		// O (OAI-PMH Import/Update)
+		Option oOaiImport = Option
+				.builder("O")
+				.required(false)
+				.longOpt("oai_import")
+				.hasArg(true)
+				.numberOfArgs(1)
+				.desc("Indexing or updating data from an OAI-PMH interface.")
+				.build();
+
 		// index_sampledata (index sample data)
 		Option oIndexSampleData = Option
 				.builder()
@@ -1373,6 +1425,7 @@ public class Main {
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
+		optionGroup.addOption(oOaiImport);
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
