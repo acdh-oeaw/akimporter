@@ -355,7 +355,13 @@ public class OaiUpdater {
 	 */
 	private boolean mergeXmlFiles(String sourcePath, String destinationPath) {
 		XmlMerger xmlm = new XmlMerger();
-		boolean isMergeSuccessful = xmlm.mergeMultipleElementNodes(sourcePath, destinationPath, "collection", "slim:record");
+		
+		// Old merge method (using DOM parser - problem with level of element):
+		//boolean isMergeSuccessful = xmlm.mergeMultipleElementNodes(sourcePath, destinationPath, "collection", "slim:record");
+		
+		// New merge method (using SAX parser):
+		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", "record", 0);
+
 		return isMergeSuccessful;
 	}
 
