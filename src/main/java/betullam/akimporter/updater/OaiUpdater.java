@@ -360,7 +360,7 @@ public class OaiUpdater {
 		//boolean isMergeSuccessful = xmlm.mergeMultipleElementNodes(sourcePath, destinationPath, "collection", "slim:record");
 		
 		// New merge method (using SAX parser):
-		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", "record", 0);
+		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", "record", 1);
 
 		return isMergeSuccessful;
 	}
