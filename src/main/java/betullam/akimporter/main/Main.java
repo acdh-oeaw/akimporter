@@ -569,6 +569,9 @@ public class Main {
 				String oaiDatefile = importerProperties.getProperty("oai." + oaiName + ".dateFile");
 				String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
 				String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
+				String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
+				int elementsToMergeLevel = Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel"));
+				List<String> structElements = Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*"));
 				
 				/*
 				System.out.println("OAI oaiUrl: " + oaiUrl);
@@ -578,6 +581,8 @@ public class Main {
 				System.out.println("OAI oaiDatefile: " + oaiDatefile);
 				System.out.println("OAI oaiPropertiesFile: " + oaiPropertiesFile);
 				System.out.println("OAI solrServerBiblio: " + solrServerBiblio);
+				System.out.println("OAI elementsToMerge: " + elementsToMerge);
+				System.out.println("OAI elementsToMergeLevel: " + elementsToMergeLevel);
 				*/
 
 				
@@ -586,7 +591,10 @@ public class Main {
 						oaiUrl,
 						format,
 						set,
+						structElements,
 						destinationPath,
+						elementsToMerge,
+						elementsToMergeLevel,
 						oaiDatefile,
 						oaiPropertiesFile,
 						solrServerBiblio,

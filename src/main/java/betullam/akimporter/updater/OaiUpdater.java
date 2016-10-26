@@ -40,6 +40,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -75,12 +76,15 @@ public class OaiUpdater {
 	long indexTimestamp;
 	SolrMabHelper smHelper = new SolrMabHelper();
 
-	
+
 	public void oaiGenericUpdate(
 			String oaiUrl,
 			String format,
 			String set,
+			List<String> structElements,
 			String destinationPath,
+			String elementsToMerge,
+			int elementsToMergeLevel,
 			String oaiDatefile,
 			String oaiPropertiesFile,
 			String solrServerBiblio,
@@ -92,13 +96,14 @@ public class OaiUpdater {
 
 		smHelper.print(print, "\n-------------------------------------------");
 		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
-		
-		// First start of downloading and mergeing XML files from OAI interface:
-		String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, 0, print);
 
+		// First start of downloading and mergeing XML files from OAI interface:
+		String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
+
+		// TODO: Start parsing merged XML file and index it's contents. Don't forget structElements!
 	}
-	
-	
+
+
 	/**
 	 * Starting the harvesting and index process of authority records.
 	 * 
@@ -117,16 +122,16 @@ public class OaiUpdater {
 	 * @param optimize					boolean indicating whether to optimize the solr index not
 	 */
 	public void oaiGndUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
-		
+
 		boolean isAuthorityUpdateSuccessful = false;
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
 		smHelper.print(print, "\n-------------------------------------------");
 		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
-		
+
 		// First start of downloading and mergeing XML files from OAI interface:
-		String mergedAuthFileName = oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, 0, print);
+		String mergedAuthFileName = oaiDownload(oaiUrl, format, set, destinationPath, "slim:record", 1, oaiDatefile, this.indexTimestamp, 0, print);
 
 		if (mergedAuthFileName != null) {
 			smHelper.print(print, "\nIndexing new authority data ... ");
@@ -184,11 +189,11 @@ public class OaiUpdater {
 	 * @param print					boolean indicating whether to print status messages or not
 	 * @return						String representing the path to a file with the downloaded data
 	 */
-	private String oaiDownload(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, long downloadTimestamp, int counter, boolean print) {
-		
+	private String oaiDownload(String oaiUrl, String format, String set, String destinationPath, String elementsToMerge, int elementsToMergeLevel, String oaiDatefile, long downloadTimestamp, int counter, boolean print) {
+
 		String mergedFileName = null;
 		String downloadDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date(downloadTimestamp)); // Use download time of the first run as "until" time
-		
+
 		// Get "from" and "until" date/time from .properties file
 		Properties oaiDateTime = getOaiDateTime(oaiDatefile);
 		String from = oaiDateTime.getProperty("from"); // Should be something like 2016-01-13T14:00:00Z
@@ -250,21 +255,21 @@ public class OaiUpdater {
 					}
 				} while (resumptionToken != null);
 				smHelper.print(print, "Done");
-								
+
 				// Write current date/time to date/time-file for next update:
 				this.writeOaiDateFile(oaiDatefile, until);
-				
+
 				// Start downloading XML data again until we reach today:
 				if (this.indexTimestamp > downloadTimestamp) {
-					oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, this.indexTimestamp, counter, print);
+					oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, counter, print);
 				} else {
 					// Reached today - stop downloading and start merging
 					smHelper.print(print, "\nAll OAI updates are downloaded.");
-					
+
 					// Start merging all downloaded updates into one file:
 					smHelper.print(print, "\nMerging downloaded XML data ... ");
 					mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
-					boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName);
+					boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, elementsToMerge, elementsToMergeLevel);
 					if (isMergeSuccessful) {
 						smHelper.print(print, "Done");
 					} else {
@@ -277,7 +282,7 @@ public class OaiUpdater {
 				// Calculate new timestamp
 				long newTimeStamp = (long)(downloadTimestamp - (timeSpan*0.15));
 				//System.err.print("\nToo many documents requested from OAI interface (> 100000) . Trying again with shorter time span ...");
-				oaiDownload(oaiUrl, format, set, destinationPath, oaiDatefile, newTimeStamp, counter, print);
+				oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, newTimeStamp, counter, print);
 				mergedFileName = null;
 			} else {
 				System.err.print("\nERROR: Getting HTTP response code " + httpResponseCode + " from OAI interface at " + oaiUrl);
@@ -353,14 +358,14 @@ public class OaiUpdater {
 	 * @param destinationPath		String representing a path to a file containing the merged XML data (e. g. /path/to/merged_file.xml)
 	 * @return
 	 */
-	private boolean mergeXmlFiles(String sourcePath, String destinationPath) {
+	private boolean mergeXmlFiles(String sourcePath, String destinationPath, String elementsToMerge, int elementsToMergeLevel) {
 		XmlMerger xmlm = new XmlMerger();
-		
+
 		// Old merge method (using DOM parser - problem with level of element):
 		//boolean isMergeSuccessful = xmlm.mergeMultipleElementNodes(sourcePath, destinationPath, "collection", "slim:record");
-		
+
 		// New merge method (using SAX parser):
-		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", "record", 1);
+		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", elementsToMerge, elementsToMergeLevel);
 
 		return isMergeSuccessful;
 	}
@@ -439,7 +444,7 @@ public class OaiUpdater {
 			e.printStackTrace();
 			document = null;
 		}
-		
+
 		return document;
 	}
 
@@ -463,7 +468,7 @@ public class OaiUpdater {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return httpResponseCode;
 	}
 
@@ -485,7 +490,7 @@ public class OaiUpdater {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return resumptionToken;
 	}
 
