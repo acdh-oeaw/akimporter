@@ -94,7 +94,7 @@ public class Consolidate {
 		// Merge XML:
 		System.out.println("\nStart merging splitted files into a new consolidated file. This could take a while ...");
 		XmlMerger xmlm = new XmlMerger(); // Start merging
-		boolean isMergingSuccessful = xmlm.mergeElementNodes(pathToSplittedFilesDir, this.pathToConsolidatedFile, "collection", "record", 0);
+		boolean isMergingSuccessful = xmlm.mergeElements(pathToSplittedFilesDir, this.pathToConsolidatedFile, "collection", "record", 0);
 
 		if (isMergingSuccessful) {
 			this.smHelper.print(this.print, "\nConsolidating data into file " + this.pathToConsolidatedFile + " was successful.\n");

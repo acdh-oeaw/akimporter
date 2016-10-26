@@ -175,7 +175,7 @@ public class Import {
 
 			if (isMergeOk.equals("Y")) {
 				XmlMerger xmlm = new XmlMerger(); // Start merging
-				isMergingSuccessful = xmlm.mergeElementNodes(pathToMultipleXmlFolder, pathToMergedFile, "collection", "record", 1);
+				isMergingSuccessful = xmlm.mergeElements(pathToMultipleXmlFolder, pathToMergedFile, "collection", "record", 1);
 
 				if (isMergingSuccessful) {
 					pathToMabXmlFile = pathToMergedFile;

@@ -93,7 +93,7 @@ public class Updater {
 			smHelper.print(print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
 			String pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
-			xmlm.mergeElementNodes(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
+			xmlm.mergeElements(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
 			smHelper.print(print, "Done");
 
 			// Validate merged XML file:
