@@ -183,6 +183,8 @@ public class OaiUpdater {
 	 * @param format				Format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
 	 * @param set					String representing the set of the OAI interface you want to harvest
 	 * @param destinationPath		String representing a path to a local directory where the downloaded data should be stored (e. g. /home/username/oai_data)
+	 * @param elementsToMerge		String representing the XML element that should be merged into a new file after downloading the OAI data (e. g. record).
+	 * @param elementsToMergeLevel	int: Level of the XML element that should be merge if there are more of one of the same name. As default and for the top level element, use 1.
 	 * @param oaiDatefile			String representing a path to a .properties file with at least a "from" date/time in format YYYY-MM-DDTHH:MM:SSZ. It could also contain an "until" date/time. Example: /path/to/oai_date-time_file.properties
 	 * @param downloadTimestamp		long: Timestamp of start of current downloading task
 	 * @param counter				int: Counter for naming files of downloaded OAI result pages (created by resumptionToken)
@@ -356,6 +358,8 @@ public class OaiUpdater {
 	 * 
 	 * @param sourcePath			String representing a path to a directory with multiple XML files (e. g. /folder/with/multiple/xml/files)
 	 * @param destinationPath		String representing a path to a file containing the merged XML data (e. g. /path/to/merged_file.xml)
+	 * @param elementsToMerge		String representing the XML element that should be merged into a new file after downloading the OAI data (e. g. record).
+	 * @param elementsToMergeLevel	int: Level of the XML element that should be merge if there are more of one of the same name. As default and for the top level element, use 1.
 	 * @return
 	 */
 	private boolean mergeXmlFiles(String sourcePath, String destinationPath, String elementsToMerge, int elementsToMergeLevel) {
