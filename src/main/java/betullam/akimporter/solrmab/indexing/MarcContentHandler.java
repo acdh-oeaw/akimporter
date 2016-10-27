@@ -423,7 +423,7 @@ public class MarcContentHandler implements ContentHandler {
 	/**
 	 * Prints the specified text to the console if "print" is true.
 	 * 
-	 * @param print		boolean\t true if the text should be print
+	 * @param print		boolean: true if the text should be print
 	 * @param text		String: a text message to print.
 	 */
 	private void print(boolean print, String text) {
