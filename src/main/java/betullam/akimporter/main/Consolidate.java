@@ -34,8 +34,8 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 
-import betullam.xmlhelper.XmlMerger;
-import betullam.xmlhelper.XmlSplitter;
+import ak.xmlhelper.XmlMerger;
+import ak.xmlhelper.XmlSplitter;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 
 public class Consolidate {

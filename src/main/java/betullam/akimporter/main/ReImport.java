@@ -37,7 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
-import betullam.xmlhelper.XmlValidator;
+import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;

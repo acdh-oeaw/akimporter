@@ -62,8 +62,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import betullam.xmlhelper.XmlMerger;
-import betullam.xmlhelper.XmlParser;
+import ak.xmlhelper.XmlMerger;
+import ak.xmlhelper.XmlParser;
 import main.java.betullam.akimporter.main.Authority;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
