@@ -28,10 +28,51 @@ import java.util.List;
 
 public class MetsRawRecord {
 
+	String topParentTitle;
+	String topParentType;
+	String topParentContentId;
+	String topParentLogId;
 	String topTitle;
 	String topSubtitle;
+	String topTitleSort;
+	List<Person> topPersons;
+	String topYear;
+	String topVolume;
+	String topIssueNo;
+	String topSortNo;
+	String topPlace;
+	String topPublisher;
+	String topLanguage;
+	String topType;
+	String topAkIdentifier;
 	String topAcNo;
-	String topUrn;
-	List<String> topPersons;
+	String topGoobiId;
+	String topContentId;
+	String topDmdLogId;
+	String topLogId;
+	String topPhysId;
+	List<Child> childs;
+
+	private class Child {
+		String childTitle;
+		String childSubtitle;
+		String childTitleSort;
+		List<Person> childPersons;
+		List<String> childAbstracts;
+		String childLanguage;
+		String childFromPage;
+		String childToPage;
+		String childType;
+		String childContentId;
+		String childDmdLogId;
+		String childLogId;
+		String childPhysId;
+	}
 	
+	private class Person {
+		String personFirstName;
+		String personLastName;
+		String personRole;
+		String personAuthorityId;
+	}
 }
