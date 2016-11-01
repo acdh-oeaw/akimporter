@@ -1,5 +1,5 @@
 /**
- * MetsRecord class which describes a Mets/Mods record
+ * MetsRawRecord class which describes a Mets/Mods record
  * 
  * Copyright (C) AK Bibliothek Wien 2016, Michael Birkner
  * 
@@ -26,7 +26,7 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.List;
 
-public class MetsRecord {
+public class MetsRawRecord {
 
 	String topTitle;
 	String topSubtitle;
