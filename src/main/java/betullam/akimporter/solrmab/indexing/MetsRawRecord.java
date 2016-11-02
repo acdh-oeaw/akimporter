@@ -43,6 +43,7 @@ public class MetsRawRecord {
 	String topPlace;
 	String topPublisher;
 	String topLanguage;
+	List<String> topClassification;
 	String topType;
 	String topAkIdentifier;
 	String topAcNo;
@@ -60,6 +61,7 @@ public class MetsRawRecord {
 		List<Person> childPersons;
 		List<String> childAbstracts;
 		String childLanguage;
+		List<String> childClassification;
 		String childFromPage;
 		String childToPage;
 		String childType;
