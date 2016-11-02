@@ -31,6 +31,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -60,12 +61,17 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlParser;
 import main.java.betullam.akimporter.main.Authority;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.solrmab.indexing.MarcContentHandler;
+import main.java.betullam.akimporter.solrmab.indexing.MetsContentHandler;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
@@ -73,8 +79,9 @@ import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 public class OaiUpdater {
 
 	//String indexTimeStamp;
-	long indexTimestamp;
-	SolrMabHelper smHelper = new SolrMabHelper();
+	private HttpSolrServer solrServer = null;
+	private long indexTimestamp;
+	private SolrMabHelper smHelper = new SolrMabHelper();
 
 
 	public void oaiGenericUpdate(
@@ -98,9 +105,32 @@ public class OaiUpdater {
 		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 
 		// First start of downloading and mergeing XML files from OAI interface:
-		String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
+		//String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
 
 		// TODO: Start parsing merged XML file and index it's contents. Don't forget structElements!
+		// Start parsing METS (for example file: see git repo):
+		
+		// Set XML file and content handler
+		try {
+			FileReader reader = new FileReader("EXAMPLE FILE");
+			InputSource inputSource = new InputSource(reader);
+			MetsContentHandler metsContentHandler = new MetsContentHandler(solrServer, "TIMESTAMP", print);
+			
+			// Create SAX parser:
+			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+			xmlReader.setContentHandler(metsContentHandler);
+			
+			// Start parsing & indexing:
+			xmlReader.parse(inputSource);
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 
