@@ -101,9 +101,9 @@ public class OaiUpdater {
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
-		smHelper.print(print, "\n-------------------------------------------");
-		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
-
+		//smHelper.print(print, "\n-------------------------------------------");
+		//smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		
 		// First start of downloading and mergeing XML files from OAI interface:
 		//String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
 
@@ -112,7 +112,7 @@ public class OaiUpdater {
 		
 		// Set XML file and content handler
 		try {
-			FileReader reader = new FileReader("EXAMPLE FILE");
+			FileReader reader = new FileReader("METS FILE HERE");
 			InputSource inputSource = new InputSource(reader);
 			MetsContentHandler metsContentHandler = new MetsContentHandler(solrServer, "TIMESTAMP", print);
 			
