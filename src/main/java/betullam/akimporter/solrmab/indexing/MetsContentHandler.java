@@ -34,14 +34,12 @@ import org.xml.sax.SAXException;
 
 public class MetsContentHandler implements ContentHandler {
 
-	private List<PropertiesObject> propertiesObjects;
 	private SolrServer solrServer;
 	private String elementContent;
 	private String timeStamp;
 	private boolean print = true;
 	
-	public MetsContentHandler(List<PropertiesObject> propertiesObjects, SolrServer solrServer, String timeStamp, boolean print) {
-		this.propertiesObjects = propertiesObjects;
+	public MetsContentHandler(SolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.timeStamp = timeStamp;
 		this.print = print;
@@ -56,6 +54,17 @@ public class MetsContentHandler implements ContentHandler {
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
 		
+		
+		// Parse dmdSec sections
+		if (qName.equals("mets:dmdSec")) {
+			System.out.println("Parsing dmdSec");
+			if (qName.equals("mods:classification")) {
+				if (atts.getValue("authority").equals("sswd")) {
+					// Content of node should be the classification
+					System.out.println("Classification: " + elementContent);
+				}
+			}
+		}
 	}
 
 	
