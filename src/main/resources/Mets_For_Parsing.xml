@@ -3489,7 +3489,7 @@
 					<mets:mdWrap MDTYPE="MODS">
 						<mets:xmlData>
 							<mods:mods>
-								<mods:classification authority="sswd">OTHER</mods:classification>
+								<mods:classification authority="sswd">Wirtschaft</mods:classification>
 								<mods:titleInfo>
 									<mods:title>Wirtschaft und Gesellschaft - 2016 Heft 1</mods:title>
 								</mods:titleInfo>
