@@ -300,9 +300,9 @@ public class MetsContentHandler implements ContentHandler {
 					}
 				}
 			}
-
 		}
 
+		
 		if (isLogicalStructMap) {
 			if (qName.equals("mets:div")) {
 				isDiv_logical = true;
@@ -321,28 +321,32 @@ public class MetsContentHandler implements ContentHandler {
 				if (atts.getValue("TYPE") != null) {
 					structMapLogical.setType(atts.getValue("TYPE"));
 				}
+				
+				structMapsLogical.put(dmdLogId_logicalStructMap, structMapLogical);
+				//System.out.println(structMapLogical);
 			}
 		}
 
+		
 		if (isPhysicalStructMap) {
 			if (qName.equals("mets:div")) {
 				isDiv_physical = true;
 				structMapPhysical = metsRawRecord.new StructMapPhysical();
 
-				if (atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("page")) {
+				//if (atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("page")) {
 
 					if (atts.getValue("ID") != null) {
 						physId_physicalStructMap = atts.getValue("ID");
-						//structMapPhysical.setPhysId(physId_physicalStructMap);
-						//System.out.println("physId_physicalStructMap: " + physId_physicalStructMap);
+						structMapPhysical.setPhysId(physId_physicalStructMap);
 					} else {
 						physId_physicalStructMap = null;
 					}
-					
+
 					if (atts.getValue("DMDID") != null) {
 						structMapPhysical.setDmdPhysId(atts.getValue("DMDID"));
+
 					}
-					
+
 					if (atts.getValue("CONTENTIDS") != null) {
 						structMapPhysical.setContentId(atts.getValue("CONTENTIDS"));
 					}
@@ -354,11 +358,14 @@ public class MetsContentHandler implements ContentHandler {
 					if (atts.getValue("ORDERLABEL") != null) {
 						structMapPhysical.setOrderLabel(atts.getValue("ORDERLABEL"));
 					}
-					
+
 					if (atts.getValue("TYPE") != null) {
 						structMapPhysical.setType(atts.getValue("TYPE"));
 					}
-				}
+				//}
+				
+				structMapsPhysical.put(physId_physicalStructMap, structMapPhysical);
+				System.out.println(structMapPhysical);
 			}
 		}
 
@@ -393,12 +400,10 @@ public class MetsContentHandler implements ContentHandler {
 
 		if (isPublisher) {
 			dmdSec.setPublisher(elementContent);
-			//System.out.println("publisher: " + publisher);
 		}
 
 		if (isPlace) {
 			dmdSec.setPlace(elementContent);
-			//System.out.println("place: " + place);
 		}
 
 		if (isYear) {
@@ -459,22 +464,11 @@ public class MetsContentHandler implements ContentHandler {
 		if (isAbstract) {
 			dmdSec.getAbstractTexts().add(elementContent);
 		}
+
 		
-		if (isLogicalStructMap) {
-			structMapsLogical.put(dmdLogId_logicalStructMap, structMapLogical);
-		}
 		
-		if (isPhysicalStructMap) {
-			structMapPhysical.setPhysId(physId_physicalStructMap);
-			structMapsPhysical.put(physId_physicalStructMap, structMapPhysical);
-			System.out.println(structMapPhysical);
-		}
 
 
-
-
-
-	
 		if (qName.equals("record")) {
 			metsRawRecord.setDmdSecs(dmdSecs);
 			metsRawRecord.setStructMapsLogical(structMapsLogical);
@@ -482,7 +476,7 @@ public class MetsContentHandler implements ContentHandler {
 			isRecord = false;
 			System.out.println("\n------------------------------------------------------\n");
 		}
-		
+
 		if (qName.equals("mets:dmdSec")) {
 			dmdSec.setClassifications(classifications);
 			dmdSec.setParticipants(participants);
@@ -494,6 +488,11 @@ public class MetsContentHandler implements ContentHandler {
 		if (qName.equals("mets:structMap")) {
 			isLogicalStructMap = false;
 			isPhysicalStructMap = false;
+		}
+		
+		if (qName.equals("mets:div")) {
+			isDiv_logical = false;
+			isDiv_physical = false;
 		}
 
 		if (qName.equals("mets:structLink")) {
@@ -585,11 +584,7 @@ public class MetsContentHandler implements ContentHandler {
 			isGivenNamePart = false;
 		}
 
-		if (qName.equals("mets:div")) {
-			isDiv_logical = false;
-			isDiv_physical = false;
-		}
-
+		
 
 	}
 
