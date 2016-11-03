@@ -27,7 +27,6 @@ package main.java.betullam.akimporter.solrmab.indexing;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MetsRawRecord {
 
@@ -81,6 +80,9 @@ public class MetsRawRecord {
 		private String publisher = null;
 		private String place = null;
 		private String year = null;
+		private String publisherPublication = null;
+		private String placePublication = null;
+		private String yearPublication = null;
 		private String volume = null;
 		private String issueNo = null;
 		private String sortNo = null;
@@ -116,6 +118,24 @@ public class MetsRawRecord {
 		}
 		public void setYear(String year) {
 			this.year = year;
+		}
+		public String getPublisherPublication() {
+			return publisherPublication;
+		}
+		public void setPublisherPublication(String publisherPublication) {
+			this.publisherPublication = publisherPublication;
+		}
+		public String getPlacePublication() {
+			return placePublication;
+		}
+		public void setPlacePublication(String placePublication) {
+			this.placePublication = placePublication;
+		}
+		public String getYearPublication() {
+			return yearPublication;
+		}
+		public void setYearPublication(String yearPublication) {
+			this.yearPublication = yearPublication;
 		}
 		public String getVolume() {
 			return volume;
@@ -177,22 +197,29 @@ public class MetsRawRecord {
 		public void setParticipants(List<Participant> participants) {
 			this.participants = participants;
 		}
-
 		@Override
 		public String toString() {
-			return "DmdSec [classifications=" + classifications + "publisher=" + publisher + ", place=" + place
-					+ ", year=" + year + ", volume=" + volume + ", issueNo=" + issueNo + ", sortNo=" + sortNo
-					+ ", title=" + title + ", subTitle=" + subTitle + ", acNo=" + acNo + ", akIdentifier="
-					+ akIdentifier + ", languageTerm=" + languageTerm + ", abstractTexts=" + abstractTexts
-					+ ", participants=" + participants + "]\n\t";
+			return "DmdSec [classifications=" + classifications + ", publisher=" + publisher + ", place=" + place
+					+ ", year=" + year + ", publisherPublication=" + publisherPublication + ", placePublication="
+					+ placePublication + ", yearPublication=" + yearPublication + ", volume=" + volume + ", issueNo="
+					+ issueNo + ", sortNo=" + sortNo + ", title=" + title + ", subTitle=" + subTitle + ", acNo=" + acNo
+					+ ", akIdentifier=" + akIdentifier + ", languageTerm=" + languageTerm + ", abstractTexts="
+					+ abstractTexts + ", participants=" + participants + "]\n\t";
 		}
-
 	}
 
 	public class StructMapLogical {
+		String dmdLogId = null;
 		String logId = null;
 		String type = null;
 		int level = 0;
+		
+		public String getDmdLogId() {
+			return dmdLogId;
+		}
+		public void setDmdLogId(String dmdLogId) {
+			this.dmdLogId = dmdLogId;
+		}
 		public String getLogId() {
 			return logId;
 		}
@@ -214,8 +241,8 @@ public class MetsRawRecord {
 		
 		@Override
 		public String toString() {
-			return "StructMapLogical [logId=" + logId + ", type=" + type + ", level=" + level + "]\n\t";
-		}
+			return "StructMapLogical [dmdLogId=" + dmdLogId + ", logId=" + logId + ", type=" + type + ", level=" + level + "]\n\t";
+		}		
 	}
 
 	public class StructMapPhysical {
