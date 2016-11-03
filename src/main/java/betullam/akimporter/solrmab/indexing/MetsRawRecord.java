@@ -33,7 +33,7 @@ public class MetsRawRecord {
 	private LinkedHashMap<String,DmdSec> dmdSecs = null;
 	private LinkedHashMap<String,StructMapLogical> structMapsLogical = null;
 	private LinkedHashMap<String,StructMapPhysical> structMapsPhysical = null;
-	private LinkedHashMap<String,StructLink> structLinks = null;
+	private List<StructLink> structLinks = null;
 
 	public LinkedHashMap<String, DmdSec> getDmdSecs() {
 		return dmdSecs;
@@ -59,11 +59,11 @@ public class MetsRawRecord {
 		this.structMapsPhysical = structMapsPhysical;
 	}
 
-	public LinkedHashMap<String, StructLink> getStructLinks() {
+	public List<StructLink> getStructLinks() {
 		return structLinks;
 	}
 
-	public void setStructLinks(LinkedHashMap<String, StructLink> structLinks) {
+	public void setStructLinks(List<StructLink> structLinks) {
 		this.structLinks = structLinks;
 	}
 	
