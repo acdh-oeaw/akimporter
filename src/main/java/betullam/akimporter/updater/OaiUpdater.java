@@ -31,7 +31,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -71,7 +70,6 @@ import ak.xmlhelper.XmlParser;
 import main.java.betullam.akimporter.main.Authority;
 import main.java.betullam.akimporter.main.Main;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
-import main.java.betullam.akimporter.solrmab.indexing.MarcContentHandler;
 import main.java.betullam.akimporter.solrmab.indexing.MetsContentHandler;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
@@ -117,8 +115,7 @@ public class OaiUpdater {
 			BufferedInputStream xmlData = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/Mets_For_Parsing.xml"));
 			InputSource inputSource = new InputSource(xmlData);
 			
-			// TODO: Set correct timestamp:
-			MetsContentHandler metsContentHandler = new MetsContentHandler(solrServer, "TIMESTAMP", print);
+			MetsContentHandler metsContentHandler = new MetsContentHandler(solrServer, strIndexTimestamp, print);
 			
 			// Create SAX parser:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
