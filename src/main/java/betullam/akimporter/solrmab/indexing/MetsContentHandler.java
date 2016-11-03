@@ -93,7 +93,6 @@ public class MetsContentHandler implements ContentHandler {
 	private String logId_logicalStructMap = null;
 	private int level = 0;
 	private String physId_physicalStructMap = null;
-	private String smLinkTo = null;
 
 
 	private MetsRawRecord metsRawRecord = null;
@@ -103,7 +102,7 @@ public class MetsContentHandler implements ContentHandler {
 	private StructMapLogical structMapLogical = null;
 	private LinkedHashMap<String, StructMapPhysical> structMapsPhysical = null;
 	private StructMapPhysical structMapPhysical = null;
-	private LinkedHashMap<String, StructLink> structLinks = null;
+	private List<StructLink> structLinks = null;
 	private StructLink structLink = null;
 	private List<String> classifications = null;
 	private Participant participant = null;
@@ -134,7 +133,7 @@ public class MetsContentHandler implements ContentHandler {
 			dmdSecs = new LinkedHashMap<String, DmdSec>();
 			structMapsLogical = new LinkedHashMap<String, StructMapLogical>();
 			structMapsPhysical = new LinkedHashMap<String, StructMapPhysical>();
-			structLinks = new LinkedHashMap<String, StructLink>();
+			structLinks = new ArrayList<StructLink>();
 		}
 
 
@@ -177,7 +176,7 @@ public class MetsContentHandler implements ContentHandler {
 				if (atts.getValue("eventType") != null && atts.getValue("eventType").equals("publication")) {
 					isOriginInfoPublication = true;
 				}
-				
+
 			}
 
 			if (isOriginInfo && !isOriginInfoPublication) {
@@ -193,7 +192,7 @@ public class MetsContentHandler implements ContentHandler {
 					isYear = true;
 				}
 			}
-			
+
 			if (isOriginInfo && isOriginInfoPublication) {
 				if (qName.equals("mods:publisher")) {
 					isPublisherPublication = true;
@@ -396,21 +395,23 @@ public class MetsContentHandler implements ContentHandler {
 				structLink = metsRawRecord.new StructLink();
 
 				if (atts.getValue("xlink:to") != null) {
-					smLinkTo = atts.getValue("xlink:to");
-					structLink.setSmLinkTo(smLinkTo);
-
-				} else {
-
+					//smLinkTo = atts.getValue("xlink:to");
+					structLink.setSmLinkTo(atts.getValue("xlink:to"));
+				}/* else {
 					smLinkTo = null;
-				}
+				}*/
 
 				if (atts.getValue("xlink:from") != null) {
+					//smLinkFrom = atts.getValue("xlink:from");
 					structLink.setSmLinkFrom(atts.getValue("xlink:from"));
-				}
+				}/* else {
+					smLinkFrom = null;
+				}*/
 
-				structLinks.put(smLinkTo, structLink);
-				//System.out.println(structLink);
+				structLinks.add(structLink);
+
 			}
+
 		}
 
 
@@ -437,7 +438,7 @@ public class MetsContentHandler implements ContentHandler {
 		if (isYearPublication) {
 			dmdSec.setYearPublication(elementContent);
 		}
-		
+
 		if (isPublisher) {
 			dmdSec.setPublisher(elementContent);
 		}
@@ -449,7 +450,7 @@ public class MetsContentHandler implements ContentHandler {
 		if (isYear) {
 			dmdSec.setYear(elementContent);
 		}
-		
+
 		if (isVolume && isNumber) {
 			dmdSec.setVolume(elementContent);
 		}
@@ -542,6 +543,7 @@ public class MetsContentHandler implements ContentHandler {
 				level = level - 1;
 			}
 		}
+
 
 		if (qName.equals("mets:structLink")) {
 			isStructLink = false;
@@ -667,119 +669,136 @@ public class MetsContentHandler implements ContentHandler {
 	 */
 
 	private List<MetsSolrRecord> getMetsSolrRecord(MetsRawRecord metsRawRecord) {
-		// TODO: Change raw record to a record that can be indexed to Solr.
 
+		// Return variable
 		List<MetsSolrRecord> metsSolrRecords = new ArrayList<MetsSolrRecord>();
 
+		// Get all subclasses from raw mets record
 		LinkedHashMap<String,DmdSec> dmdSecs = metsRawRecord.getDmdSecs();
 		LinkedHashMap<String,StructMapLogical> structMapsLogical = metsRawRecord.getStructMapsLogical();
 		LinkedHashMap<String,StructMapPhysical> structMapsPhysical = metsRawRecord.getStructMapsPhysical();
-		LinkedHashMap<String,StructLink> structLinks = metsRawRecord.getStructLinks();
+		List<StructLink> structLinks = metsRawRecord.getStructLinks();
 
-		//System.out.println(structMapsLogical);
-
-		// Get the StructMapLogical that has a DMD-ID and also has the lowest level. This is the topmost element that contains data
-		// like publication year and place, volume no., issue no., etc. that are relevant for all other records like articles or chapters.
-		//int lowestLevel = 1;
-		String lowestLevelDmdLogId = null;
+		// Loop over logical StructMaps and get all data that are relevant for indexing to Solr
+		String topDmdLogId = null;
 		if (structMapsLogical != null) {
-			// Get first level of a StructMapLogical that also has a DMDLOG-ID. That is our lowest level we have:
+
+			DmdSec topDmdSec = null;
+			String topAcNo = null;
+			String topAkIdentifier = null;
+			List<String> topClassifications = null;
+			String topLanguageTerm = null;
+			String topPublisher = null;
+			String topPlace = null;
+			String topYear = null;
+			String topVolume = null;
+			String topIssueNo = null;
+
+
 			for (Entry<String,StructMapLogical> structMapLogicalMap : structMapsLogical.entrySet()) {
+				MetsSolrRecord metsSolrRecord = new MetsSolrRecord();
 				StructMapLogical structMapLogical = structMapLogicalMap.getValue();
-				if (structMapLogical.getDmdLogId() != null) {
-					//lowestLevel = structMapLogical.getLevel();
-					lowestLevelDmdLogId = structMapLogical.getDmdLogId();
-					break;
+
+				String dmdLogId = structMapLogical.getDmdLogId(); // Only DMDLOG-ID or null
+				String logId = structMapLogical.getLogId(); // Only LOG-ID or null
+
+				// Get the StructMapLogical that has a DMD-ID and also has the lowest level. This is the topmost element that contains data
+				// like publication year and place, volume no., issue no., etc. that are relevant for all other records like articles or chapters.
+				if (structMapLogical.getDmdLogId() != null && topDmdLogId == null) {
+					topDmdLogId = structMapLogical.getDmdLogId();
+					topDmdSec = dmdSecs.get(topDmdLogId);
+					topAcNo = topDmdSec.getAcNo();
+					topAkIdentifier = topDmdSec.getAkIdentifier();
+					topClassifications = topDmdSec.getClassifications();
+					topLanguageTerm = topDmdSec.getLanguageTerm();
+					topPublisher = (topDmdSec.getPublisherPublication() != null) ? topDmdSec.getPublisherPublication() : topDmdSec.getPublisher();
+					topPlace = (topDmdSec.getPlacePublication() != null) ? topDmdSec.getPlacePublication() : topDmdSec.getPlace();
+					topYear = (topDmdSec.getYearPublication() != null) ? topDmdSec.getYearPublication() : topDmdSec.getYear();
+					topVolume = topDmdSec.getVolume();
+					topIssueNo = topDmdSec.getIssueNo();
 				}
-			}
-		}
-		//System.out.println(lowestLevelDmdLogId);
-		
-		DmdSec topDmdSec = dmdSecs.get(lowestLevelDmdLogId);
-		//System.out.println(topDmdSec);
-		String topAcNo = topDmdSec.getAcNo();
-		String topAkIdentifier = topDmdSec.getAkIdentifier();
-		List<String> topClassifications = topDmdSec.getClassifications();
-		String topLanguageTerm = topDmdSec.getLanguageTerm();
-		String topPublisher = (topDmdSec.getPublisherPublication() != null) ? topDmdSec.getPublisherPublication() : topDmdSec.getPublisher();
-		String topPlace = (topDmdSec.getPlacePublication() != null) ? topDmdSec.getPlacePublication() : topDmdSec.getPlace();
-		String topYear = (topDmdSec.getYearPublication() != null) ? topDmdSec.getYearPublication() : topDmdSec.getYear();
-		String topVolume = topDmdSec.getVolume();
-		String topIssueNo = topDmdSec.getIssueNo();
-		
-		for(Entry<String,DmdSec> dmdSecMap : dmdSecs.entrySet()) {
 
-			MetsSolrRecord metsSolrRecord = new MetsSolrRecord();
-			String dmdLogId = dmdSecMap.getKey();
-			DmdSec dmdSec = dmdSecMap.getValue();
-			StructMapLogical structMapLogical = structMapsLogical.get(dmdLogId);
+				// Get the metadata from the metadata section (dmdSec)
+				DmdSec dmdSec = dmdSecs.get(dmdLogId);
+				String childAcNo = null;
+				String childAkIdentifier = null;
+				List<String> childClassifications = null;
+				String childLanguageTerm = null;
+				String childPublisher = null;
+				String childPlace = null;
+				String childYear = null;
+				String childVolume = null;
+				String childIssueNo = null;
+				String childTitle = null;
+				String childSubtitle = null;
+				List<String> childAbstracts = null;
+				List<Participant> childParticipants = null;
+				String childSortNo = null;
 
-			
-			String childAcNo = dmdSec.getAcNo();
-			String childAkIdentifier = dmdSec.getAkIdentifier();
-			List<String> childClassifications = (!dmdSec.getClassifications().isEmpty()) ? dmdSec.getClassifications() : null;
-			String childLanguageTerm = dmdSec.getLanguageTerm();
-			String childPublisher = (dmdSec.getPublisherPublication() != null) ? dmdSec.getPublisherPublication() : dmdSec.getPublisher();
-			String childPlace = (dmdSec.getPlacePublication() != null) ? dmdSec.getPlacePublication() : dmdSec.getPlace();
-			String childYear = (dmdSec.getYearPublication() != null) ? dmdSec.getYearPublication() : dmdSec.getYear();
-			String childVolume = dmdSec.getVolume();
-			String childIssueNo = dmdSec.getIssueNo();
-			String childTitle = dmdSec.getTitle();
-			String childSubtitle = dmdSec.getSubTitle();
-			List<String> childAbstracts = (!dmdSec.getAbstractTexts().isEmpty()) ? dmdSec.getAbstractTexts() : null;
-			List<Participant> childParticipants = (!dmdSec.getParticipants().isEmpty()) ? dmdSec.getParticipants() : null;
-			String childSortNo = dmdSec.getSortNo();
-			
-			
-			
-			
-			
-			// Transfor data that we already have in raw record to record for Solr
-			//metsSolrRecord.setDmdLogId(dmdLogId);
-			metsSolrRecord.setAbstractTexts(childAbstracts);
-			metsSolrRecord.setAcNo((childAcNo != null) ? childAcNo : topAcNo);
-			metsSolrRecord.setAkIdentifier((childAkIdentifier != null) ? childAkIdentifier : topAkIdentifier);
-			metsSolrRecord.setClassifications((childClassifications != null) ? childClassifications : topClassifications);
-			metsSolrRecord.setIssueNo((childIssueNo != null) ? childIssueNo : topIssueNo);
-			metsSolrRecord.setLanguageTerm((childLanguageTerm != null) ? childLanguageTerm : topLanguageTerm);
-			metsSolrRecord.setParticipants(childParticipants);
-			metsSolrRecord.setPlace((childPlace != null) ? childPlace : topPlace);
-			metsSolrRecord.setPublisher((childPublisher != null) ? childPublisher : topPublisher);
-			metsSolrRecord.setSortNo(childSortNo);
-			metsSolrRecord.setSubTitle(childSubtitle);
-			metsSolrRecord.setTitle(childTitle);
-			metsSolrRecord.setVolume((childVolume != null) ? childVolume : topVolume);
-			metsSolrRecord.setYear((childYear != null) ? childYear : topYear);
+				if (dmdSec != null) {
+					childAcNo = dmdSec.getAcNo();
+					childAkIdentifier = dmdSec.getAkIdentifier();
+					childClassifications = (!dmdSec.getClassifications().isEmpty()) ? dmdSec.getClassifications() : null;
+					childLanguageTerm = dmdSec.getLanguageTerm();
+					childPublisher = (dmdSec.getPublisherPublication() != null) ? dmdSec.getPublisherPublication() : dmdSec.getPublisher();
+					childPlace = (dmdSec.getPlacePublication() != null) ? dmdSec.getPlacePublication() : dmdSec.getPlace();
+					childYear = (dmdSec.getYearPublication() != null) ? dmdSec.getYearPublication() : dmdSec.getYear();
+					childVolume = dmdSec.getVolume();
+					childIssueNo = dmdSec.getIssueNo();
+					childTitle = dmdSec.getTitle();
+					childSubtitle = dmdSec.getSubTitle();
+					childAbstracts = (!dmdSec.getAbstractTexts().isEmpty()) ? dmdSec.getAbstractTexts() : null;
+					childParticipants = (!dmdSec.getParticipants().isEmpty()) ? dmdSec.getParticipants() : null;
+					childSortNo = dmdSec.getSortNo();
+				}
 
+				// Set metadata to record for Solr
+				metsSolrRecord.setAbstractTexts(childAbstracts);
+				metsSolrRecord.setAcNo((childAcNo != null) ? childAcNo : topAcNo);
+				metsSolrRecord.setAkIdentifier((childAkIdentifier != null) ? childAkIdentifier : topAkIdentifier);
+				metsSolrRecord.setClassifications((childClassifications != null) ? childClassifications : topClassifications);
+				metsSolrRecord.setIssueNo((childIssueNo != null) ? childIssueNo : topIssueNo);
+				metsSolrRecord.setLanguageTerm((childLanguageTerm != null) ? childLanguageTerm : topLanguageTerm);
+				metsSolrRecord.setParticipants(childParticipants);
+				metsSolrRecord.setPlace((childPlace != null) ? childPlace : topPlace);
+				metsSolrRecord.setPublisher((childPublisher != null) ? childPublisher : topPublisher);
+				metsSolrRecord.setSortNo(childSortNo);
+				metsSolrRecord.setSubTitle(childSubtitle);
+				metsSolrRecord.setTitle(childTitle);
+				metsSolrRecord.setVolume((childVolume != null) ? childVolume : topVolume);
+				metsSolrRecord.setYear((childYear != null) ? childYear : topYear);
 
-			// Get entry in sturctMapsLogical for current dmdSec and set the values to record for Solr
-
-			//metsSolrRecord.setLogId(structMapLogical.getLogId());
-			String logId_structMapLogical = null;
-			if (structMapLogical != null) {
-				metsSolrRecord.setType(structMapLogical.getType());
+				// Set some logical data:
 				metsSolrRecord.setLevel(structMapLogical.getLevel());
-				logId_structMapLogical = structMapLogical.getLogId();
-			}
+				metsSolrRecord.setType(structMapLogical.getType());
 
-			// Get infos from structLink
-			List<String> physIds = new ArrayList<String>();
-			for (Entry<String,StructLink> structLinkMap : structLinks.entrySet()) {
-
-				String logId_structLink = structLinkMap.getValue().getSmLinkFrom();
-				if (logId_structLink == logId_structMapLogical) {
-					physIds.add(structLinkMap.getValue().getSmLinkTo());
+				// Get data from StructLinks
+				List<String> physIds = new ArrayList<String>();
+				for (StructLink structLink : structLinks) {
+					String logId_structLink = structLink.getSmLinkFrom();
+					String physId_structLink = structLink.getSmLinkTo();
+					if (logId.equals(logId_structLink)) {
+						physIds.add(physId_structLink);
+					}
 				}
+
+				// With physIds from StructLinks, get data from physical StructMap
+				if (!physIds.isEmpty()) {
+					String physIdFirst = physIds.get(0); // This represents the first page of an article, chapter, ...
+					String physIdLast = physIds.get(physIds.size()-1); // This represents the last page of an article, chapter, ...
+
+					String urn = structMapsPhysical.get(physIdFirst).getContentId();
+					int order = structMapsPhysical.get(physIdFirst).getOrder();
+					String orderLabelFirst = structMapsPhysical.get(physIdFirst).getOrderLabel();
+					String orderLabelLast = structMapsPhysical.get(physIdLast).getOrderLabel();
+					metsSolrRecord.setOrder(order);
+					metsSolrRecord.setOrderLabelFrom(orderLabelFirst);
+					metsSolrRecord.setOrderLabelTo(orderLabelLast);
+					metsSolrRecord.setUrn(urn);
+				}
+
+				metsSolrRecords.add(metsSolrRecord);
 			}
-
-			/*
-			metsSolrRecord.setOrder();
-			metsSolrRecord.setOrderLabelFrom();
-			metsSolrRecord.setOrderLabelTo();
-			metsSolrRecord.setUrn();
-			 */
-
-			metsSolrRecords.add(metsSolrRecord);
 
 		}
 
