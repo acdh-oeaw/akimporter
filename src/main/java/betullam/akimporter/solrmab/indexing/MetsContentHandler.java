@@ -26,6 +26,7 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,13 +99,13 @@ public class MetsContentHandler implements ContentHandler {
 
 
 	private MetsRawRecord metsRawRecord = null;
-	private Map<String, DmdSec> dmdSecs = null;
+	private LinkedHashMap<String, DmdSec> dmdSecs = null;
 	private DmdSec dmdSec = null;
-	private Map<String, StructMapLogical> structMapsLogical = null;
+	private LinkedHashMap<String, StructMapLogical> structMapsLogical = null;
 	private StructMapLogical structMapLogical = null;
-	private Map<String, StructMapPhysical> structMapsPhysical = null;
+	private LinkedHashMap<String, StructMapPhysical> structMapsPhysical = null;
 	private StructMapPhysical structMapPhysical = null;
-	private Map<String, StructLink> structLinks = null;
+	private LinkedHashMap<String, StructLink> structLinks = null;
 	private StructLink structLink = null;
 	private List<String> classifications = null;
 	private Participant participant = null;
@@ -133,10 +134,10 @@ public class MetsContentHandler implements ContentHandler {
 		if (qName.equals("record")) {
 			isRecord = true;
 			metsRawRecord = new MetsRawRecord();
-			dmdSecs = new HashMap<String, DmdSec>();
-			structMapsLogical = new HashMap<String, StructMapLogical>();
-			structMapsPhysical = new HashMap<String, StructMapPhysical>();
-			structLinks = new HashMap<String, StructLink>();
+			dmdSecs = new LinkedHashMap<String, DmdSec>();
+			structMapsLogical = new LinkedHashMap<String, StructMapLogical>();
+			structMapsPhysical = new LinkedHashMap<String, StructMapPhysical>();
+			structLinks = new LinkedHashMap<String, StructLink>();
 		}
 
 
@@ -152,17 +153,14 @@ public class MetsContentHandler implements ContentHandler {
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("LOGICAL")) {
 				isLogicalStructMap = true;
 				level = 0;
-				//structMapLogical = metsRawRecord.new StructMapLogical();
 			}
 
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("PHYSICAL")) {
 				isPhysicalStructMap = true;
-				//structMapPhysical = metsRawRecord.new StructMapPhysical();
 			}
 
 			if (qName.equals("mets:structLink")) {
 				isStructLink = true;
-				structLink = metsRawRecord.new StructLink();
 			}
 		}
 
@@ -367,23 +365,30 @@ public class MetsContentHandler implements ContentHandler {
 				}
 
 				structMapsPhysical.put(physId_physicalStructMap, structMapPhysical);
-				System.out.println(structMapPhysical);
+				//System.out.println(structMapPhysical);
 			}
 		}
 
 
 		if (isStructLink) {
 			if (qName.equals("mets:smLink")) {
+				structLink = metsRawRecord.new StructLink();
 
 				if (atts.getValue("xlink:to") != null) {
 					smLinkTo = atts.getValue("xlink:to");
-					//System.out.println("smLinkTo: " + smLinkTo);
+					structLink.setSmLinkTo(smLinkTo);
+					
+				} else {
+					
+					smLinkTo = null;
 				}
 
 				if (atts.getValue("xlink:from") != null) {
-					smLinkFrom = atts.getValue("xlink:from");
-					//System.out.println("smLinkFrom: " + smLinkFrom);
+					structLink.setSmLinkFrom(atts.getValue("xlink:from"));
 				}
+				
+				structLinks.put(smLinkTo, structLink);
+				//System.out.println(structLink);
 			}
 		}
 
@@ -433,7 +438,6 @@ public class MetsContentHandler implements ContentHandler {
 
 		if (isSubtitle) {
 			dmdSec.setSubTitle(elementContent);
-			//System.out.println("subTitle: " + subTitle);
 		}
 
 		if (isPersonalName && isGivenNamePart) {
@@ -475,6 +479,9 @@ public class MetsContentHandler implements ContentHandler {
 			metsRawRecord.setDmdSecs(dmdSecs);
 			metsRawRecord.setStructMapsLogical(structMapsLogical);
 			metsRawRecord.setStructMapsPhysical(structMapsPhysical);
+			metsRawRecord.setStructLinks(structLinks);
+			System.out.println(metsRawRecord);
+			
 			isRecord = false;
 			System.out.println("\n------------------------------------------------------\n");
 		}

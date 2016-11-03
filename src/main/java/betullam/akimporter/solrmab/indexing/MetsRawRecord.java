@@ -25,52 +25,53 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MetsRawRecord {
 
-	private Map<String,DmdSec> dmdSecs = null;
-	private Map<String,StructMapLogical> structMapsLogical = null;
-	private Map<String,StructMapPhysical> structMapsPhysical = null;
-	private Map<String,StructLink> structLinks = null;
+	private LinkedHashMap<String,DmdSec> dmdSecs = null;
+	private LinkedHashMap<String,StructMapLogical> structMapsLogical = null;
+	private LinkedHashMap<String,StructMapPhysical> structMapsPhysical = null;
+	private LinkedHashMap<String,StructLink> structLinks = null;
 
-	public Map<String, DmdSec> getDmdSecs() {
+	public LinkedHashMap<String, DmdSec> getDmdSecs() {
 		return dmdSecs;
 	}
 
-	public void setDmdSecs(Map<String, DmdSec> dmdSecs) {
+	public void setDmdSecs(LinkedHashMap<String, DmdSec> dmdSecs) {
 		this.dmdSecs = dmdSecs;
 	}
 
-	public Map<String, StructMapLogical> getStructMapsLogical() {
+	public LinkedHashMap<String, StructMapLogical> getStructMapsLogical() {
 		return structMapsLogical;
 	}
 
-	public void setStructMapsLogical(Map<String, StructMapLogical> structMapsLogical) {
+	public void setStructMapsLogical(LinkedHashMap<String, StructMapLogical> structMapsLogical) {
 		this.structMapsLogical = structMapsLogical;
 	}
 
-	public Map<String, StructMapPhysical> getStructMapsPhysical() {
+	public LinkedHashMap<String, StructMapPhysical> getStructMapsPhysical() {
 		return structMapsPhysical;
 	}
 
-	public void setStructMapsPhysical(Map<String, StructMapPhysical> structMapsPhysical) {
+	public void setStructMapsPhysical(LinkedHashMap<String, StructMapPhysical> structMapsPhysical) {
 		this.structMapsPhysical = structMapsPhysical;
 	}
 
-	public Map<String, StructLink> getStructLinks() {
+	public LinkedHashMap<String, StructLink> getStructLinks() {
 		return structLinks;
 	}
 
-	public void setStructLinks(Map<String, StructLink> structLinks) {
+	public void setStructLinks(LinkedHashMap<String, StructLink> structLinks) {
 		this.structLinks = structLinks;
 	}
 	
 	@Override
 	public String toString() {
-		return "MetsRawRecord [dmdSecs=" + dmdSecs + ", structMapsLogical=" + structMapsLogical
-				+ ", structMapsPhysical=" + structMapsPhysical + ", structLinks=" + structLinks + "]";
+		return "MetsRawRecord [dmdSecs=\n\t" + dmdSecs + "\nstructMapsLogical=\n\t" + structMapsLogical
+				+ "\nstructMapsPhysical=\n\t" + structMapsPhysical + "\nstructLinks=\n\t" + structLinks + "]";
 	}
 
 
@@ -179,11 +180,11 @@ public class MetsRawRecord {
 
 		@Override
 		public String toString() {
-			return "DmdSec [classifications=" + classifications + ", publisher=" + publisher + ", place=" + place
+			return "DmdSec [classifications=" + classifications + "publisher=" + publisher + ", place=" + place
 					+ ", year=" + year + ", volume=" + volume + ", issueNo=" + issueNo + ", sortNo=" + sortNo
 					+ ", title=" + title + ", subTitle=" + subTitle + ", acNo=" + acNo + ", akIdentifier="
 					+ akIdentifier + ", languageTerm=" + languageTerm + ", abstractTexts=" + abstractTexts
-					+ ", participants=" + participants + "]";
+					+ ", participants=" + participants + "]\n\t";
 		}
 
 	}
@@ -213,7 +214,7 @@ public class MetsRawRecord {
 		
 		@Override
 		public String toString() {
-			return "StructMapLogical [logId=" + logId + ", type=" + type + ", level=" + level + "]";
+			return "StructMapLogical [logId=" + logId + ", type=" + type + ", level=" + level + "]\n\t";
 		}
 	}
 
@@ -264,28 +265,30 @@ public class MetsRawRecord {
 		@Override
 		public String toString() {
 			return "StructMapPhysical [dmdPhysId=" + dmdPhysId + ", physId=" + physId + ", contentId=" + contentId
-					+ ", order=" + order + ", orderLabel=" + orderLabel + ", type=" + type + "]";
+					+ ", order=" + order + ", orderLabel=" + orderLabel + ", type=" + type + "]\n\t";
 		}
 	}
 	
 	public class StructLink {
-		String smLinkFrom = null;
 		String smLinkTo = null;
-		public String getSmLinkFrom() {
-			return smLinkFrom;
-		}
-		public void setSmLinkFrom(String smLinkFrom) {
-			this.smLinkFrom = smLinkFrom;
-		}
+		String smLinkFrom = null;
+		
 		public String getSmLinkTo() {
 			return smLinkTo;
 		}
 		public void setSmLinkTo(String smLinkTo) {
 			this.smLinkTo = smLinkTo;
 		}
+		public String getSmLinkFrom() {
+			return smLinkFrom;
+		}
+		public void setSmLinkFrom(String smLinkFrom) {
+			this.smLinkFrom = smLinkFrom;
+		}
+		
 		@Override
 		public String toString() {
-			return "StructLink [smLinkFrom=" + smLinkFrom + ", smLinkTo=" + smLinkTo + "]";
+			return "StructLink [smLinkTo=" + smLinkTo + ", smLinkFrom=" + smLinkFrom + "]\n\t";
 		}
 	}
 
