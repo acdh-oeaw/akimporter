@@ -23,10 +23,8 @@ public class MetsSolrRecord {
 	private String languageTerm = null;
 	private List<String> abstractTexts = new ArrayList<String>();
 	private List<Participant> participants = new ArrayList<Participant>();
-	//private String dmdLogId = null;
 	
 	// Logical StructMap
-	//private String logId = null;
 	private String type = null;
 	int level = 0;
 	
@@ -121,20 +119,6 @@ public class MetsSolrRecord {
 	public void setParticipants(List<Participant> participants) {
 		this.participants = participants;
 	}
-	/*
-	public String getDmdLogId() {
-		return dmdLogId;
-	}
-	public void setDmdLogId(String dmdLogId) {
-		this.dmdLogId = dmdLogId;
-	}
-	public String getLogId() {
-		return logId;
-	}
-	public void setLogId(String logId) {
-		this.logId = logId;
-	}
-	*/
 	public String getType() {
 		return type;
 	}
