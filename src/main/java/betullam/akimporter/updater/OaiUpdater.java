@@ -69,6 +69,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlParser;
 import main.java.betullam.akimporter.main.Authority;
+import main.java.betullam.akimporter.main.Main;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.indexing.MarcContentHandler;
 import main.java.betullam.akimporter.solrmab.indexing.MetsContentHandler;
@@ -112,8 +113,9 @@ public class OaiUpdater {
 		
 		// Set XML file and content handler
 		try {
-			FileReader reader = new FileReader("METS FILE HERE");
-			InputSource inputSource = new InputSource(reader);
+			//FileReader xmlData = new FileReader(FILE NAME HERE);
+			BufferedInputStream xmlData = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/Mets_For_Parsing.xml"));
+			InputSource inputSource = new InputSource(xmlData);
 			MetsContentHandler metsContentHandler = new MetsContentHandler(solrServer, "TIMESTAMP", print);
 			
 			// Create SAX parser:
