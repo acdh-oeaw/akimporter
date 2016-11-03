@@ -116,6 +116,8 @@ public class OaiUpdater {
 			//FileReader xmlData = new FileReader(FILE NAME HERE);
 			BufferedInputStream xmlData = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/Mets_For_Parsing.xml"));
 			InputSource inputSource = new InputSource(xmlData);
+			
+			// TODO: Set correct timestamp:
 			MetsContentHandler metsContentHandler = new MetsContentHandler(solrServer, "TIMESTAMP", print);
 			
 			// Create SAX parser:
