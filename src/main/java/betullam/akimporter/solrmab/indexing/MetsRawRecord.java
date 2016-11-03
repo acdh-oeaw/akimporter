@@ -31,6 +31,9 @@ import java.util.Map;
 public class MetsRawRecord {
 
 	private Map<String,DmdSec> dmdSecs = null;
+	private Map<String,StructMapLogical> structMapsLogical = null;
+	private Map<String,StructMapPhysical> structMapsPhysical = null;
+	private Map<String,StructLink> structLinks = null;
 
 	public Map<String, DmdSec> getDmdSecs() {
 		return dmdSecs;
@@ -39,6 +42,37 @@ public class MetsRawRecord {
 	public void setDmdSecs(Map<String, DmdSec> dmdSecs) {
 		this.dmdSecs = dmdSecs;
 	}
+
+	public Map<String, StructMapLogical> getStructMapsLogical() {
+		return structMapsLogical;
+	}
+
+	public void setStructMapsLogical(Map<String, StructMapLogical> structMapsLogical) {
+		this.structMapsLogical = structMapsLogical;
+	}
+
+	public Map<String, StructMapPhysical> getStructMapsPhysical() {
+		return structMapsPhysical;
+	}
+
+	public void setStructMapsPhysical(Map<String, StructMapPhysical> structMapsPhysical) {
+		this.structMapsPhysical = structMapsPhysical;
+	}
+
+	public Map<String, StructLink> getStructLinks() {
+		return structLinks;
+	}
+
+	public void setStructLinks(Map<String, StructLink> structLinks) {
+		this.structLinks = structLinks;
+	}
+	
+	@Override
+	public String toString() {
+		return "MetsRawRecord [dmdSecs=" + dmdSecs + ", structMapsLogical=" + structMapsLogical
+				+ ", structMapsPhysical=" + structMapsPhysical + ", structLinks=" + structLinks + "]";
+	}
+
 
 
 	public class DmdSec {
@@ -151,7 +185,108 @@ public class MetsRawRecord {
 					+ akIdentifier + ", languageTerm=" + languageTerm + ", abstractTexts=" + abstractTexts
 					+ ", participants=" + participants + "]";
 		}
+
+	}
+
+	public class StructMapLogical {
+		String logId = null;
+		String type = null;
+		int level = 0;
+		public String getLogId() {
+			return logId;
+		}
+		public void setLogId(String logId) {
+			this.logId = logId;
+		}
+		public String getType() {
+			return type;
+		}
+		public void setType(String type) {
+			this.type = type;
+		}
+		public int getLevel() {
+			return level;
+		}
+		public void setLevel(int level) {
+			this.level = level;
+		}
 		
+		@Override
+		public String toString() {
+			return "StructMapLogical [logId=" + logId + ", type=" + type + ", level=" + level + "]";
+		}
+	}
+
+	public class StructMapPhysical {
+		String dmdPhysId = null;
+		String physId = null;
+		String contentId = null;
+		int order = 0;
+		String orderLabel = null;
+		String type = null;
+		public String getDmdPhysId() {
+			return dmdPhysId;
+		}
+		public void setDmdPhysId(String dmdPhysId) {
+			this.dmdPhysId = dmdPhysId;
+		}
+		public String getPhysId() {
+			return physId;
+		}
+		public void setPhysId(String physId) {
+			this.physId = physId;
+		}
+		public String getContentId() {
+			return contentId;
+		}
+		public void setContentId(String contentId) {
+			this.contentId = contentId;
+		}
+		public int getOrder() {
+			return order;
+		}
+		public void setOrder(int order) {
+			this.order = order;
+		}
+		public String getOrderLabel() {
+			return orderLabel;
+		}
+		public void setOrderLabel(String orderLabel) {
+			this.orderLabel = orderLabel;
+		}
+		public String getType() {
+			return type;
+		}
+		public void setType(String type) {
+			this.type = type;
+		}
+		
+		@Override
+		public String toString() {
+			return "StructMapPhysical [dmdPhysId=" + dmdPhysId + ", physId=" + physId + ", contentId=" + contentId
+					+ ", order=" + order + ", orderLabel=" + orderLabel + ", type=" + type + "]";
+		}
+	}
+	
+	public class StructLink {
+		String smLinkFrom = null;
+		String smLinkTo = null;
+		public String getSmLinkFrom() {
+			return smLinkFrom;
+		}
+		public void setSmLinkFrom(String smLinkFrom) {
+			this.smLinkFrom = smLinkFrom;
+		}
+		public String getSmLinkTo() {
+			return smLinkTo;
+		}
+		public void setSmLinkTo(String smLinkTo) {
+			this.smLinkTo = smLinkTo;
+		}
+		@Override
+		public String toString() {
+			return "StructLink [smLinkFrom=" + smLinkFrom + ", smLinkTo=" + smLinkTo + "]";
+		}
 	}
 
 	public class Participant {
@@ -159,7 +294,7 @@ public class MetsRawRecord {
 		private String givenName;
 		private String role;
 		private String authorityId;
-		
+
 		public String getFamilyName() {
 			return familyName;
 		}
@@ -184,13 +319,13 @@ public class MetsRawRecord {
 		public void setAuthorityId(String authorityId) {
 			this.authorityId = authorityId;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "Participant [familyName=" + familyName + ", givenName=" + givenName + ", role=" + role
 					+ ", authorityId=" + authorityId + "]";
 		}		
-		
+
 	}
 
 
