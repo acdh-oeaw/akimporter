@@ -37,6 +37,9 @@ import org.xml.sax.SAXException;
 
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.DmdSec;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.Participant;
+import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructLink;
+import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructMapLogical;
+import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructMapPhysical;
 
 public class MetsContentHandler implements ContentHandler {
 
@@ -91,15 +94,21 @@ public class MetsContentHandler implements ContentHandler {
 	private String orderLabel = null;
 	private String smLinkTo = null;
 	private String smLinkFrom = null;
-	
+
 	private MetsRawRecord metsRawRecord = null;
 	private Map<String, DmdSec> dmdSecs = null;
 	private DmdSec dmdSec = null;
+	private Map<String, StructMapLogical> structMapsLogical = null;
+	private StructMapLogical structMapLogical = null;
+	private Map<String, StructMapPhysical> structMapsPhysical = null;
+	private StructMapPhysical structMapPhysical = null;
+	private Map<String, StructLink> structLinks = null;
+	private StructLink structLink = null;
 	private List<String> classifications = null;
 	private Participant participant = null;
 	private List<Participant> participants = null;
 	//List<String> classifications = new ArrayList<String>();
-	
+
 
 	public MetsContentHandler(SolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
@@ -121,13 +130,16 @@ public class MetsContentHandler implements ContentHandler {
 
 		if (qName.equals("record")) {
 			isRecord = true;
-		}
-
-		
-		if (isRecord) {
 			metsRawRecord = new MetsRawRecord();
 			dmdSecs = new HashMap<String, DmdSec>();
-			
+			structMapsLogical = new HashMap<String, StructMapLogical>();
+			structMapsPhysical = new HashMap<String, StructMapPhysical>();
+			structLinks = new HashMap<String, StructLink>();
+		}
+
+
+		if (isRecord) {
+
 			if (qName.equals("mets:dmdSec")) {
 				isDmdSec = true;
 				dmdSec = metsRawRecord.new DmdSec();
@@ -137,20 +149,23 @@ public class MetsContentHandler implements ContentHandler {
 
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("LOGICAL")) {
 				isLogicalStructMap = true;
+				//structMapLogical = metsRawRecord.new StructMapLogical();
 			}
 
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("PHYSICAL")) {
 				isPhysicalStructMap = true;
+				//structMapPhysical = metsRawRecord.new StructMapPhysical();
 			}
 
 			if (qName.equals("mets:structLink")) {
 				isStructLink = true;
+				structLink = metsRawRecord.new StructLink();
 			}
 		}
 
-		
+
 		if (isDmdSec) {
-			
+
 			if (atts.getValue("ID") != null) {
 				dmdLogIdDmdSec = atts.getValue("ID");
 			}
@@ -291,44 +306,57 @@ public class MetsContentHandler implements ContentHandler {
 		if (isLogicalStructMap) {
 			if (qName.equals("mets:div")) {
 				isDiv_logical = true;
+				structMapLogical = metsRawRecord.new StructMapLogical();
 
 				if (atts.getValue("DMDID") != null) {
 					dmdLogId_logicalStructMap = atts.getValue("DMDID");
-					//System.out.println("dmdLogId_logicalStructMap: " + dmdLogId_logicalStructMap);
+				} else {
+					dmdLogId_logicalStructMap = null;
 				}
 
 				if (atts.getValue("ID") != null) {
-					logId_logicalStructMap = atts.getValue("ID");
-					//System.out.println("logId_logicalStructMap: " + logId_logicalStructMap);
+					structMapLogical.setLogId(atts.getValue("ID"));
 				}
 
 				if (atts.getValue("TYPE") != null) {
-					type = atts.getValue("TYPE");
-					//System.out.println("type: " + type);
+					structMapLogical.setType(atts.getValue("TYPE"));
 				}
-
 			}
 		}
 
 		if (isPhysicalStructMap) {
 			if (qName.equals("mets:div")) {
 				isDiv_physical = true;
+				structMapPhysical = metsRawRecord.new StructMapPhysical();
 
 				if (atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("page")) {
 
-					if (atts.getValue("CONTENTIDS") != null) {
-						contentId = atts.getValue("CONTENTIDS");
-						//System.out.println("contentId: " + contentId);
-					}
-
 					if (atts.getValue("ID") != null) {
 						physId_physicalStructMap = atts.getValue("ID");
+						//structMapPhysical.setPhysId(physId_physicalStructMap);
 						//System.out.println("physId_physicalStructMap: " + physId_physicalStructMap);
+					} else {
+						physId_physicalStructMap = null;
+					}
+					
+					if (atts.getValue("DMDID") != null) {
+						structMapPhysical.setDmdPhysId(atts.getValue("DMDID"));
+					}
+					
+					if (atts.getValue("CONTENTIDS") != null) {
+						structMapPhysical.setContentId(atts.getValue("CONTENTIDS"));
+					}
+
+					if (atts.getValue("ORDER") != null) {
+						structMapPhysical.setOrder(Integer.valueOf(atts.getValue("ORDER")));
 					}
 
 					if (atts.getValue("ORDERLABEL") != null) {
-						orderLabel = atts.getValue("ORDERLABEL");
-						//System.out.println("orderLabel: " + orderLabel);
+						structMapPhysical.setOrderLabel(atts.getValue("ORDERLABEL"));
+					}
+					
+					if (atts.getValue("TYPE") != null) {
+						structMapPhysical.setType(atts.getValue("TYPE"));
 					}
 				}
 			}
@@ -357,14 +385,6 @@ public class MetsContentHandler implements ContentHandler {
 
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-
-		
-		
-		if (qName.equals("record")) {
-			metsRawRecord.setDmdSecs(dmdSecs);
-			isRecord = false;
-			System.out.println("\n------------------------------------------------------\n");
-		}
 
 
 		if (isClassification) {
@@ -411,7 +431,7 @@ public class MetsContentHandler implements ContentHandler {
 
 		if (isPersonalName && isGivenNamePart) {
 			participant.setGivenName(elementContent);
-			
+
 		}
 
 		if ((isPersonalName || isCorporateName) && isFamilyNamePart) {
@@ -421,7 +441,7 @@ public class MetsContentHandler implements ContentHandler {
 		if (isRoleTerm) {
 			participant.setRole(elementContent);
 		}
-		
+
 		if (isRecordIdentifier && !isRelatedItem) {
 			if (isAcNo) {
 				dmdSec.setAcNo(elementContent);
@@ -438,19 +458,36 @@ public class MetsContentHandler implements ContentHandler {
 
 		if (isAbstract) {
 			dmdSec.getAbstractTexts().add(elementContent);
-			
+		}
+		
+		if (isLogicalStructMap) {
+			structMapsLogical.put(dmdLogId_logicalStructMap, structMapLogical);
+		}
+		
+		if (isPhysicalStructMap) {
+			structMapPhysical.setPhysId(physId_physicalStructMap);
+			structMapsPhysical.put(physId_physicalStructMap, structMapPhysical);
+			System.out.println(structMapPhysical);
 		}
 
 
 
 
 
-		// RESET BOOLEANS TO FALSE:
+	
+		if (qName.equals("record")) {
+			metsRawRecord.setDmdSecs(dmdSecs);
+			metsRawRecord.setStructMapsLogical(structMapsLogical);
+			metsRawRecord.setStructMapsPhysical(structMapsPhysical);
+			isRecord = false;
+			System.out.println("\n------------------------------------------------------\n");
+		}
+		
 		if (qName.equals("mets:dmdSec")) {
 			dmdSec.setClassifications(classifications);
 			dmdSec.setParticipants(participants);
 			dmdSecs.put(dmdLogIdDmdSec, dmdSec);
-			System.out.println(dmdSecs);
+			//System.out.println(dmdSecs);
 			isDmdSec = false;
 		}
 
