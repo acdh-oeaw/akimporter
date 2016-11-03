@@ -89,11 +89,13 @@ public class MetsContentHandler implements ContentHandler {
 	private String dmdLogId_logicalStructMap = null;
 	private String logId_logicalStructMap = null;
 	private String type = null;
+	private int level = 0;
 	private String contentId = null;
 	private String physId_physicalStructMap = null;
 	private String orderLabel = null;
 	private String smLinkTo = null;
 	private String smLinkFrom = null;
+
 
 	private MetsRawRecord metsRawRecord = null;
 	private Map<String, DmdSec> dmdSecs = null;
@@ -149,6 +151,7 @@ public class MetsContentHandler implements ContentHandler {
 
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("LOGICAL")) {
 				isLogicalStructMap = true;
+				level = 0;
 				//structMapLogical = metsRawRecord.new StructMapLogical();
 			}
 
@@ -302,11 +305,14 @@ public class MetsContentHandler implements ContentHandler {
 			}
 		}
 
-		
+
 		if (isLogicalStructMap) {
+
 			if (qName.equals("mets:div")) {
 				isDiv_logical = true;
+				level = level + 1;
 				structMapLogical = metsRawRecord.new StructMapLogical();
+				structMapLogical.setLevel(level);
 
 				if (atts.getValue("DMDID") != null) {
 					dmdLogId_logicalStructMap = atts.getValue("DMDID");
@@ -321,49 +327,45 @@ public class MetsContentHandler implements ContentHandler {
 				if (atts.getValue("TYPE") != null) {
 					structMapLogical.setType(atts.getValue("TYPE"));
 				}
-				
+
 				structMapsLogical.put(dmdLogId_logicalStructMap, structMapLogical);
 				//System.out.println(structMapLogical);
 			}
 		}
 
-		
+
 		if (isPhysicalStructMap) {
 			if (qName.equals("mets:div")) {
 				isDiv_physical = true;
 				structMapPhysical = metsRawRecord.new StructMapPhysical();
 
-				//if (atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("page")) {
+				if (atts.getValue("ID") != null) {
+					physId_physicalStructMap = atts.getValue("ID");
+					structMapPhysical.setPhysId(physId_physicalStructMap);
+				} else {
+					physId_physicalStructMap = null;
+				}
 
-					if (atts.getValue("ID") != null) {
-						physId_physicalStructMap = atts.getValue("ID");
-						structMapPhysical.setPhysId(physId_physicalStructMap);
-					} else {
-						physId_physicalStructMap = null;
-					}
+				if (atts.getValue("DMDID") != null) {
+					structMapPhysical.setDmdPhysId(atts.getValue("DMDID"));
+				}
 
-					if (atts.getValue("DMDID") != null) {
-						structMapPhysical.setDmdPhysId(atts.getValue("DMDID"));
+				if (atts.getValue("CONTENTIDS") != null) {
+					structMapPhysical.setContentId(atts.getValue("CONTENTIDS"));
+				}
 
-					}
+				if (atts.getValue("ORDER") != null) {
+					structMapPhysical.setOrder(Integer.valueOf(atts.getValue("ORDER")));
+				}
 
-					if (atts.getValue("CONTENTIDS") != null) {
-						structMapPhysical.setContentId(atts.getValue("CONTENTIDS"));
-					}
+				if (atts.getValue("ORDERLABEL") != null) {
+					structMapPhysical.setOrderLabel(atts.getValue("ORDERLABEL"));
+				}
 
-					if (atts.getValue("ORDER") != null) {
-						structMapPhysical.setOrder(Integer.valueOf(atts.getValue("ORDER")));
-					}
+				if (atts.getValue("TYPE") != null) {
+					structMapPhysical.setType(atts.getValue("TYPE"));
+				}
 
-					if (atts.getValue("ORDERLABEL") != null) {
-						structMapPhysical.setOrderLabel(atts.getValue("ORDERLABEL"));
-					}
-
-					if (atts.getValue("TYPE") != null) {
-						structMapPhysical.setType(atts.getValue("TYPE"));
-					}
-				//}
-				
 				structMapsPhysical.put(physId_physicalStructMap, structMapPhysical);
 				System.out.println(structMapPhysical);
 			}
@@ -465,8 +467,8 @@ public class MetsContentHandler implements ContentHandler {
 			dmdSec.getAbstractTexts().add(elementContent);
 		}
 
-		
-		
+
+
 
 
 		if (qName.equals("record")) {
@@ -489,8 +491,11 @@ public class MetsContentHandler implements ContentHandler {
 			isLogicalStructMap = false;
 			isPhysicalStructMap = false;
 		}
-		
+
 		if (qName.equals("mets:div")) {
+			if (isLogicalStructMap) {
+				level = level - 1;
+			}
 			isDiv_logical = false;
 			isDiv_physical = false;
 		}
@@ -584,7 +589,7 @@ public class MetsContentHandler implements ContentHandler {
 			isGivenNamePart = false;
 		}
 
-		
+
 
 	}
 
