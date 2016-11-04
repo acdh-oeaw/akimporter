@@ -26,8 +26,7 @@
 								<mods:classification authority="sswd">Österreich</mods:classification>
 								<mods:classification authority="sswd">Frau</mods:classification>
 								<mods:classification authority="sswd">Wirtschaftskrise</mods:classification>
-								<mods:classification authority="sswd">Soziale
-									Dienstleistung</mods:classification>
+								<mods:classification authority="sswd">Soziale Dienstleistung</mods:classification>
 								<mods:originInfo eventType="publication">
 									<mods:publisher>Donau-Universität Krems, Zentrum für Migration,
 										Integration und Sicherheit</mods:publisher>
@@ -3832,6 +3831,30 @@
 								<mods:titleInfo type="uniform">
 									<mods:title>Analyse des Prozesses der Vermögensakkumulation anhand des Konzeptes der Pfadtheorie</mods:title>
 								</mods:titleInfo>
+								<mods:name type="personal">
+									<mods:role>
+										<mods:roleTerm authority="marcrelator" type="code">aut</mods:roleTerm>
+									</mods:role>
+									<mods:namePart type="family">Biffl</mods:namePart>
+									<mods:namePart type="given">Gudrun</mods:namePart>
+									<mods:displayForm>Biffl, Gudrun</mods:displayForm>
+								</mods:name>
+								<mods:name type="personal">
+									<mods:role>
+										<mods:roleTerm authority="marcrelator" type="code">aut</mods:roleTerm>
+									</mods:role>
+									<mods:namePart type="family">Faustmann</mods:namePart>
+									<mods:namePart type="given">Anna</mods:namePart>
+									<mods:displayForm>Faustmann, Anna</mods:displayForm>
+								</mods:name>
+								<mods:name type="personal">
+									<mods:role>
+										<mods:roleTerm authority="marcrelator" type="code">aut</mods:roleTerm>
+									</mods:role>
+									<mods:namePart type="family">Skrivanek</mods:namePart>
+									<mods:namePart type="given">Isabella</mods:namePart>
+									<mods:displayForm>Skrivanek, Isabella</mods:displayForm>
+								</mods:name>
 								<mods:recordInfo>
 									<mods:recordIdentifier source="ak_identifier">akwien</mods:recordIdentifier>
 								</mods:recordInfo>
