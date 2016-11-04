@@ -7,7 +7,6 @@ import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.Participant;
 
 public class MetsSolrRecord {
 	
-	// DmdSec
 	private List<String> classifications = new ArrayList<String>();
 	private String publisher = null;
 	private String place = null;
@@ -23,22 +22,18 @@ public class MetsSolrRecord {
 	private String languageTerm = null;
 	private List<String> abstractTexts = new ArrayList<String>();
 	private List<Participant> participants = new ArrayList<Participant>();
-	
-	// Logical StructMap
 	private String type = null;
 	int level = 0;
-	
-	// Physical StructMap
 	private String urn = null;
 	private int order = 0;
 	private String orderLabelFrom = null;
 	private String orderLabelTo = null;
 	
 	
-	public List<String> getClassifications() {
+	protected List<String> getClassifications() {
 		return classifications;
 	}
-	public void setClassifications(List<String> classifications) {
+	protected void setClassifications(List<String> classifications) {
 		this.classifications = classifications;
 	}
 	public String getPublisher() {
