@@ -3536,7 +3536,6 @@
 					<mets:mdWrap MDTYPE="MODS">
 						<mets:xmlData>
 							<mods:mods>
-								<mods:classification authority="sswd">Classification Inhalt</mods:classification>
 								<mods:titleInfo>
 									<mods:title>Inhalt</mods:title>
 								</mods:titleInfo>
@@ -3559,6 +3558,7 @@
 					<mets:mdWrap MDTYPE="MODS">
 						<mets:xmlData>
 							<mods:mods>
+							<mods:classification authority="sswd">Makroökonomie</mods:classification>
 								<mods:titleInfo>
 									<mods:subTitle>Makroökonomische Zusammenhänge und politische Gestaltungsspielräume</mods:subTitle>
 								</mods:titleInfo>
