@@ -78,7 +78,7 @@ import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 public class OaiUpdater {
 
 	//String indexTimeStamp;
-	private HttpSolrServer solrServer = null;
+	//private HttpSolrServer solrServer = null;
 	private long indexTimestamp;
 	private SolrMabHelper smHelper = new SolrMabHelper();
 
