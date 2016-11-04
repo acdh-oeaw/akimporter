@@ -76,7 +76,8 @@ public class MetsRawRecord {
 
 
 	public class DmdSec {
-		private List<String> classifications = new ArrayList<String>();
+		//private List<String> classifications = new ArrayList<String>();
+		private List<String> classifications = null;
 		private String publisher = null;
 		private String place = null;
 		private String year = null;
@@ -211,6 +212,7 @@ public class MetsRawRecord {
 	public class StructMapLogical {
 		String dmdLogId = null;
 		String logId = null;
+		String contentId = null;
 		String type = null;
 		int level = 0;
 		
@@ -225,6 +227,12 @@ public class MetsRawRecord {
 		}
 		public void setLogId(String logId) {
 			this.logId = logId;
+		}
+		public String getContentId() {
+			return contentId;
+		}
+		public void setContentId(String contentId) {
+			this.contentId = contentId;
 		}
 		public String getType() {
 			return type;
@@ -241,8 +249,9 @@ public class MetsRawRecord {
 		
 		@Override
 		public String toString() {
-			return "StructMapLogical [dmdLogId=" + dmdLogId + ", logId=" + logId + ", type=" + type + ", level=" + level + "]\n\t";
-		}		
+			return "StructMapLogical [dmdLogId=" + dmdLogId + ", logId=" + logId + ", contentId=" + contentId
+					+ ", type=" + type + ", level=" + level + "]\n\t";
+		}	
 	}
 
 	public class StructMapPhysical {
@@ -320,10 +329,10 @@ public class MetsRawRecord {
 	}
 
 	public class Participant {
-		private String familyName;
-		private String givenName;
-		private String role;
-		private String authorityId;
+		private String familyName = null;
+		private String givenName = null;
+		private String role = null;
+		private String authorityId = null;
 
 		public String getFamilyName() {
 			return familyName;
@@ -354,7 +363,70 @@ public class MetsRawRecord {
 		public String toString() {
 			return "Participant [familyName=" + familyName + ", givenName=" + givenName + ", role=" + role
 					+ ", authorityId=" + authorityId + "]";
-		}		
+		}
+		
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + ((authorityId == null) ? 0 : authorityId.hashCode());
+			result = prime * result + ((familyName == null) ? 0 : familyName.hashCode());
+			result = prime * result + ((givenName == null) ? 0 : givenName.hashCode());
+			result = prime * result + ((role == null) ? 0 : role.hashCode());
+			return result;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (!(obj instanceof Participant)) {
+				return false;
+			}
+			Participant other = (Participant) obj;
+			if (!getOuterType().equals(other.getOuterType())) {
+				return false;
+			}
+			if (authorityId == null) {
+				if (other.authorityId != null) {
+					return false;
+				}
+			} else if (!authorityId.equals(other.authorityId)) {
+				return false;
+			}
+			if (familyName == null) {
+				if (other.familyName != null) {
+					return false;
+				}
+			} else if (!familyName.equals(other.familyName)) {
+				return false;
+			}
+			if (givenName == null) {
+				if (other.givenName != null) {
+					return false;
+				}
+			} else if (!givenName.equals(other.givenName)) {
+				return false;
+			}
+			if (role == null) {
+				if (other.role != null) {
+					return false;
+				}
+			} else if (!role.equals(other.role)) {
+				return false;
+			}
+			return true;
+		}
+		private MetsRawRecord getOuterType() {
+			return MetsRawRecord.this;
+		}
+		
+		
 
 	}
 
