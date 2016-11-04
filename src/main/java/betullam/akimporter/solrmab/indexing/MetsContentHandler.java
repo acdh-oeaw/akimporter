@@ -56,10 +56,11 @@ public class MetsContentHandler implements ContentHandler {
 	// XML sections we need to process
 	private boolean isRecord = false;
 	private boolean isDmdSec = false;
-	private boolean isLogicalStructMap = false;
-	private boolean isPhysicalStructMap = false;
+	private boolean isStructMapLogical = false;
+	private boolean isStructMapPhysical = false;
 	private boolean isStructLink = false;
 	private boolean isClassification = false;
+	private boolean isSswd = false;
 	private boolean isOriginInfo = false;
 	private boolean isPublisher = false;
 	private boolean isPlace = false;
@@ -95,6 +96,7 @@ public class MetsContentHandler implements ContentHandler {
 	private String dmdLogIdDmdSec = null;
 	private String dmdLogId_logicalStructMap = null;
 	private String logId_logicalStructMap = null;
+	private String contentId_logicalStructMap = null;
 	private int level = 0;
 	private String physId_physicalStructMap = null;
 
@@ -110,14 +112,15 @@ public class MetsContentHandler implements ContentHandler {
 	private List<String> classifications = null;
 	private Participant participant = null;
 	private List<Participant> participants = null;
-
 	private List<MetsSolrRecord> metsSolrRecords = null;
+
 
 	public MetsContentHandler(SolrServer solrServer, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.timeStamp = timeStamp;
 		this.print = print;
 	}
+
 
 	@Override
 	public void startDocument() throws SAXException {
@@ -130,6 +133,7 @@ public class MetsContentHandler implements ContentHandler {
 
 		// Clear element content for fresh start
 		elementContent = "";
+
 
 		if (qName.equals("record")) {
 			isRecord = true;
@@ -151,12 +155,12 @@ public class MetsContentHandler implements ContentHandler {
 			}
 
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("LOGICAL")) {
-				isLogicalStructMap = true;
+				isStructMapLogical = true;
 				level = 0;
 			}
 
 			if (qName.equals("mets:structMap") && atts.getValue("TYPE") != null && atts.getValue("TYPE").equals("PHYSICAL")) {
-				isPhysicalStructMap = true;
+				isStructMapPhysical = true;
 			}
 
 			if (qName.equals("mets:structLink")) {
@@ -172,17 +176,9 @@ public class MetsContentHandler implements ContentHandler {
 			}
 
 			if (qName.equals("mods:classification")) {
+				isClassification = true;
 				if (atts.getValue("authority") != null && atts.getValue("authority").equals("sswd")) {
-					isClassification = true;
-					/*
-					for (int i = 0; i < atts.getLength(); i++) {
-						System.out.println(atts.getQName(i) + ": " + atts.getValue(i));
-					}
-					*/
-					
-					
-				} else {
-					isClassification = false;
+					isSswd = true;
 				}
 			}
 
@@ -243,9 +239,7 @@ public class MetsContentHandler implements ContentHandler {
 			if (isPart) {
 
 				if (atts.getValue("order") != null) {
-					//sortNo = atts.getValue("order");
 					dmdSec.setSortNo(atts.getValue("order"));
-					//System.out.println("sortNo: " + sortNo);
 				}
 
 				if (qName.equals("mods:detail") && atts.getValue("type") != null && atts.getValue("type").equals("issue")) {
@@ -333,7 +327,7 @@ public class MetsContentHandler implements ContentHandler {
 		}
 
 
-		if (isLogicalStructMap) {
+		if (isStructMapLogical) {
 
 			if (qName.equals("mets:div")) {
 				level = level + 1;
@@ -353,6 +347,13 @@ public class MetsContentHandler implements ContentHandler {
 				} else {
 					logId_logicalStructMap = null;
 				}
+				
+				if (atts.getValue("CONTENTIDS") != null) {
+					contentId_logicalStructMap = atts.getValue("CONTENTIDS");
+					structMapLogical.setContentId(contentId_logicalStructMap);
+				} else {
+					contentId_logicalStructMap = null;
+				}
 
 				if (atts.getValue("TYPE") != null) {
 					structMapLogical.setType(atts.getValue("TYPE"));
@@ -363,12 +364,11 @@ public class MetsContentHandler implements ContentHandler {
 				} else {
 					structMapsLogical.put(logId_logicalStructMap, structMapLogical);
 				}
-				//System.out.println(structMapLogical);
 			}
 		}
 
 
-		if (isPhysicalStructMap) {
+		if (isStructMapPhysical) {
 			if (qName.equals("mets:div")) {
 				structMapPhysical = metsRawRecord.new StructMapPhysical();
 
@@ -400,7 +400,6 @@ public class MetsContentHandler implements ContentHandler {
 				}
 
 				structMapsPhysical.put(physId_physicalStructMap, structMapPhysical);
-				//System.out.println(structMapPhysical);
 			}
 		}
 
@@ -410,26 +409,16 @@ public class MetsContentHandler implements ContentHandler {
 				structLink = metsRawRecord.new StructLink();
 
 				if (atts.getValue("xlink:to") != null) {
-					//smLinkTo = atts.getValue("xlink:to");
 					structLink.setSmLinkTo(atts.getValue("xlink:to"));
-				}/* else {
-					smLinkTo = null;
-				}*/
+				}
 
 				if (atts.getValue("xlink:from") != null) {
-					//smLinkFrom = atts.getValue("xlink:from");
 					structLink.setSmLinkFrom(atts.getValue("xlink:from"));
-				}/* else {
-					smLinkFrom = null;
-				}*/
+				}
 
 				structLinks.add(structLink);
-
 			}
-
 		}
-
-
 
 	}
 
@@ -437,11 +426,8 @@ public class MetsContentHandler implements ContentHandler {
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 
-
-		if (isClassification) {
-			
+		if (isClassification && isSswd) {
 			classifications.add(elementContent);
-			
 		}
 
 		if (isPublisherPublication) {
@@ -523,42 +509,32 @@ public class MetsContentHandler implements ContentHandler {
 		}
 
 
-
-
-
 		if (qName.equals("record")) {
 			metsRawRecord.setDmdSecs(dmdSecs);
 			metsRawRecord.setStructMapsLogical(structMapsLogical);
 			metsRawRecord.setStructMapsPhysical(structMapsPhysical);
 			metsRawRecord.setStructLinks(structLinks);
-			//System.out.println(metsRawRecord);
 			metsSolrRecords.addAll(getMetsSolrRecords(metsRawRecord));
-			System.out.println("End of record tag: " + metsSolrRecords.get(0).getClassifications());
 			isRecord = false;
-			
 		}
 
 		if (qName.equals("mets:dmdSec")) {
 			dmdSec.setClassifications(classifications);
 			dmdSec.setParticipants(participants);
-			
-			//classifications = null;
 			dmdSecs.put(dmdLogIdDmdSec, dmdSec);
-			//System.out.println(dmdSecs);
 			isDmdSec = false;
 		}
 
 		if (qName.equals("mets:structMap")) {
-			isLogicalStructMap = false;
-			isPhysicalStructMap = false;
+			isStructMapLogical = false;
+			isStructMapPhysical = false;
 		}
 
 		if (qName.equals("mets:div")) {
-			if (isLogicalStructMap) {
+			if (isStructMapLogical) {
 				level = level - 1;
 			}
 		}
-
 
 		if (qName.equals("mets:structLink")) {
 			isStructLink = false;
@@ -571,7 +547,7 @@ public class MetsContentHandler implements ContentHandler {
 
 		if (qName.equals("mods:classification")) {
 			isClassification = false;
-			
+			isSswd = false;
 		}
 
 		if (qName.equals("mods:relatedItem")) {
@@ -658,10 +634,9 @@ public class MetsContentHandler implements ContentHandler {
 
 	@Override
 	public void endDocument() throws SAXException {
-		//System.out.println(metsSolrRecords);
-		
+		print(print, "Indexing documents to Solr ... ");
 		solrAddRecordSet(solrServer, metsSolrRecords);
-		System.out.println("endDocument(): " + metsSolrRecords.get(0).getClassifications());
+		print(print, "Done\n");
 	}
 
 
@@ -682,7 +657,6 @@ public class MetsContentHandler implements ContentHandler {
 
 			// Create a collection of all documents:
 			Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-
 
 			List<String> parentVolumeFields = new ArrayList<String>();
 			parentVolumeFields.add("allfields");
@@ -731,12 +705,16 @@ public class MetsContentHandler implements ContentHandler {
 			classificationFields.add("topic_facet");
 			classificationFields.add("swdTopic_txt_mv");
 
+			List<String> abstractFields = new ArrayList<String>();
+			abstractFields.add("allfields");
+			abstractFields.add("abstract_txt_mv");
+
+
 			List<String> publisherFields = new ArrayList<String>();
 			publisherFields.add("allfields");
 			publisherFields.add("publisher");
 
 			List<String> publishDateFields = new ArrayList<String>();
-			publishDateFields.add("allfields");
 			publishDateFields.add("publishDate");
 			publishDateFields.add("publishDateSort");
 
@@ -745,36 +723,25 @@ public class MetsContentHandler implements ContentHandler {
 			publishPlaceFields.add("publishPlace_txt");			
 
 			List<String> urlFields = new ArrayList<String>();
-			urlFields.add("allfields");
 			urlFields.add("url");
 
 			List<String> languageFields = new ArrayList<String>();
-			languageFields.add("allfields");
 			languageFields.add("language");
 
-			List<String> abstractFields = new ArrayList<String>();
-			abstractFields.add("allfields");
-			abstractFields.add("abstract_txt");
-
 			List<String> pageFromFields = new ArrayList<String>();
-			pageFromFields.add("allfields");
 			pageFromFields.add("orderLabelFrom_str");
 
 			List<String> pageToFields = new ArrayList<String>();
-			pageToFields.add("allfields");
 			pageToFields.add("orderLabelTo_str");
 
 			List<String> sortNumberFields = new ArrayList<String>();
-			sortNumberFields.add("allfields");
 			sortNumberFields.add("sortNo_str");
 			sortNumberFields.add("order_str");
 
 			List<String> levelFields = new ArrayList<String>();
-			levelFields.add("allfields");
 			levelFields.add("level_str");
 
 			List<String> formatFields = new ArrayList<String>();
-			formatFields.add("allfields");
 			formatFields.add("format");
 
 			Map<String,List<String>> indexFields = new LinkedHashMap<String,List<String>>();
@@ -799,19 +766,15 @@ public class MetsContentHandler implements ContentHandler {
 			indexFields.put("author2", author2Fields);
 			indexFields.put("authorAdditional", authorAdditionalFields);
 
-			
-			
-			//System.out.println(metsSolrRecords);
+
 			for (MetsSolrRecord metsSolrRecord : metsSolrRecords) {
-				
-				
-				
-				
 				String id = metsSolrRecord.getUrn();
-				
+
 				if (id != null) {
-					// Create a document:
+
+					// Create a Solr input document:
 					SolrInputDocument doc = new SolrInputDocument();
+
 					doc.addField("id", metsSolrRecord.getUrn());
 					String parentAcNoRaw = metsSolrRecord.getAcNo();
 					if (parentAcNoRaw != null) {
@@ -819,137 +782,182 @@ public class MetsContentHandler implements ContentHandler {
 						Pattern pattern = Pattern.compile("^[A-Za-z0-9]+");
 						Matcher matcher = pattern.matcher(metsSolrRecord.getAcNo());
 						String parentAc = (matcher.find()) ? matcher.group().trim() : null;
-						doc.addField("parentAC_str_mv", metsSolrRecord.getAcNo());
+						doc.addField("parentAC_str_mv", parentAc);
 					}
-					doc.addField("recordtype", "Dependant"); // ???
+					//doc.addField("recordtype", "Dependant"); // ???
+					doc.addField("recordtype", "mab"); // ???
 
 					for (String solrFieldName : indexFields.get("classifications")) {
-						
-						doc.addField(solrFieldName, metsSolrRecord.getClassifications());
+						List<String> classificationList = metsSolrRecord.getClassifications();
+						// ATTENTION: It's not possible to add a List<String> directly, e. g.: doc.addField(solrFieldName, classificationList);
+						// It seems to be a bug?!?! That's why we have to iterate over the List and add the values one by one.
+						for (String classificationString : classificationList) {
+							doc.addField(solrFieldName, classificationString);
+						}
 					}
-					
+
 					for (String solrFieldName : indexFields.get("publisher")) {
 						doc.addField(solrFieldName, metsSolrRecord.getPublisher());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("place")) {
 						doc.addField(solrFieldName, metsSolrRecord.getPlace());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("year")) {
 						doc.addField(solrFieldName, metsSolrRecord.getYear());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("volume")) {
 						doc.addField(solrFieldName, metsSolrRecord.getVolume());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("issueNo")) {
 						doc.addField(solrFieldName, metsSolrRecord.getIssueNo());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("sortNo")) {
 						doc.addField(solrFieldName, metsSolrRecord.getSortNo());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("title")) {
 						doc.addField(solrFieldName, metsSolrRecord.getTitle());
 					}
-					
+
 					for (String solrFieldName : indexFields.get("subTitle")) {
 						doc.addField(solrFieldName, metsSolrRecord.getSubTitle());
 					}
-					/*
-					for (Entry<String,List<String>> indexField : indexFields.entrySet()) {
-						String fieldClass = indexField.getKey();
-						List<String> solrFieldNames = indexField.getValue();
-						
-						if (fieldClass.equals("classifications")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getClassifications());
-							}
-						}
-						
-						if (fieldClass.equals("publisher")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getPublisher());
-								System.out.println(metsSolrRecord.getPublisher());
-							}
-						}
-						
-						if (fieldClass.equals("place")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getPlace());
-							}
-						}
-						
-						if (fieldClass.equals("year")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getYear());
-							}
-						}
-						
-						if (fieldClass.equals("volume")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getVolume());
-							}
-						}
-						
-						if (fieldClass.equals("issueNo")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getIssueNo());
-							}
-						}
-						
-						if (fieldClass.equals("sortNo")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getSortNo());
-							}
-						}
-						
-						if (fieldClass.equals("title")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getTitle());
-							}
-						}
-						
-						if (fieldClass.equals("subTitle")) {
-							for (String solrFieldName : solrFieldNames) {
-								doc.addField(solrFieldName, metsSolrRecord.getSubTitle());
+
+					for (String solrFieldName : indexFields.get("languageTerm")) {
+						doc.addField(solrFieldName, metsSolrRecord.getLanguageTerm());
+					}
+
+					for (String solrFieldName : indexFields.get("abstractTexts")) {
+						List<String> abstractsList = metsSolrRecord.getAbstractTexts();
+						// ATTENTION: It's not possible to add a List<String> directly, e. g.: doc.addField(solrFieldName, abstractsList);
+						// It seems to be a bug?!?! That's why we have to iterate over the List and add the values one by one.
+						if (abstractsList != null && !abstractsList.isEmpty() ) {
+							for (String abstractString : abstractsList) {
+								doc.addField(solrFieldName, abstractString);
 							}
 						}
 					}
-					*/
+
+					for (String solrFieldName : indexFields.get("type")) {
+						//doc.addField(solrFieldName, metsSolrRecord.getType());
+						doc.addField(solrFieldName, "electronic");
+					}
+
+					for (String solrFieldName : indexFields.get("level")) {
+						doc.addField(solrFieldName, metsSolrRecord.getLevel());
+					}
+
+					String urlText = "Volltext";
+					doc.addField("urlText_txtF_mv", urlText);
+					for (String solrFieldName : indexFields.get("urn")) {
+						String urlPrefix = "https://emedien.arbeiterkammer.at/viewer/resolver?urn=";
+						String url = urlPrefix + metsSolrRecord.getUrn();
+						doc.addField(solrFieldName, url);
+						doc.addField(solrFieldName, urlText);
+						doc.addField(solrFieldName, "NoMimeType");
+
+					}
+
+					/*
+					for (String solrFieldName : indexFields.get("order")) {
+						doc.addField(solrFieldName, metsSolrRecord.getOrder());
+					}
+					 */
+
+					for (String solrFieldName : indexFields.get("orderLabelFrom")) {
+						doc.addField(solrFieldName, metsSolrRecord.getOrderLabelFrom());
+					}
+
+					for (String solrFieldName : indexFields.get("orderLabelTo")) {
+						doc.addField(solrFieldName, metsSolrRecord.getOrderLabelTo());
+					}
+
+
+					List<Participant> participants = metsSolrRecord.getParticipants();
+
+					if (participants != null && !participants.isEmpty()) {
+						Participant participant1 = participants.get(0);
+						String participant1Role = participant1.getRole();
+						String participant1AuthId = participant1.getAuthorityId();
+
+						// author
+						for (String solrFieldName : indexFields.get("author")) {
+							String givenName = participant1.getGivenName();
+							String familyName = participant1.getFamilyName();
+							String name = familyName;
+							name += (givenName != null && !givenName.isEmpty()) ? ", " + givenName : "";
+							doc.addField(solrFieldName, name);
+						}
+						doc.addField("author_role", participant1Role);
+						doc.addField("author_GndNo_str", participant1AuthId);
+
+						//author2
+						if (participants.size() >= 2) {
+							Participant participant2 = participants.get(1);
+
+							String participant2Role = participant2.getRole();
+							String participant2AuthId = participant2.getAuthorityId();
+
+							for (String solrFieldName : indexFields.get("author2")) {
+								String givenName = participant2.getGivenName();
+								String familyName = participant2.getFamilyName();
+								String name = familyName;
+								name += (givenName != null && !givenName.isEmpty()) ? ", " + givenName : "";
+								doc.addField(solrFieldName, name);
+							}
+							doc.addField("author2_role", participant2Role);
+							doc.addField("author2_GndNo_str", participant2AuthId);
+
+							//authorAdditional
+							if (participants.size() > 2) {
+								for (Participant participant : participants) {
+									if (!participant.equals(participant1) && !participant.equals(participant2)) { // We already have author 1 and 2, so treat only the other ones
+										String givenName = participant.getGivenName();
+										String familyName = participant.getFamilyName();
+										String authorityId = (participant.getAuthorityId() != null && !participant.getAuthorityId().isEmpty()) ? participant.getAuthorityId() : "NoGndId";
+										String role = (participant.getRole() != null && !participant.getRole().isEmpty()) ? participant.getRole() : "NoRole";
+
+										String name = familyName;
+										name += (givenName != null && !givenName.isEmpty()) ? ", " + givenName : "";
+
+										for (String solrFieldName : indexFields.get("authorAdditional")) {
+											doc.addField(solrFieldName, name);
+										}
+
+										doc.addField("author_additional_NameRoleGnd_str_mv", name);
+										doc.addField("author_additional_NameRoleGnd_str_mv", role);
+										doc.addField("author_additional_NameRoleGnd_str_mv", authorityId);
+										doc.addField("author_additional_GndNo_str_mv", (!authorityId.equals("NoGndId") ? authorityId : null));
+									}
+								}
+							}
+						}
+					}
+
 					// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
-					// TODO: Change hardecoded fieldname "indexTimestamp_str" to fieldname specified in .properties file.
+					// TODO: Change hardcoded fieldname "indexTimestamp_str" to fieldname specified in .properties file.
 					doc.addField("indexTimestamp_str", timeStamp);
 
 					// Add the document to the collection of documents:
 					docs.add(doc);
 				}
-				
 			}
 
-
-			
 			if (!docs.isEmpty()) {
 				// Now add the collection of documents to Solr:
-				//solrServer.add(docs);
-				//solrServer.commit();
+				solrServer.add(docs);
+				solrServer.commit();
 				// Set "docs" to "null" (save memory):
 				docs = null;
 			}
-
-
-		}/* catch (SolrServerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}*/ catch (Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		
 	}
 
 	/**
@@ -958,13 +966,12 @@ public class MetsContentHandler implements ContentHandler {
 	 * @param print		boolean: true if the text should be print, false otherwise
 	 * @param text		String: a text message to print.
 	 */
-	/*
 	private void print(boolean print, String text) {
 		if (print) {
 			System.out.print(text);
 		}
 	}
-	 */
+	 
 
 	private List<MetsSolrRecord> getMetsSolrRecords(MetsRawRecord metsRawRecord) {
 
@@ -991,9 +998,15 @@ public class MetsContentHandler implements ContentHandler {
 			String topYear = null;
 			String topVolume = null;
 			String topIssueNo = null;
+			String topUrn = null;
+			String topTitle = null;
+			String topSubtitle = null;
 
 
 			for (Entry<String,StructMapLogical> structMapLogicalMap : structMapsLogical.entrySet()) {
+				
+				//System.out.println(structMapLogicalMap);
+				
 				MetsSolrRecord metsSolrRecord = new MetsSolrRecord();
 				StructMapLogical structMapLogical = structMapLogicalMap.getValue();
 
@@ -1014,30 +1027,31 @@ public class MetsContentHandler implements ContentHandler {
 					topYear = (topDmdSec.getYearPublication() != null) ? topDmdSec.getYearPublication() : topDmdSec.getYear();
 					topVolume = topDmdSec.getVolume();
 					topIssueNo = topDmdSec.getIssueNo();
+					topTitle = topDmdSec.getTitle();
+					topSubtitle = topDmdSec.getSubTitle();
+					topUrn = structMapLogical.getContentId();
+					//System.out.println(topTitle + ": " + topUrn);
 				}
-				//System.out.println(topClassifications);
-				
+
 
 				// Get the metadata from the metadata section (dmdSec)
-				DmdSec dmdSec = (topDmdLogId != null && !topDmdLogId.equals(dmdSecs.get(dmdLogId))) ? dmdSecs.get(dmdLogId) : null;
-				
+				//DmdSec dmdSec = (topDmdLogId != null && !topDmdLogId.equals(dmdLogId)) ? dmdSecs.get(dmdLogId) : null;
+				DmdSec dmdSec = dmdSecs.get(dmdLogId);
+				String urn = null;
+
 				if (dmdSec != null) {
-					/*
-					String childAcNo = null;
-					String childAkIdentifier = null;
-					List<String> childClassifications = null;
-					String childLanguageTerm = null;
-					String childPublisher = null;
-					String childPlace = null;
-					String childYear = null;
-					String childVolume = null;
-					String childIssueNo = null;
-					String childTitle = null;
-					String childSubtitle = null;
-					List<String> childAbstracts = null;
-					List<Participant> childParticipants = null;
-					String childSortNo = null;
-					*/
+					
+					
+					if (dmdLogId.equals(topDmdLogId)) {
+						urn = topUrn;
+						//System.out.println("Top: " + dmdSec.getTitle() + ", URN: " + urn);
+					} else {
+						urn = null;
+						//System.out.println("Child: " + dmdSec.getTitle() + ", URN: " + urn);
+					}
+					
+					
+
 					String childAcNo = dmdSec.getAcNo();
 					String childAkIdentifier = dmdSec.getAkIdentifier();
 					List<String> childClassifications = (!dmdSec.getClassifications().isEmpty()) ? dmdSec.getClassifications() : null;
@@ -1052,7 +1066,7 @@ public class MetsContentHandler implements ContentHandler {
 					List<String> childAbstracts = (!dmdSec.getAbstractTexts().isEmpty()) ? dmdSec.getAbstractTexts() : null;
 					List<Participant> childParticipants = (!dmdSec.getParticipants().isEmpty()) ? dmdSec.getParticipants() : null;
 					String childSortNo = dmdSec.getSortNo();
-					
+
 					// Set metadata to record for Solr
 					metsSolrRecord.setAbstractTexts(childAbstracts);
 					metsSolrRecord.setAcNo((childAcNo != null) ? childAcNo : topAcNo);
@@ -1068,11 +1082,12 @@ public class MetsContentHandler implements ContentHandler {
 					metsSolrRecord.setTitle(childTitle);
 					metsSolrRecord.setVolume((childVolume != null) ? childVolume : topVolume);
 					metsSolrRecord.setYear((childYear != null) ? childYear : topYear);
-					
-					//System.out.println(childClassifications);
+					/*
+					if (dmdLogId.equals(topDmdLogId)) {
+						System.out.print("Top: " + dmdSec.getTitle());
+					}
+					*/
 				}
-
-				
 
 				// Set some logical data:
 				metsSolrRecord.setLevel(structMapLogical.getLevel());
@@ -1087,13 +1102,16 @@ public class MetsContentHandler implements ContentHandler {
 						physIds.add(physId_structLink);
 					}
 				}
+				
+				
 
 				// With physIds from StructLinks, get data from physical StructMap
 				if (!physIds.isEmpty()) {
 					String physIdFirst = physIds.get(0); // This represents the first page of an article, chapter, ...
 					String physIdLast = physIds.get(physIds.size()-1); // This represents the last page of an article, chapter, ...
 
-					String urn = structMapsPhysical.get(physIdFirst).getContentId();
+					//String urn = structMapsPhysical.get(physIdFirst).getContentId();
+					urn = (urn == null) ? structMapsPhysical.get(physIdFirst).getContentId() : urn;
 					int order = structMapsPhysical.get(physIdFirst).getOrder();
 					String orderLabelFirst = structMapsPhysical.get(physIdFirst).getOrderLabel();
 					String orderLabelLast = structMapsPhysical.get(physIdLast).getOrderLabel();
@@ -1102,11 +1120,12 @@ public class MetsContentHandler implements ContentHandler {
 					metsSolrRecord.setOrderLabelTo(orderLabelLast);
 					metsSolrRecord.setUrn(urn);
 				}
-				
-				metsSolrRecords.add(metsSolrRecord);
+
+				metsSolrRecords.add(metsSolrRecord);				
 			}
 		}
 
+		System.out.println(metsSolrRecords);
 		return metsSolrRecords;
 	}
 
