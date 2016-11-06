@@ -213,6 +213,7 @@ public class MetsRawRecord {
 		String dmdLogId = null;
 		String logId = null;
 		String contentId = null;
+		String label = null;
 		String type = null;
 		int level = 0;
 		
@@ -234,6 +235,12 @@ public class MetsRawRecord {
 		public void setContentId(String contentId) {
 			this.contentId = contentId;
 		}
+		public String getLabel() {
+			return label;
+		}
+		public void setLabel(String label) {
+			this.label = label;
+		}
 		public String getType() {
 			return type;
 		}
@@ -246,12 +253,13 @@ public class MetsRawRecord {
 		public void setLevel(int level) {
 			this.level = level;
 		}
-		
 		@Override
 		public String toString() {
 			return "StructMapLogical [dmdLogId=" + dmdLogId + ", logId=" + logId + ", contentId=" + contentId
-					+ ", type=" + type + ", level=" + level + "]\n\t";
-		}	
+					+ ", label=" + label + ", type=" + type + ", level=" + level + "]\n\t";
+		}
+		
+			
 	}
 
 	public class StructMapPhysical {

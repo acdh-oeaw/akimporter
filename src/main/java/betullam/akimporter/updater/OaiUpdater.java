@@ -114,9 +114,9 @@ public class OaiUpdater {
 			//FileReader xmlData = new FileReader(FILE NAME HERE);
 			BufferedInputStream xmlData = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/Mets_For_Parsing.xml"));
 			InputSource inputSource = new InputSource(xmlData);
-			
+						
 			HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
-			MetsContentHandler metsContentHandler = new MetsContentHandler(sServerBiblio, strIndexTimestamp, print);
+			MetsContentHandler metsContentHandler = new MetsContentHandler(sServerBiblio, structElements, strIndexTimestamp, print);
 			
 			// Create SAX parser:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();

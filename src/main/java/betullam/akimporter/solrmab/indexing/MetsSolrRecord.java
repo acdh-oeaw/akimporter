@@ -7,6 +7,20 @@ import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.Participant;
 
 public class MetsSolrRecord {
 	
+	private boolean isParentOfParent = false;
+	private String parentOfParentUrn = null;
+	private String parentOfParentTitle = null;
+	private String parentOfParentType = null;
+	private int parentOfParentLevel = 0;
+	
+	private boolean isParent = false;
+	private String parentUrn = null;
+	private String parentTitle = null;
+	private String parentSubtitle = null;
+	private String parentType = null;
+	private int parentLevel = 0;
+	
+	private boolean isChild = false;
 	private List<String> classifications = new ArrayList<String>();
 	private String publisher = null;
 	private String place = null;
@@ -29,7 +43,83 @@ public class MetsSolrRecord {
 	private String orderLabelFrom = null;
 	private String orderLabelTo = null;
 	
+
+	public boolean isParentOfParent() {
+		return isParentOfParent;
+	}
+	public void setIsParentOfParent(boolean isParentOfParent) {
+		this.isParentOfParent = isParentOfParent;
+	}
+	public String getParentOfParentUrn() {
+		return parentOfParentUrn;
+	}
+	public void setParentOfParentUrn(String parentOfParentUrn) {
+		this.parentOfParentUrn = parentOfParentUrn;
+	}
+	public String getParentOfParentTitle() {
+		return parentOfParentTitle;
+	}
+	public void setParentOfParentTitle(String parentOfParentTitle) {
+		this.parentOfParentTitle = parentOfParentTitle;
+	}
+	public String getParentOfParentType() {
+		return parentOfParentType;
+	}
+	public void setParentOfParentType(String parentOfParentType) {
+		this.parentOfParentType = parentOfParentType;
+	}
+	public int getParentOfParentLevel() {
+		return parentOfParentLevel;
+	}
+	public void setParentOfParentLevel(int parentOfParentLevel) {
+		this.parentOfParentLevel = parentOfParentLevel;
+	}
 	
+	
+	public boolean isParent() {
+		return isParent;
+	}
+	public void setIsParent(boolean isParent) {
+		this.isParent = isParent;
+	}
+	public String getParentUrn() {
+		return parentUrn;
+	}
+	public void setParentUrn(String parentUrn) {
+		this.parentUrn = parentUrn;
+	}
+	public String getParentTitle() {
+		return parentTitle;
+	}
+	public void setParentTitle(String parentTitle) {
+		this.parentTitle = parentTitle;
+	}
+	public String getParentSubtitle() {
+		return parentSubtitle;
+	}
+	public void setParentSubtitle(String parentSubtitle) {
+		this.parentSubtitle = parentSubtitle;
+	}
+	public String getParentType() {
+		return parentType;
+	}
+	public void setParentType(String parentType) {
+		this.parentType = parentType;
+	}
+	public int getParentLevel() {
+		return parentLevel;
+	}
+	public void setParentLevel(int parentLevel) {
+		this.parentLevel = parentLevel;
+	}
+	
+	
+	public boolean isChild() {
+		return isChild;
+	}
+	public void setIsChild(boolean isChild) {
+		this.isChild = isChild;
+	}
 	protected List<String> getClassifications() {
 		return classifications;
 	}
@@ -150,15 +240,20 @@ public class MetsSolrRecord {
 	public void setOrderLabelTo(String orderLabelTo) {
 		this.orderLabelTo = orderLabelTo;
 	}
+	
+	
 	@Override
 	public String toString() {
-		return "MetsSolrRecord [\n\tclassifications=" + classifications + "\n\tpublisher=" + publisher + "\n\tplace=" + place
-				+ "\n\tyear=" + year + "\n\tvolume=" + volume + "\n\tissueNo=" + issueNo + "\n\tsortNo=" + sortNo + "\n\ttitle="
-				+ title + "\n\tsubTitle=" + subTitle + "\n\tacNo=" + acNo + "\n\takIdentifier=" + akIdentifier
-				+ "\n\tlanguageTerm=" + languageTerm + "\n\tabstractTexts=" + abstractTexts + "\n\tparticipants="
-				+ participants + "\n\ttype=" + type + "\n\tlevel=" + level + "\n\turn=" + urn + "\n\torder=" + order
-				+ "\n\torderLabelFrom=" + orderLabelFrom + "\n\torderLabelTo=" + orderLabelTo + "\n]";
-	}	
-	
-	
+		return "MetsSolrRecord [isParentOfParent=" + isParentOfParent + "\n\tparentOfParentUrn=" + parentOfParentUrn
+				+ "\n\tparentOfParentTitle=" + parentOfParentTitle + "\n\tparentOfParentType=" + parentOfParentType
+				+ "\n\tparentOfParentLevel=" + parentOfParentLevel + "\n\tisParent=" + isParent + "\n\tparentUrn=" + parentUrn
+				+ "\n\tparentTitle=" + parentTitle + "\n\tparentSubtitle=" + parentSubtitle + "\n\tparentType=" + parentType
+				+ "\n\tparentLevel=" + parentLevel + "\n\tisChild=" + isChild + "\n\tclassifications=" + classifications
+				+ "\n\tpublisher=" + publisher + "\n\tplace=" + place + "\n\tyear=" + year + "\n\tvolume=" + volume
+				+ "\n\tissueNo=" + issueNo + "\n\tsortNo=" + sortNo + "\n\ttitle=" + title + "\n\tsubTitle=" + subTitle
+				+ "\n\tacNo=" + acNo + "\n\takIdentifier=" + akIdentifier + "\n\tlanguageTerm=" + languageTerm
+				+ "\n\tabstractTexts=" + abstractTexts + "\n\tparticipants=" + participants + "\n\ttype=" + type + "\n\tlevel="
+				+ level + "\n\turn=" + urn + "\n\torder=" + order + "\n\torderLabelFrom=" + orderLabelFrom + "\n\torderLabelTo="
+				+ orderLabelTo + "\n]";
+	}
 }
