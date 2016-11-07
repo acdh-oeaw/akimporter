@@ -34,6 +34,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -45,18 +47,18 @@ import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.Participant;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructLink;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructMapLogical;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructMapPhysical;
+import main.java.betullam.akimporter.solrmab.relations.RelationHelper;
 
 public class MetsContentHandler implements ContentHandler {
 
-	private SolrServer solrServer;
+	private HttpSolrServer solrServer;
 	List<String> structElements;
 	private String timeStamp;
 	private boolean print = true;
-
+	RelationHelper relationHelper = null;
+	
 	private String elementContent;
 
-
-	// XML sections we need to process
 	private boolean isRecord = false;
 	private boolean isDmdSec = false;
 	private boolean isStructMapLogical = false;
@@ -95,7 +97,6 @@ public class MetsContentHandler implements ContentHandler {
 	private boolean isFamilyNamePart = false;
 	private boolean isGivenNamePart = false;
 
-	// Attribute values that we get in startElement-Method
 	private String dmdLogIdDmdSec = null;
 	private String dmdLogId_logicalStructMap = null;
 	private String logId_logicalStructMap = null;
@@ -118,11 +119,12 @@ public class MetsContentHandler implements ContentHandler {
 	private List<MetsSolrRecord> metsSolrRecords = null;
 
 
-	public MetsContentHandler(SolrServer solrServer, List<String> structElements, String timeStamp, boolean print) {
+	public MetsContentHandler(HttpSolrServer solrServer, List<String> structElements, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.structElements = structElements;
 		this.timeStamp = timeStamp;
 		this.print = print;
+		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
 	}
 
 
@@ -760,15 +762,9 @@ public class MetsContentHandler implements ContentHandler {
 					
 					// Parent data
 					boolean isParent = metsSolrRecord.isParent();
+					String parentId = metsSolrRecord.getParentId();
 					String parentUrn = metsSolrRecord.getParentUrn();
-					String parentAcNoRaw = metsSolrRecord.getAcNo();
-					String parentAcNo = null;
-					if (parentAcNoRaw != null) {
-						// Remove suffix of AC Nos, e. g. remove "_2016_1" from "AC08846807_2016_1"
-						Pattern pattern = Pattern.compile("^[A-Za-z0-9]+");
-						Matcher matcher = pattern.matcher(metsSolrRecord.getAcNo());
-						parentAcNo = (matcher.find()) ? matcher.group().trim() : null;
-					}
+					String parentAcNo = metsSolrRecord.getAcNo();
 					String parentTitle = metsSolrRecord.getParentTitle();
 					String parentSubtitle = metsSolrRecord.getParentSubtitle();
 					String parentPublisher = metsSolrRecord.getPublisher();
@@ -911,6 +907,7 @@ public class MetsContentHandler implements ContentHandler {
 						
 						// Parent
 						if (isParent) {
+
 							doc.addField("parentSYS_str_mv", parentOfParentUrn);
 							doc.addField("parentTitle_str_mv", parentOfParentTitle);
 							doc.addField("parentStructType_str", parentOfParentType);
@@ -948,19 +945,21 @@ public class MetsContentHandler implements ContentHandler {
 								doc.addField("parentOfParentLevel_str", parentOfParentLevel);
 							}
 
-							// TODO: Add parent SYS no to Solr field "parentSYS_str_mv" when relating child to parent records.
-							//doc.addField("parentSYS_str_mv", metsSolrRecord.getParentUrn());
+							// Fields "parentSYS_str_mv" and "parentTitle_str_mv" are responsible for displaying data in AKsearch
+							doc.addField("parentSYS_str_mv", parentId);
+							doc.addField("parentTitle_str_mv", parentOfParentTitle);
+							
 							doc.addField("parentAC_str_mv", parentAcNo);
 							doc.addField("articleParentAC_str", parentAcNo);
-							doc.addField("parentStructType_str", parentType);
 							doc.addField("articleParentTitle_txt", parentTitle);
-							doc.addField("parentTitle_str_mv", parentTitle);
 							doc.addField("articleParentSubtitle_txt", parentSubtitle);
 							doc.addField("articleParentVolumeNo_str", parentVolumeNo);
-							doc.addField("articleParentIssue_str", parentIssueNo);							
+							doc.addField("articleParentIssue_str", parentIssueNo);
+							doc.addField("parentStructType_str", parentType);
 							doc.addField("parentLevel_str", parentLevel);
 							
 							doc.addField("id", childUrn);
+							doc.addField("sysNo_txt", childUrn);
 							for (String solrFieldName : indexFields.get("titleFields")) {
 								doc.addField(solrFieldName, childTitle);
 							}
@@ -1032,7 +1031,9 @@ public class MetsContentHandler implements ContentHandler {
 
 			//boolean isParent = false;
 			DmdSec parentDmdSec = null;
+			String parentAcNoRaw = null;
 			String parentAcNo = null;
+			String parentId = null;
 			String parentAkIdentifier = null;
 			List<String> parentClassifications = null;
 			String parentLanguageTerm = null;
@@ -1048,6 +1049,7 @@ public class MetsContentHandler implements ContentHandler {
 			int parentLevel = 0;
 
 			//boolean isChild = false;
+			String childAcNoRaw = null;
 			String childAcNo = null;
 			String childAkIdentifier = null;
 			List<String> childClassifications = null;
@@ -1076,7 +1078,7 @@ public class MetsContentHandler implements ContentHandler {
 				if (structMapLogical.getDmdLogId() != null && parentDmdLogId == null) {
 					parentDmdLogId = structMapLogical.getDmdLogId();
 					parentDmdSec = dmdSecs.get(parentDmdLogId);
-					parentAcNo = parentDmdSec.getAcNo();
+					parentAcNoRaw = parentDmdSec.getAcNo();
 					parentAkIdentifier = parentDmdSec.getAkIdentifier();
 					parentClassifications = parentDmdSec.getClassifications();
 					parentLanguageTerm = parentDmdSec.getLanguageTerm();
@@ -1090,6 +1092,25 @@ public class MetsContentHandler implements ContentHandler {
 					parentParticipants = (!parentDmdSec.getParticipants().isEmpty()) ? parentDmdSec.getParticipants() : null;
 					parentUrn = structMapLogical.getContentId();
 					parentLevel = structMapLogical.getLevel();
+					
+					
+					// Check if Solr record for the parent already exists so that we can relate the child
+					// records to it:
+					if (parentAcNoRaw != null) {
+						// Remove suffix of AC Nos, e. g. remove "_2016_1" from "AC08846807_2016_1"
+						Pattern pattern = Pattern.compile("^[A-Za-z0-9]+");
+						Matcher matcher = pattern.matcher(parentAcNoRaw);
+						parentAcNo = (matcher.find()) ? matcher.group().trim() : null;
+					}
+					
+					if (parentAcNo != null) {
+						SolrDocument parentRecord = relationHelper.getParentRecord(parentAcNo);
+						parentId = (parentRecord.get("id") != null) ? parentRecord.get("id").toString() : null;
+					}
+					
+					
+					
+					
 				}
 
 				// Get the metadata from the metadata section (dmdSec)
@@ -1103,7 +1124,13 @@ public class MetsContentHandler implements ContentHandler {
 					} else {
 						urn = null;
 					}
-					childAcNo = dmdSec.getAcNo();
+					childAcNoRaw = dmdSec.getAcNo();
+					if (childAcNoRaw != null) {
+						// Remove suffix of AC Nos, e. g. remove "_2016_1" from "AC08846807_2016_1"
+						Pattern pattern = Pattern.compile("^[A-Za-z0-9]+");
+						Matcher matcher = pattern.matcher(childAcNoRaw);
+						childAcNo = (matcher.find()) ? matcher.group().trim() : null;
+					}
 					childAkIdentifier = dmdSec.getAkIdentifier();
 					childClassifications = (!dmdSec.getClassifications().isEmpty()) ? dmdSec.getClassifications() : null;
 					childLanguageTerm = dmdSec.getLanguageTerm();
@@ -1119,20 +1146,22 @@ public class MetsContentHandler implements ContentHandler {
 					childSortNo = dmdSec.getSortNo();
 
 					// Set metadata to record for Solr
-					metsSolrRecord.setAbstractTexts(childAbstracts);
-					metsSolrRecord.setAcNo((childAcNo != null) ? childAcNo : parentAcNo);
+					
+					metsSolrRecord.setParentId(parentId);
+					metsSolrRecord.setAcNo((childAcNoRaw != null) ? childAcNo : parentAcNo);
 					metsSolrRecord.setAkIdentifier((childAkIdentifier != null) ? childAkIdentifier : parentAkIdentifier);
-					metsSolrRecord.setClassifications((childClassifications != null) ? childClassifications : parentClassifications);
-					metsSolrRecord.setIssueNo((childIssueNo != null) ? childIssueNo : parentIssueNo);
-					metsSolrRecord.setLanguageTerm((childLanguageTerm != null) ? childLanguageTerm : parentLanguageTerm);
-					metsSolrRecord.setParticipants((childParticipants != null) ? childParticipants : parentParticipants);
-					metsSolrRecord.setPlace((childPlace != null) ? childPlace : parentPlace);
-					metsSolrRecord.setPublisher((childPublisher != null) ? childPublisher : parentPublisher);
-					metsSolrRecord.setSortNo(childSortNo);
-					metsSolrRecord.setSubTitle(childSubtitle);
 					metsSolrRecord.setTitle(childTitle);
-					metsSolrRecord.setVolume((childVolume != null) ? childVolume : parentVolume);
+					metsSolrRecord.setSubTitle(childSubtitle);
+					metsSolrRecord.setParticipants((childParticipants != null) ? childParticipants : parentParticipants);
+					metsSolrRecord.setPublisher((childPublisher != null) ? childPublisher : parentPublisher);
+					metsSolrRecord.setPlace((childPlace != null) ? childPlace : parentPlace);
 					metsSolrRecord.setYear((childYear != null) ? childYear : parentYear);
+					metsSolrRecord.setVolume((childVolume != null) ? childVolume : parentVolume);
+					metsSolrRecord.setIssueNo((childIssueNo != null) ? childIssueNo : parentIssueNo);
+					metsSolrRecord.setClassifications((childClassifications != null) ? childClassifications : parentClassifications);
+					metsSolrRecord.setAbstractTexts(childAbstracts);
+					metsSolrRecord.setLanguageTerm((childLanguageTerm != null) ? childLanguageTerm : parentLanguageTerm);
+					metsSolrRecord.setSortNo(childSortNo);
 				}
 
 				// Set some logical data:

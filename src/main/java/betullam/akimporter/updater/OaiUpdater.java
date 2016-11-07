@@ -69,6 +69,7 @@ import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlParser;
 import main.java.betullam.akimporter.main.Authority;
 import main.java.betullam.akimporter.main.Main;
+import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.indexing.MetsContentHandler;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
@@ -124,6 +125,25 @@ public class OaiUpdater {
 			
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
+			
+			
+			
+			smHelper.print(print, "\nStart linking parent and child records ... ");
+
+			// Connect child and parent volumes:
+			Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
+			boolean isRelateSuccessful = relate.isRelateSuccessful();
+
+			if (isRelateSuccessful) {
+				smHelper.print(print, "Done");
+			}
+			
+			if (optimize) {
+				smHelper.print(print, "\nOptimizing Solr Server ... ");
+				smHelper.solrOptimize();
+				smHelper.print(print, "Done");
+			}
+		
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

@@ -14,6 +14,7 @@ public class MetsSolrRecord {
 	private int parentOfParentLevel = 0;
 	
 	private boolean isParent = false;
+	private String parentId = null;
 	private String parentUrn = null;
 	private String parentTitle = null;
 	private String parentSubtitle = null;
@@ -81,6 +82,12 @@ public class MetsSolrRecord {
 	}
 	public void setIsParent(boolean isParent) {
 		this.isParent = isParent;
+	}
+	public String getParentId() {
+		return parentId;
+	}
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
 	}
 	public String getParentUrn() {
 		return parentUrn;
@@ -241,19 +248,18 @@ public class MetsSolrRecord {
 		this.orderLabelTo = orderLabelTo;
 	}
 	
-	
 	@Override
 	public String toString() {
 		return "MetsSolrRecord [isParentOfParent=" + isParentOfParent + "\n\tparentOfParentUrn=" + parentOfParentUrn
 				+ "\n\tparentOfParentTitle=" + parentOfParentTitle + "\n\tparentOfParentType=" + parentOfParentType
-				+ "\n\tparentOfParentLevel=" + parentOfParentLevel + "\n\tisParent=" + isParent + "\n\tparentUrn=" + parentUrn
-				+ "\n\tparentTitle=" + parentTitle + "\n\tparentSubtitle=" + parentSubtitle + "\n\tparentType=" + parentType
-				+ "\n\tparentLevel=" + parentLevel + "\n\tisChild=" + isChild + "\n\tclassifications=" + classifications
-				+ "\n\tpublisher=" + publisher + "\n\tplace=" + place + "\n\tyear=" + year + "\n\tvolume=" + volume
-				+ "\n\tissueNo=" + issueNo + "\n\tsortNo=" + sortNo + "\n\ttitle=" + title + "\n\tsubTitle=" + subTitle
-				+ "\n\tacNo=" + acNo + "\n\takIdentifier=" + akIdentifier + "\n\tlanguageTerm=" + languageTerm
-				+ "\n\tabstractTexts=" + abstractTexts + "\n\tparticipants=" + participants + "\n\ttype=" + type + "\n\tlevel="
-				+ level + "\n\turn=" + urn + "\n\torder=" + order + "\n\torderLabelFrom=" + orderLabelFrom + "\n\torderLabelTo="
-				+ orderLabelTo + "\n]";
+				+ "\n\tparentOfParentLevel=" + parentOfParentLevel + "\n\tisParent=" + isParent + "\n\tparentId=" + parentId
+				+ "\n\tparentUrn=" + parentUrn + "\n\tparentTitle=" + parentTitle + "\n\tparentSubtitle=" + parentSubtitle
+				+ "\n\tparentType=" + parentType + "\n\tparentLevel=" + parentLevel + "\n\tisChild=" + isChild
+				+ "\n\tclassifications=" + classifications + "\n\tpublisher=" + publisher + "\n\tplace=" + place + "\n\tyear="
+				+ year + "\n\tvolume=" + volume + "\n\tissueNo=" + issueNo + "\n\tsortNo=" + sortNo + "\n\ttitle=" + title
+				+ "\n\tsubTitle=" + subTitle + "\n\tacNo=" + acNo + "\n\takIdentifier=" + akIdentifier + "\n\tlanguageTerm="
+				+ languageTerm + "\n\tabstractTexts=" + abstractTexts + "\n\tparticipants=" + participants + "\n\ttype="
+				+ type + "\n\tlevel=" + level + "\n\turn=" + urn + "\n\torder=" + order + "\n\torderLabelFrom=" + orderLabelFrom
+				+ "\n\torderLabelTo=" + orderLabelTo + "\n]";
 	}
 }
