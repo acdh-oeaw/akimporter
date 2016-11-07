@@ -951,7 +951,7 @@ public class MetsContentHandler implements ContentHandler {
 							
 							doc.addField("parentAC_str_mv", parentAcNo);
 							doc.addField("articleParentAC_str", parentAcNo);
-							doc.addField("articleParentTitle_txt", parentTitle);
+							doc.addField("articleParentTitle_txt", parentOfParentTitle);
 							doc.addField("articleParentSubtitle_txt", parentSubtitle);
 							doc.addField("articleParentVolumeNo_str", parentVolumeNo);
 							doc.addField("articleParentIssue_str", parentIssueNo);
@@ -979,6 +979,7 @@ public class MetsContentHandler implements ContentHandler {
 							doc.addField("url", urlText);
 							doc.addField("url", "NoMimeType");
 							doc.addField("language", language);
+							doc.addField("begrenzteWerke_str", "a|||||||");
 							doc.addField("erscheinungsform_str", "Unselbständig");
 							doc.addField("pageFrom_str", childPageFrom);
 							doc.addField("pageTo_str", childPageTo);
