@@ -321,7 +321,7 @@ public class ChildsToParentsFromParents {
 
 		// Filter all records that were indexed with the current import process and that are child volumes
 		// (because we need to get their parent records to be able to unlink these childs from there).
-		querynonDeletedChilds.setFilterQueries("parentSYS_str_mv:"+parentSYS, "-deleted_str:Y");
+		querynonDeletedChilds.setFilterQueries("parentSYS_str_mv:\""+parentSYS+"\"", "-deleted_str:Y");
 
 		// Set fields that should be given back from the query
 		querynonDeletedChilds.setFields(
