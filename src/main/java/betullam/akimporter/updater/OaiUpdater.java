@@ -81,7 +81,7 @@ public class OaiUpdater {
 	//String indexTimeStamp;
 	//private HttpSolrServer solrServer = null;
 	private long indexTimestamp;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private SolrMabHelper smHelper = null;
 
 
 	public void oaiGenericUpdate(
@@ -100,17 +100,20 @@ public class OaiUpdater {
 			) {
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
-
-		smHelper.print(print, "\n-------------------------------------------");
-		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
-		
-		// First start of downloading and mergeing XML files from OAI interface:
-		String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
 		
 		
 		try {
 			// Creating Solr server
 			HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
+			
+			// Creating instance of SolrMabHelper
+			smHelper = new SolrMabHelper(sServerBiblio);
+			
+			smHelper.print(print, "\n-------------------------------------------");
+			smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+			 
+			// First start of downloading and mergeing XML files from OAI interface:
+			String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
 			
 			// Create InputSource from XML file
 			FileReader xmlData = new FileReader(mergedOaiDataFileName);
