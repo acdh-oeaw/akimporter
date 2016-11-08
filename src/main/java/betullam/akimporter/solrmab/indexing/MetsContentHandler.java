@@ -643,9 +643,9 @@ public class MetsContentHandler implements ContentHandler {
 
 	@Override
 	public void endDocument() throws SAXException {
-		print(print, "Indexing documents to Solr ... ");
+		print(print, "\nIndexing documents to Solr ... ");
 		solrAddRecordSet(solrServer, metsSolrRecords);
-		print(print, "Done\n");
+		print(print, "Done");
 	}
 
 
@@ -1106,7 +1106,7 @@ public class MetsContentHandler implements ContentHandler {
 					
 					if (parentAcNo != null) {
 						SolrDocument parentRecord = relationHelper.getParentRecord(parentAcNo);
-						parentId = (parentRecord.get("id") != null) ? parentRecord.get("id").toString() : null;
+						parentId = (parentRecord != null && parentRecord.get("id") != null) ? parentRecord.get("id").toString() : null;
 					}
 					
 					
