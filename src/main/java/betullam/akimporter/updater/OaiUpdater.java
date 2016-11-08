@@ -31,6 +31,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -68,7 +69,6 @@ import org.xml.sax.helpers.XMLReaderFactory;
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlParser;
 import main.java.betullam.akimporter.main.Authority;
-import main.java.betullam.akimporter.main.Main;
 import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.indexing.MetsContentHandler;
@@ -101,39 +101,35 @@ public class OaiUpdater {
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
-		//smHelper.print(print, "\n-------------------------------------------");
-		//smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		smHelper.print(print, "\n-------------------------------------------");
+		smHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 		
 		// First start of downloading and mergeing XML files from OAI interface:
-		//String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
-
-		// TODO: Start parsing merged XML file and index it's contents. Don't forget structElements!
-		// Start parsing METS (for example file: see git repo):
+		String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
 		
-		// Set XML file and content handler
+		
 		try {
-			//FileReader xmlData = new FileReader(FILE NAME HERE);
-			BufferedInputStream xmlData = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/Mets_For_Parsing.xml"));
-			InputSource inputSource = new InputSource(xmlData);
-						
+			// Creating Solr server
 			HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
+			
+			// Create InputSource from XML file
+			FileReader xmlData = new FileReader(mergedOaiDataFileName);
+			InputSource inputSource = new InputSource(xmlData);
+			
+			// Create content handler for Mets/Mods data
 			MetsContentHandler metsContentHandler = new MetsContentHandler(sServerBiblio, structElements, strIndexTimestamp, print);
 			
-			// Create SAX parser:
+			// Create SAX parser and set content handler:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 			xmlReader.setContentHandler(metsContentHandler);
 			
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
-			
-			
-			
-			smHelper.print(print, "\nStart linking parent and child records ... ");
 
 			// Connect child and parent volumes:
+			smHelper.print(print, "\nStart linking parent and child records ... ");
 			Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
 			boolean isRelateSuccessful = relate.isRelateSuccessful();
-
 			if (isRelateSuccessful) {
 				smHelper.print(print, "Done");
 			}
@@ -144,7 +140,6 @@ public class OaiUpdater {
 				smHelper.print(print, "Done");
 			}
 		
-			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
