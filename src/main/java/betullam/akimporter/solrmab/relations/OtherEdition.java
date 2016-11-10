@@ -16,10 +16,13 @@ public class OtherEdition {
 	
 	
 	/**
-	 * 1. Get all records with the field "otherEditionId_str_mv"
+	 * 1. Get all records with the field "otherEditionId_str_mv" (RelationHelper -> getCurrentlyIndexedRecordsWithOtherEdition())
 	 * 2. Iterate over these records and use "getOtherEditionRecord" to get the Solr-Record-ID (SYS-No.) of the record for the "other Edition"
 	 * 3. Add the Solr-Record-ID (SYS-No.) to the record with atomic updates.
 	 */
+	
+	
+	
 	
 	
 	/**

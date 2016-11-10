@@ -58,6 +58,56 @@ public class RelationHelper {
 		this.timeStamp = timeStamp;
 	}
 
+	
+	public SolrDocumentList getCurrentlyIndexedRecordsWithOtherEdition(boolean isFirstPage, String lastDocId) {
+
+		// Set up variable
+		SolrDocumentList queryResult = null;
+
+		// New Solr query
+		SolrQuery query = new SolrQuery();
+
+		// Set no of rows
+		query.setRows(NO_OF_ROWS);
+
+		// Add sorting (more efficient for deep paging)
+		query.addSort(SolrQuery.SortClause.asc("id"));
+
+		// Define a query for getting all documents. We will do a filter query further down because of performance
+		query.setQuery("*:*");
+
+		// Filter all records that were indexed with the current import process and that contain other editions
+		if (this.timeStamp != null) {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("otherEditionId_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("otherEditionId_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+			}
+		} else {
+			if (isFirstPage) { // No range filter on first page
+				query.setFilterQueries("otherEditionId_str_mv:*", "id:*");
+			} else { // After the first query, we need to use ranges to get the appropriate results
+				query.setStart(1);
+				query.setFilterQueries("otherEditionId_str_mv:*", "id:[" + lastDocId + " TO *]");
+			}
+
+		}
+
+		// Set fields that should be given back from the query
+		query.setFields("id", "sysNo_txt", "acNo_txt", "zdbId_txt");
+
+
+		try {
+			// Execute query and get results
+			queryResult = this.solrServerBiblio.query(query).getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+		return queryResult;
+	}
+	
+	
 	/**
 	 * Getting all child records of the current index process.
 	 *  
