@@ -3,6 +3,9 @@ package main.java.betullam.akimporter.solrmab.relations;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,6 +41,7 @@ public class OtherEdition {
 	 */
 	public void addChildsToParentsFromChilds() {
 
+		// Get all currently indexed records that are containing data for other editions
 		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedRecordsWithOtherEdition(true, null);
 
 		// Get the number of documents that were found
@@ -100,26 +104,42 @@ public class OtherEdition {
 		// Variable for return value
 		String returnValue = null;
 
-		SolrDocumentList currentEditionRecords = relationHelper.getCurrentlyIndexedRecordsWithOtherEdition(isFirstPage, lastDocId);
-		String newLastDocId = currentEditionRecords.get(currentEditionRecords.size()-1).getFieldValue("id").toString();
-
+		// Get currently indexed records that are containing data for other editions (use paging in Solr query for better performance)
+		SolrDocumentList currentIndexedRecords = relationHelper.getCurrentlyIndexedRecordsWithOtherEdition(isFirstPage, lastDocId);
+		String newLastDocId = currentIndexedRecords.get(currentIndexedRecords.size()-1).getFieldValue("id").toString();
 		String docId = null;
 
-		for (SolrDocument currentEditionRecord : currentEditionRecords) {
-			String currentEditionIds = (currentEditionRecord != null && currentEditionRecord.get("otherEditionId_str_mv") != null) ? currentEditionRecord.get("otherEditionId_str_mv").toString() : null;
+		for (SolrDocument currentIndexedRecord : currentIndexedRecords) {
+			docId = (currentIndexedRecord.getFieldValue("id") != null) ? currentIndexedRecord.getFieldValue("id").toString() : null;
+			Collection<Object> currentEditionIds = (currentIndexedRecord != null && currentIndexedRecord.getFieldValues("otherEditionId_str_mv") != null && !currentIndexedRecord.getFieldValues("otherEditionId_str_mv").isEmpty()) ? currentIndexedRecord.getFieldValues("otherEditionId_str_mv") : null;
 
 			if (currentEditionIds != null) {
-				String otherEditionSYS = getOtherEditionSys(currentEditionIds);
+				for (Object currentEditionId : currentEditionIds) {
+					String editionId = currentEditionId.toString();
+					String otherEditionSys = getOtherEditionSys(editionId);
+					if (otherEditionSys != null) {
+						
+						// Prepare current record for atomic updates:
+						SolrInputDocument atomicUpdateDoc = null;
+						atomicUpdateDoc = new SolrInputDocument();
+						atomicUpdateDoc.setField("id", docId);
+						
+						// Add ID (SYS No.) of "other edition" to current record
+						Map<String, String> mapOtherEditionRecrodSys = new HashMap<String, String>();
+						mapOtherEditionRecrodSys.put("add", otherEditionSys);
+						atomicUpdateDoc.setField("otherEditionRecordId_txt_mv", mapOtherEditionRecrodSys);
+						
+						// TODO: GO ON WITH ATOMIC UPDATE HERE!!
 
-				if (otherEditionSYS != null) {
-					// TODO: ATOMIC UPDATE HERE!!
+					}
 				}
-				docId = (currentEditionRecord.getFieldValue("id") != null) ? currentEditionRecord.getFieldValue("id").toString() : null;
+			}
+			
+			
 
-				// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
-				if (docId.equals(newLastDocId)) {
-					returnValue = docId;
-				}
+			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
+			if (docId.equals(newLastDocId)) {
+				returnValue = docId;
 			}
 		}
 
@@ -129,23 +149,22 @@ public class OtherEdition {
 	}
 
 	/**
-	 * Getting SYS No. (id) of the "other Edition" by its AC-No. or ZDB ID
+	 * Getting SYS No. (ID) of the "other edition" record by its AC-No. or ZDB ID
 	 * 
 	 * @param id		AC-No. or ZDB ID of record
-	 * @return			SolrDocument representing the record of the other Edition
+	 * @return			String containing ID of the record of the "other edition"
 	 */
 	private String getOtherEditionSys(String id) {
 		String otherEditionSys = null;
-		SolrDocument otherEditionRecord = null;
 		SolrQuery queryOtherEdition = new SolrQuery(); // New Solr query
 		queryOtherEdition.setQuery("acNo_txt:\""+id+"\" || zdbId_txt:\""+id+"\""); // Define a query
-		queryOtherEdition.setFields("id", "title"); // Set fields that should be given back from the query
+		queryOtherEdition.setFields("id"); // Set fields that should be given back from the query
 
 		try {
-			SolrDocumentList resultList = this.solrServerBiblio.query(queryOtherEdition).getResults();
-			if (resultList.getNumFound() > 0 && resultList != null) {
-				otherEditionRecord = resultList.get(0);// Get Solr document (there should only be one)
-				otherEditionSys = otherEditionRecord.get("id").toString();
+			SolrDocumentList resultDocList = this.solrServerBiblio.query(queryOtherEdition).getResults();
+			if (resultDocList.getNumFound() > 0 && resultDocList != null) {
+				// Get ID of "other edition". We only take the first one, because we only can link to one other edition.
+				otherEditionSys = resultDocList.get(0).getFieldValue("id").toString();
 			}
 		} catch (SolrServerException e) {
 			e.printStackTrace();
