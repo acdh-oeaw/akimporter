@@ -63,6 +63,8 @@ public class ChildsToParentsFromParents {
 	private int NO_OF_ROWS = 500;
 	private Set<String> parentSYSs = new HashSet<String>();
 	private boolean print = false;
+	private long noOfDocs = 0;
+	private int counter = 0;
 
 	/**
 	 * Constructor for indexing infos from child records to parent records
@@ -86,7 +88,7 @@ public class ChildsToParentsFromParents {
 		SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(true, null);
 
 		// Get the number of documents that were found
-		long noOfDocs = recordsWithNoChilds.getNumFound();
+		noOfDocs = recordsWithNoChilds.getNumFound();
 
 		// If there are some records, go on. If not, do nothing.
 		if (recordsWithNoChilds != null && noOfDocs > 0) {
@@ -168,11 +170,7 @@ public class ChildsToParentsFromParents {
 		String returnValue = null;
 
 		// Records without childs (these could be parents with childs that are not linked yet)
-		//SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(true, null);
 		SolrDocumentList recordsWithNoChilds = relationHelper.getCurrentlyIndexedRecordsWithNoChilds(isFirstPage, lastDocId);
-
-		int counter = 0;
-		long noOfParents = recordsWithNoChilds.getNumFound();
 
 		// Deep paging stuff (better performance)
 		String newLastDocId = recordsWithNoChilds.get(recordsWithNoChilds.size()-1).getFieldValue("id").toString();
@@ -281,7 +279,7 @@ public class ChildsToParentsFromParents {
 			}
 
 			counter = counter + 1;
-			this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfParents + "                 \r");
+			this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs + "                              \r");
 			
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 
