@@ -66,38 +66,38 @@ public class Relate {
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 		//+++++++++++++++++++++++++++++++++++ RELATE VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-		
-		/*
+
+
 		// 1. Linking parents to their childs:
 		ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp, this.print);
 		ptc.addParentsToChilds();
 		this.smHelper.print(this.print, "\n");
-		
-		
+
+
 		// 2. Remove all childs from parents:
 		UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp, this.print);
 		ucfp.unlinkChildsFromParents();
 		this.smHelper.print(this.print, "\n");
-		
-		
+
+
 		// 3. Relink childs to parents from all currently indexed child records:
 		ChildsToParentsFromChilds ctpfc = new ChildsToParentsFromChilds(this.solrServer, this.timeStamp, this.print);
 		ctpfc.addChildsToParentsFromChilds();
 		this.smHelper.print(this.print, "\n");
 
-		
+
 		// 4. Relink childs to parents from all currently indexed parent records:
 		ChildsToParentsFromParents ctpfp = new ChildsToParentsFromParents(this.solrServer, this.timeStamp, this.print);
 		ctpfp.addChildsToParentsFromParents();
 		this.smHelper.print(this.print, "\n");
-		*/
-		
+
+
 		// 5. Linking "other editions":
 		OtherEdition oe = new OtherEdition(this.solrServer, this.timeStamp, this.print);
 		oe.addOtherEditions();
 		this.smHelper.print(this.print, "\n");
-		
-		
+
+
 		if (optimize) {
 			this.smHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");
 			this.smHelper.solrOptimize();

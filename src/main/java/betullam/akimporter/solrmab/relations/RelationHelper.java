@@ -59,6 +59,13 @@ public class RelationHelper {
 	}
 
 	
+	/**
+	 * Getting all records of the current index process that have data about "other editions".
+	 * 
+	 * @param isFirstPage	boolean: "true" if first page of Solr results
+	 * @param lastDocId		String: Doc Id of the last processed Solr document
+	 * @return				SolrDocumentList: List of Solr documents that have data about "other editions"
+	 */
 	public SolrDocumentList getCurrentlyIndexedRecordsWithOtherEdition(boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
@@ -79,23 +86,23 @@ public class RelationHelper {
 		// Filter all records that were indexed with the current import process and that contain other editions
 		if (this.timeStamp != null) {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("otherEditionId_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
+				query.setFilterQueries("otherEdition_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("otherEditionId_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries("otherEdition_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
 			}
 		} else {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("otherEditionId_str_mv:*", "id:*");
+				query.setFilterQueries("otherEdition_str_mv:*", "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("otherEditionId_str_mv:*", "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries("otherEdition_str_mv:*", "id:[" + lastDocId + " TO *]");
 			}
 
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "otherEditionId_str_mv", "otherEditionType_txt_mv", "otherEditionTitle_txt_mv");
+		query.setFields("id", "otherEdition_str_mv");
 
 
 		try {
