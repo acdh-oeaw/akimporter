@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -14,38 +13,38 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
+import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+
 public class OtherEdition {
 
 	private HttpSolrServer solrServerBiblio;
 	private RelationHelper relationHelper;
-	private String timeStamp;
+	private SolrMabHelper smHelper;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private int NO_OF_ROWS = 500;
+	private boolean print = false;
+	private long noOfDocs = 0;
+	private int counter = 0;
+	
 
-	public OtherEdition(HttpSolrServer solrServerBiblio, String timeStamp) {
+	public OtherEdition(HttpSolrServer solrServerBiblio, String timeStamp, boolean print) {
 		this.solrServerBiblio = solrServerBiblio;
-		this.timeStamp = timeStamp;
+		this.print = print;
+		this.smHelper = new SolrMabHelper();
 		this.relationHelper = new RelationHelper(solrServerBiblio, null, timeStamp);
 	}
 
 
 	/**
-	 * 1. Get all records with the field "otherEditionId_str_mv" (RelationHelper -> getCurrentlyIndexedRecordsWithOtherEdition())
-	 * 2. Iterate over these records and use "getOtherEditionRecord" to get the Solr-Record-ID (SYS-No.) of the record for the "other Edition"
-	 * 3. Add the Solr-Record-ID (SYS-No.) to the record with atomic updates.
+	 * Adding link to "other edition" based on the information of the record of the current edition. 
 	 */
-
-
-	/**
-	 * Adding link to other edition based on the information of the record of the current edition. 
-	 */
-	public void addChildsToParentsFromChilds() {
+	public void addOtherEditions() {
 
 		// Get all currently indexed records that are containing data for other editions
 		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedRecordsWithOtherEdition(true, null);
 
 		// Get the number of documents that were found
-		long noOfDocs = queryResults.getNumFound();
+		noOfDocs = queryResults.getNumFound();
 
 		// If there are some records, go on. If not, do nothing.
 		if (queryResults != null && noOfDocs > 0) {
@@ -70,6 +69,11 @@ public class OtherEdition {
 
 				// Add documents to Solr
 				relationHelper.indexDocuments(docsForAtomicUpdates, solrServerBiblio);
+
+				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
+				docsForAtomicUpdates.clear();
+				docsForAtomicUpdates = null;
+				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			}
 
 			// Add documents on the last page:
@@ -81,6 +85,11 @@ public class OtherEdition {
 
 				// Add documents to Solr
 				relationHelper.indexDocuments(docsForAtomicUpdates, solrServerBiblio);
+
+				// Set Collection<SolrInputDocument> to null and then to a fresh Collection
+				docsForAtomicUpdates.clear();
+				docsForAtomicUpdates = null;
+				docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			}
 
 
@@ -118,24 +127,26 @@ public class OtherEdition {
 					String editionId = currentEditionId.toString();
 					String otherEditionSys = getOtherEditionSys(editionId);
 					if (otherEditionSys != null) {
-						
+
 						// Prepare current record for atomic updates:
 						SolrInputDocument atomicUpdateDoc = null;
 						atomicUpdateDoc = new SolrInputDocument();
 						atomicUpdateDoc.setField("id", docId);
-						
+
 						// Add ID (SYS No.) of "other edition" to current record
 						Map<String, String> mapOtherEditionRecrodSys = new HashMap<String, String>();
-						mapOtherEditionRecrodSys.put("add", otherEditionSys);
+						mapOtherEditionRecrodSys.put("set", otherEditionSys);
 						atomicUpdateDoc.setField("otherEditionRecordId_txt_mv", mapOtherEditionRecrodSys);
-						
-						// TODO: GO ON WITH ATOMIC UPDATE HERE!!
+
+						docsForAtomicUpdates.add(atomicUpdateDoc);
 
 					}
 				}
 			}
-			
-			
+
+			counter = counter + 1;
+			this.smHelper.print(this.print, "Linking \"other editions\". Processing record no " + counter  + " of " + noOfDocs + "                                      \r");
+
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

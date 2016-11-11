@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import main.java.betullam.akimporter.solrmab.relations.ChildsToParentsFromChilds;
 import main.java.betullam.akimporter.solrmab.relations.ChildsToParentsFromParents;
+import main.java.betullam.akimporter.solrmab.relations.OtherEdition;
 import main.java.betullam.akimporter.solrmab.relations.ParentToChilds;
 import main.java.betullam.akimporter.solrmab.relations.UnlinkChildsFromParents;
 
@@ -66,6 +67,7 @@ public class Relate {
 		//+++++++++++++++++++++++++++++++++++ RELATE VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 		
+		/*
 		// 1. Linking parents to their childs:
 		ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp, this.print);
 		ptc.addParentsToChilds();
@@ -82,11 +84,17 @@ public class Relate {
 		ChildsToParentsFromChilds ctpfc = new ChildsToParentsFromChilds(this.solrServer, this.timeStamp, this.print);
 		ctpfc.addChildsToParentsFromChilds();
 		this.smHelper.print(this.print, "\n");
-		
+
 		
 		// 4. Relink childs to parents from all currently indexed parent records:
 		ChildsToParentsFromParents ctpfp = new ChildsToParentsFromParents(this.solrServer, this.timeStamp, this.print);
 		ctpfp.addChildsToParentsFromParents();
+		this.smHelper.print(this.print, "\n");
+		*/
+		
+		// 5. Linking "other editions":
+		OtherEdition oe = new OtherEdition(this.solrServer, this.timeStamp, this.print);
+		oe.addOtherEditions();
 		this.smHelper.print(this.print, "\n");
 		
 		

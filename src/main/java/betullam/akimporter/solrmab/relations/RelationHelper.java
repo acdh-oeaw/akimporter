@@ -95,7 +95,7 @@ public class RelationHelper {
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "otherEditionId_str_mv", "acNo_txt", "zdbId_txt");
+		query.setFields("id", "otherEditionId_str_mv", "otherEditionType_txt_mv", "otherEditionTitle_txt_mv");
 
 
 		try {
