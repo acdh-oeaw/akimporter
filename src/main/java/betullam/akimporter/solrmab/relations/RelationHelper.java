@@ -62,11 +62,12 @@ public class RelationHelper {
 	/**
 	 * Getting all records of the current index process that have data about "other editions".
 	 * 
+	 * @param relationType	String: Type of relation to another record: "otherEdition", "attachment" or "attachementTo".
 	 * @param isFirstPage	boolean: "true" if first page of Solr results
 	 * @param lastDocId		String: Doc Id of the last processed Solr document
 	 * @return				SolrDocumentList: List of Solr documents that have data about "other editions"
 	 */
-	public SolrDocumentList getCurrentlyIndexedRecordsWithOtherEdition(boolean isFirstPage, String lastDocId) {
+	public SolrDocumentList getCurrentlyIndexedRecordsWithGenericRelations(String relationType, boolean isFirstPage, String lastDocId) {
 
 		// Set up variable
 		SolrDocumentList queryResult = null;
@@ -83,27 +84,45 @@ public class RelationHelper {
 		// Define a query for getting all documents. We will do a filter query further down because of performance
 		query.setQuery("*:*");
 
-		// Filter all records that were indexed with the current import process and that contain other editions
+		// Define a filter query based on the type of relation
+		String filterQuery = null;
+		List<String> returnFieldsList = new ArrayList<String>();
+		returnFieldsList.add("id");
+		
+		if (relationType.equals("otherEdition")) {
+			filterQuery = "otherEdition_str_mv:*";
+			returnFieldsList.add("otherEdition_str_mv");
+		}
+		if (relationType.equals("attachment")) {
+			filterQuery = "attachment_str_mv:*";
+			returnFieldsList.add("attachment_str_mv");
+		}
+		if (relationType.equals("attachementTo")) {
+			filterQuery = "attachmentTo_str_mv:*";
+			returnFieldsList.add("attachmentTo_str_mv");
+		}
+			
+			
+		// Filter all records that were indexed with the current import process and that contain generic relations to other records
 		if (this.timeStamp != null) {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("otherEdition_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:*");
+				query.setFilterQueries(filterQuery, "indexTimestamp_str:"+this.timeStamp, "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("otherEdition_str_mv:*", "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries(filterQuery, "indexTimestamp_str:"+this.timeStamp, "id:[" + lastDocId + " TO *]");
 			}
 		} else {
 			if (isFirstPage) { // No range filter on first page
-				query.setFilterQueries("otherEdition_str_mv:*", "id:*");
+				query.setFilterQueries(filterQuery, "id:*");
 			} else { // After the first query, we need to use ranges to get the appropriate results
 				query.setStart(1);
-				query.setFilterQueries("otherEdition_str_mv:*", "id:[" + lastDocId + " TO *]");
+				query.setFilterQueries(filterQuery, "id:[" + lastDocId + " TO *]");
 			}
 
 		}
 
 		// Set fields that should be given back from the query
-		query.setFields("id", "otherEdition_str_mv");
-
+		query.setFields(returnFieldsList.toArray(new String[0]));
 
 		try {
 			// Execute query and get results
