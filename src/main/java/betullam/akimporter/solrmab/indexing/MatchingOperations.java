@@ -202,6 +202,9 @@ public class MatchingOperations {
 			boolean allowDuplicates = relevantPropertiesObject.isAllowDuplicates();
 			boolean hasApplyToFields = (relevantPropertiesObject.getApplyToFields() != null && !relevantPropertiesObject.getApplyToFields().isEmpty()) ? true : false;
 
+			
+			
+			
 			// Check if the raw subfield, for which we want to treat it's content (apply rules on it), is listed in the properties object
 			// (which represents a line in mab.properties).
 			// Example:
@@ -359,9 +362,41 @@ public class MatchingOperations {
 						}
 					}
 
-					// Handle connectedSubfields, but only if we do not have a translate value. Translations are treated differently for connectedSubfields.
+					// Handle the combination between connectedSubfields and concatenatedSubfields, but only if we do not have a translate value. Translations are treated differently for connectedSubfields and concatenatedSubfields.
 					// This can only apply to datafields, not to controlfields (they do not have any subfields).
-					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields)) {
+					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields && hasConcatenatedSubfields)) {
+						if (type.equals("datafield")) {
+														
+							// Get concatenated and connected subfields and the separator for concatenated subfiels
+							ArrayList<String> connectedSubfields = getConnectedSubfields(copiedDatafield, relevantPropertiesObject);
+							String concatenatedSubfieldsSeparator = relevantPropertiesObject.getConcatenatedSubfieldsSeparator();
+							ArrayList<String> concatenatedValues = getConcatenatedSubfields(copiedDatafield, relevantPropertiesObject);
+
+							// Iterate over each subfield
+							for (Subfield subfield : copiedDatafield.getSubfields()) {
+								String valueToAdd = null;
+								String rawFieldvalue = subfield.getContent(); // Get the raw field value
+
+								if (concatenatedValues != null) { // Concatenate the subfields
+									String concatenatedValue = StringUtils.join(concatenatedValues, concatenatedSubfieldsSeparator); // Join concatenated value(s) with the given separator character
+									valueToAdd = rawFieldvalue + concatenatedSubfieldsSeparator + concatenatedValue; // Add the standard field value in front of the concatenated value(s), separated by the given separator character
+								} else {
+									valueToAdd = rawFieldvalue; // If there are not values for concatenation, add the original subfield content.
+								}
+								
+								connectedSubfields.add(0, valueToAdd); // Add the concatenated value to the first position of the ArrayList							
+								
+								// Add the connected values (that contains the concatenated value) to Solr
+								for (String connectedSubfieldValue : connectedSubfields) {
+									fieldValues.add(connectedSubfieldValue);
+								}
+							}
+						}
+					}
+					
+					// Handle connectedSubfields (not combined with concatenatedSubfields), but only if we do not have a translate value. Translations are treated differently for connectedSubfields.
+					// This can only apply to datafields, not to controlfields (they do not have any subfields).
+					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields && !hasConcatenatedSubfields)) {
 						if (type.equals("datafield")) {
 							ArrayList<String> connectedSubfields = getConnectedSubfields(copiedDatafield, relevantPropertiesObject);
 							for (Subfield subfield : copiedDatafield.getSubfields()) {
@@ -371,14 +406,13 @@ public class MatchingOperations {
 								for (String connectedSubfieldValue : connectedSubfields) {
 									fieldValues.add(connectedSubfieldValue);
 								}
-
 							}
 						}
 					}
 
-					// Handle concatenatedSubfields, but only if we do not have a translate value. Translations are treated differently for concatenatedSubfields.
+					// Handle concatenatedSubfields (not combined with connectedSubfields), but only if we do not have a translate value. Translations are treated differently for concatenatedSubfields.
 					// This can only apply to datafields, not to controlfields (they do not have any subfields).
-					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConcatenatedSubfields)) {
+					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConcatenatedSubfields && !hasConnectedSubfields)) {
 						if (type.equals("datafield")) {
 
 							Datafield datafieldToUse = copiedDatafield;
