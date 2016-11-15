@@ -223,8 +223,8 @@ public class ChildsToParentsFromChilds {
 								childVolumeNoSort = "0";
 							}
 							String childEdition = (nonDeletedChild.getFieldValue("edition") != null) ? nonDeletedChild.getFieldValue("edition").toString() : "0";
-							String childPublishDate = (nonDeletedChild.getFieldValue("publishDate") != null) ? nonDeletedChild.getFieldValue("publishDate").toString() : "0";
-						
+							String childPublishDate = (nonDeletedChild.getFieldValues("publishDate") != null && !nonDeletedChild.getFieldValues("publishDate").isEmpty()) ? nonDeletedChild.getFieldValues("publishDate").iterator().next().toString() : "0";
+
 							// Add child infos to Lists
 							childTypes.add(childType);
 							childSYSs.add(childSys);
