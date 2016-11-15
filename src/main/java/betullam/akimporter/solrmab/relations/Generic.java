@@ -197,7 +197,8 @@ public class Generic {
 						// The indexing-rules for the mentioned fields should be like this (pay attention to 3rd square bracket of "connectedSubfields"):
 						// otherEdition_str_mv	: 527$**$a, connectedSubfields[p:NoOtherEditionType][n:NoOtherEditionComment][9:NoOtherEditionId], allowDuplicates, multiValued
 						// attachment_str_mv	: 529$**$a, connectedSubfields[p:NoAttachementType][n:NoAttachementComment][9:NoAttachementId], allowDuplicates, multiValued
-						// attachmentTo_str_mv	: 530$**$a, connectedSubfields[p:NoAttachementType][n:NoAttachementComment][9:NoAttachementId], allowDuplicates, multiValued
+						// attachmentTo_str_mv	: 530$**$a, connectedSubfields[p:NoAttachementToType][n:NoAttachementToComment][9:NoAttachementToId], allowDuplicates, multiValued
+
 						String relatedRecordId = (currentRelatedRecord != null) ? currentRelatedRecord.toString() : null;
 						
 						if (relatedRecordId != null) {
