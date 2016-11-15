@@ -39,7 +39,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 public class UnlinkChildsFromParents {
 
@@ -47,7 +47,7 @@ public class UnlinkChildsFromParents {
 	HttpSolrServer solrServer;
 	Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	RelationHelper relationHelper;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	int NO_OF_ROWS = 500;
 	List<String> parentAcs = new ArrayList<String>();
 	boolean print = false;
@@ -241,7 +241,7 @@ public class UnlinkChildsFromParents {
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-				this.smHelper.print(this.print, "Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "                   \r");
+				this.akiHelper.print(this.print, "Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "                   \r");
 			}
 
 		}

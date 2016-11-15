@@ -44,12 +44,12 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 public class AuthorityFlag {
 
 	private RelationHelper relationHelper;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private HttpSolrServer solrServerAuthority;
 	private boolean isAuthUpdate = false;
@@ -99,7 +99,7 @@ public class AuthorityFlag {
 			queryResults.clear();
 			queryResults = null;
 
-			this.smHelper.print(this.print, "Getting distinct authority records ... ");
+			this.akiHelper.print(this.print, "Getting distinct authority records ... ");
 
 			// Calculate the number of solr result pages we need to iterate over
 			long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -123,8 +123,8 @@ public class AuthorityFlag {
 				setGndNos(isFirstPage, lastDocId);
 			}
 
-			this.smHelper.print(this.print, "Done\n");
-			this.smHelper.print(this.print, "Found " + gndIds.size() + " distinct authority records used in bibliograpic index.\n");
+			this.akiHelper.print(this.print, "Done\n");
+			this.akiHelper.print(this.print, "Found " + gndIds.size() + " distinct authority records used in bibliograpic index.\n");
 
 			
 			// Add flag of existance to authority records
@@ -187,7 +187,7 @@ public class AuthorityFlag {
 					}
 				}
 
-				this.smHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                                         \r");
+				this.akiHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                                         \r");
 
 
 				// Add documents from the class variable which was set before to Solr
@@ -220,7 +220,7 @@ public class AuthorityFlag {
 	 */
 	private void deleteAuhtorityWithoutHeading() {
 		try {
-			this.smHelper.print(this.print, "\nDeleting wrong authority records");
+			this.akiHelper.print(this.print, "\nDeleting wrong authority records");
 			solrServerAuthority.deleteByQuery("-heading:*");
 		} catch (SolrServerException e) {
 			e.printStackTrace();
@@ -236,7 +236,7 @@ public class AuthorityFlag {
 	 */
 	private void deleteAuhtorityWithoutFlag() {
 		try {
-			this.smHelper.print(this.print, "\nDeleting authority records without flag of existance.");
+			this.akiHelper.print(this.print, "\nDeleting authority records without flag of existance.");
 			solrServerAuthority.deleteByQuery("-existsInBiblio_str:\"true\"");
 		} catch (SolrServerException e) {
 			e.printStackTrace();

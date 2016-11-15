@@ -27,6 +27,7 @@ package main.java.betullam.akimporter.solrmab;
 
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
+import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.solrmab.relations.ChildsToParentsFromChilds;
 import main.java.betullam.akimporter.solrmab.relations.ChildsToParentsFromParents;
 import main.java.betullam.akimporter.solrmab.relations.Generic;
@@ -37,7 +38,7 @@ public class Relate {
 	
 	HttpSolrServer solrServer = null;
 	String timeStamp = null;
-	private SolrMabHelper smHelper = null;
+	private AkImporterHelper akiHelper = null;
 	boolean optimize = false;
 	boolean print = true;
 	boolean isRelateSuccessful = false;
@@ -55,7 +56,7 @@ public class Relate {
 		this.timeStamp = timeStamp;
 		this.optimize = optimize;
 		this.print = print;
-		smHelper = new SolrMabHelper(solrServer);
+		akiHelper = new AkImporterHelper(solrServer);
 		this.relate();
 	}
 
@@ -71,44 +72,44 @@ public class Relate {
 		// 1. Linking parents to their childs:
 		ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp, this.print);
 		ptc.addParentsToChilds();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 
 
 		// 2. Remove all childs from parents:
 		UnlinkChildsFromParents ucfp = new UnlinkChildsFromParents(this.solrServer, this.timeStamp, this.print);
 		ucfp.unlinkChildsFromParents();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 
 
 		// 3. Relink childs to parents from all currently indexed child records:
 		ChildsToParentsFromChilds ctpfc = new ChildsToParentsFromChilds(this.solrServer, this.timeStamp, this.print);
 		ctpfc.addChildsToParentsFromChilds();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 
 
 		// 4. Relink childs to parents from all currently indexed parent records:
 		ChildsToParentsFromParents ctpfp = new ChildsToParentsFromParents(this.solrServer, this.timeStamp, this.print);
 		ctpfp.addChildsToParentsFromParents();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 
 
 		// 5. Generic linking:
 		Generic gen = null;
 		gen = new Generic(this.solrServer, "otherEdition", this.timeStamp, this.print);
 		gen.addGenericLink();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 		gen = new Generic(this.solrServer, "attachment", this.timeStamp, this.print);
 		gen.addGenericLink();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 		gen = new Generic(this.solrServer, "attachementTo", this.timeStamp, this.print);
 		gen.addGenericLink();
-		this.smHelper.print(this.print, "\n");
+		this.akiHelper.print(this.print, "\n");
 		
 
 
 		if (optimize) {
-			this.smHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");
-			this.smHelper.solrOptimize();
+			this.akiHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");
+			this.akiHelper.solrOptimize();
 		}
 		
 		isRelateSuccessful = true;

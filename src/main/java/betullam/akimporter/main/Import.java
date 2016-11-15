@@ -35,7 +35,6 @@ import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 
 public class Import {
 
@@ -59,7 +58,7 @@ public class Import {
 	private String propertiesFileInfo = null;
 	private long startTime;
 	private long endTime;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 
 	private boolean isMergingSuccessful = false;
 	private boolean hasValidationPassed = false;
@@ -179,13 +178,13 @@ public class Import {
 
 				if (isMergingSuccessful) {
 					pathToMabXmlFile = pathToMergedFile;
-					this.smHelper.print(this.print, "\nMerging into file " + pathToMergedFile + " was successful.\n");
+					this.akiHelper.print(this.print, "\nMerging into file " + pathToMergedFile + " was successful.\n");
 				} else {
 					System.err.println("\nError while merging! Cancelled import process.\n");
 					return;
 				}
 			} else {
-				this.smHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
+				this.akiHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
 				return;
 			}
 		}
@@ -201,12 +200,12 @@ public class Import {
 		if (isValidationOk.equals("V") || isValidationOk.equals("S")) {
 
 			if (isValidationOk.equals("V")) {
-				this.smHelper.print(this.print, "\nStarted validation, please be patient ...");
+				this.akiHelper.print(this.print, "\nStarted validation, please be patient ...");
 				XmlValidator bxh = new XmlValidator();
 				hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
 
 				while (hasValidationPassed == false) {
-					this.smHelper.print(this.print, "\nFound a problem in xml file!");
+					this.akiHelper.print(this.print, "\nFound a problem in xml file!");
 					if (!isWithCliArgs) {
 						isXmlCleanOk = Main.getUserInput("\nDo you want to continue with cleaning the data?"
 								+ " The original data won't be changed. This process can take some time."
@@ -222,19 +221,19 @@ public class Import {
 							pathToMabXmlFile = xmlc.getCleanedFile();
 							isNewXmlFileClean = bxh.validateXML(xmlc.getCleanedFile());
 							if (isNewXmlFileClean == false) {
-								this.smHelper.print(this.print, "\nData could not be cleaned! Cancelled import process.");
+								this.akiHelper.print(this.print, "\nData could not be cleaned! Cancelled import process.");
 								return;
 							} else {
 								hasValidationPassed = true;
 							}
 						} else {
-							this.smHelper.print(this.print, "\nProblem with cleaning the data! Maybe you do not have write permissions"
+							this.akiHelper.print(this.print, "\nProblem with cleaning the data! Maybe you do not have write permissions"
 									+ " to the folder, to which the cleaned data will be written. This is the same as the one of the original file: "
 									+ pathToMabXmlFile);
 							return;
 						}
 					} else {
-						this.smHelper.print(this.print, "\nImport process cancelled as requested by user.");
+						this.akiHelper.print(this.print, "\nImport process cancelled as requested by user.");
 						return;
 					}
 				}
@@ -246,10 +245,10 @@ public class Import {
 
 			if (hasValidationPassed) {
 				if (isValidationOk.equals("V")) {
-					this.smHelper.print(this.print, "\nValidation was successful.");
+					this.akiHelper.print(this.print, "\nValidation was successful.");
 				}
 				if (isValidationOk.equals("S")) {
-					this.smHelper.print(this.print, "\nSkiped validation.");
+					this.akiHelper.print(this.print, "\nSkiped validation.");
 				}
 
 				if (!isWithCliArgs) {
@@ -324,26 +323,26 @@ public class Import {
 					isRelateSuccessful = relate.isRelateSuccessful();
 					
 					if (this.optimize) {
-						this.smHelper = new SolrMabHelper(solrServer);
-						this.smHelper.print(this.print, "\nOptimizing Solr Server. That can take a while ...\n");
-						this.smHelper.solrOptimize();
+						this.akiHelper = new AkImporterHelper(solrServer);
+						this.akiHelper.print(this.print, "\nOptimizing Solr Server. That can take a while ...\n");
+						this.akiHelper.solrOptimize();
 					}
 
 					if (isIndexingSuccessful && isRelateSuccessful) {
 						endTime = System.currentTimeMillis();
-						this.smHelper.print(this.print, "\nDone importing. Everything successful. Execution time: " + this.smHelper.getExecutionTime(startTime, endTime) + "\n");
+						this.akiHelper.print(this.print, "\nDone importing. Everything successful. Execution time: " + this.akiHelper.getExecutionTime(startTime, endTime) + "\n");
 					} else {
 						System.err.println("\nError while importing data.\n");
 						return;
 					}
 				} else {
-					this.smHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
+					this.akiHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
 					return;
 				}
 
 			}
 		} else {
-			this.smHelper.print(this.print, "\nImport process cancelled as requested by user.");
+			this.akiHelper.print(this.print, "\nImport process cancelled as requested by user.");
 			return;
 		}
 

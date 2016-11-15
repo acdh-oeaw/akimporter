@@ -26,6 +26,7 @@ package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
+import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.DmdSec;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.Participant;
 import main.java.betullam.akimporter.solrmab.indexing.MetsRawRecord.StructLink;
@@ -117,6 +119,13 @@ public class MetsContentHandler implements ContentHandler {
 	private Participant participant = null;
 	private List<Participant> participants = null;
 	private List<MetsSolrRecord> metsSolrRecords = null;
+	
+	private AkImporterHelper akiHelper = null;
+	private HashMap<String, String> translateProperties = null;
+
+	
+	// TODO: Do not translate hard-coded! Think about using .properties or .ini files!
+	// Translation files
 
 
 	public MetsContentHandler(HttpSolrServer solrServer, List<String> structElements, String timeStamp, boolean print) {
@@ -125,6 +134,8 @@ public class MetsContentHandler implements ContentHandler {
 		this.timeStamp = timeStamp;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
+		this.akiHelper = new AkImporterHelper(solrServer);
+		this.translateProperties = this.akiHelper.getTranslateProperties("roles.properties", null, true);
 	}
 
 
@@ -496,7 +507,9 @@ public class MetsContentHandler implements ContentHandler {
 		}
 
 		if (isRoleTerm) {
-			participant.setRole(elementContent);
+			String translatedRoleTerm = this.translateProperties.get(elementContent);
+			String roleTerm = (translatedRoleTerm != null) ? translatedRoleTerm : elementContent;
+			participant.setRole(roleTerm);
 		}
 
 		if (isRecordIdentifier && !isRelatedItem) {
@@ -1094,7 +1107,6 @@ public class MetsContentHandler implements ContentHandler {
 					parentUrn = structMapLogical.getContentId();
 					parentLevel = structMapLogical.getLevel();
 					
-					
 					// Check if Solr record for the parent already exists so that we can relate the child
 					// records to it:
 					if (parentAcNoRaw != null) {
@@ -1108,12 +1120,9 @@ public class MetsContentHandler implements ContentHandler {
 						SolrDocument parentRecord = relationHelper.getParentRecord(parentAcNo);
 						parentId = (parentRecord != null && parentRecord.get("id") != null) ? parentRecord.get("id").toString() : null;
 					}
-					
-					
-					
-					
 				}
 
+				
 				// Get the metadata from the metadata section (dmdSec)
 				DmdSec dmdSec = dmdSecs.get(dmdLogId);
 				String urn = null;
@@ -1147,7 +1156,6 @@ public class MetsContentHandler implements ContentHandler {
 					childSortNo = dmdSec.getSortNo();
 
 					// Set metadata to record for Solr
-					
 					metsSolrRecord.setParentId(parentId);
 					metsSolrRecord.setAcNo((childAcNoRaw != null) ? childAcNo : parentAcNo);
 					metsSolrRecord.setAkIdentifier((childAkIdentifier != null) ? childAkIdentifier : parentAkIdentifier);

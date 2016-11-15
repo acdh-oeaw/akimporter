@@ -31,7 +31,6 @@ import java.util.Date;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import main.java.betullam.akimporter.solrmab.Index;
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
@@ -50,7 +49,7 @@ public class Authority {
 	private String timeStamp = null;
 	private boolean print = false;
 	private boolean optimize = false;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 
 
 	/**
@@ -128,11 +127,11 @@ public class Authority {
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, false, print);
 			af.setFlagOfExistance();
 			
-			this.smHelper.print(this.print, "\nDone setting flag of existance to authority records.");
+			this.akiHelper.print(this.print, "\nDone setting flag of existance to authority records.");
 			
 			if (this.merge) {
 				this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
-				this.smHelper.print(this.print, "\nDone merging authority records to bibliographic records.");
+				this.akiHelper.print(this.print, "\nDone merging authority records to bibliographic records.");
 			}
 			
 			returnValue = true;
@@ -166,7 +165,7 @@ public class Authority {
 					this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
 				}
 				
-				this.smHelper.print(this.print, "\nDone indexing authority records.");
+				this.akiHelper.print(this.print, "\nDone indexing authority records.");
 				returnValue = true;
 			} else {
 				System.err.println("Error indexing authority records!");

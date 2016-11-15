@@ -41,6 +41,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import main.java.betullam.akimporter.solrmab.Index;
 
+
 public class MatchingOperations {
 
 	private List<RawRecord> rawRecords;

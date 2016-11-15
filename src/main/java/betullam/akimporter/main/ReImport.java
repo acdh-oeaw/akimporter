@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 
 public class ReImport {
 
@@ -49,7 +48,7 @@ public class ReImport {
 	private String timeStamp = null;
 	private boolean print = false;
 	private boolean optimize = false;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	boolean isReImportingSuccessful = false;
 
 	/**
@@ -84,7 +83,7 @@ public class ReImport {
 		boolean allFilesValid = false;
 
 		if (isValidationOk) {
-			this.smHelper.print(this.print, "\nStart validating all data ...");
+			this.akiHelper.print(this.print, "\nStart validating all data ...");
 			XmlValidator bxh = new XmlValidator();
 
 			for (File file : fileList) {
@@ -101,7 +100,7 @@ public class ReImport {
 
 			// If all files are valid, go on with the import process
 			if (allFilesValid) {
-				this.smHelper.print(this.print, "\nValidation of all data was successful.\n");
+				this.akiHelper.print(this.print, "\nValidation of all data was successful.\n");
 
 				// If there are errors in at lease one file, stop the import process:
 			} else {
@@ -109,7 +108,7 @@ public class ReImport {
 				return;
 			}
 		} else {
-			this.smHelper.print(this.print, "\nSkipped validation!");
+			this.akiHelper.print(this.print, "\nSkipped validation!");
 		}
 
 		// Variables
@@ -135,7 +134,7 @@ public class ReImport {
 			}
 		}
 
-		this.smHelper.print(this.print, propertiesFileInfo + "\n");
+		this.akiHelper.print(this.print, propertiesFileInfo + "\n");
 
 		boolean isIndexingSuccessful = false;
 		boolean isRelateSuccessful = false;
@@ -147,10 +146,10 @@ public class ReImport {
 		for (File file : fileList) {
 			this.timeStamp = String.valueOf(new Date().getTime());
 
-			this.smHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
+			this.akiHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
 			String originalTimestamp = file.getName().replace(".xml", "");
 			String originalUpDate = DateFormatUtils.format(Long.valueOf(originalTimestamp), "dd.MM.yyyy HH:mm:ss");
-			this.smHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
+			this.akiHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
 			
 			// Index metadata to Solr
 			Index index = new Index(file.getAbsolutePath(), this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
@@ -169,11 +168,11 @@ public class ReImport {
 
 		if (isIndexingSuccessful && isRelateSuccessful) {
 			if(this.optimize) {
-				this.smHelper = new SolrMabHelper(this.solrServer);
-				this.smHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
-				this.smHelper.solrOptimize();
+				this.akiHelper = new AkImporterHelper(this.solrServer);
+				this.akiHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
+				this.akiHelper.solrOptimize();
 			}
-			this.smHelper.print(this.print, "\nRe-Importing of ongoing data updates is sucessfully done.\n");
+			this.akiHelper.print(this.print, "\nRe-Importing of ongoing data updates is sucessfully done.\n");
 			this.isReImportingSuccessful = true;
 		} else {
 			System.err.println("\nError while re-importing ongoing data updates!\n");
@@ -212,7 +211,7 @@ public class ReImport {
 			boolean allFilesValid = false;
 
 			if (isValidationOk.equals("V")) {
-				this.smHelper.print(this.print, "\nStart validating data ...");
+				this.akiHelper.print(this.print, "\nStart validating data ...");
 				XmlValidator bxh = new XmlValidator();
 
 				for (File file : fileList) {
@@ -229,7 +228,7 @@ public class ReImport {
 
 				// If all files are valid, go on with the import process
 				if (allFilesValid) {
-					this.smHelper.print(this.print, "\nValidation was successful.\n");
+					this.akiHelper.print(this.print, "\nValidation was successful.\n");
 
 					// If there are errors in at lease one file, stop the import process:
 				} else {
@@ -237,7 +236,7 @@ public class ReImport {
 					return;
 				}
 			} else if (isValidationOk.equals("S")) {
-				this.smHelper.print(this.print, "\nSkipped validation!");
+				this.akiHelper.print(this.print, "\nSkipped validation!");
 			}
 
 			// At this point, all files should have passed the validation process. No, ask the user for the Solr server address:
@@ -296,10 +295,10 @@ public class ReImport {
 				for (File file : fileList) {
 					this.timeStamp = String.valueOf(new Date().getTime());
 
-					this.smHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
+					this.akiHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
 					String originalTimestamp = file.getName().replace(".xml", "");
 					String originalUpDate = DateFormatUtils.format(Long.valueOf(originalTimestamp), "dd.MM.yyyy HH:mm:ss");
-					this.smHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
+					this.akiHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
 					
 					// Index metadata so Solr
 					Index index = new Index(file.getAbsolutePath(), this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
@@ -318,18 +317,18 @@ public class ReImport {
 
 				if (isIndexingSuccessful && isRelateSuccessful) {
 					if(this.optimize) {
-						this.smHelper = new SolrMabHelper(this.solrServer);
-						this.smHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
-						this.smHelper.solrOptimize();
+						this.akiHelper = new AkImporterHelper(this.solrServer);
+						this.akiHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
+						this.akiHelper.solrOptimize();
 					}
-					this.smHelper.print(this.print, "\nImport process was successful.\n");
+					this.akiHelper.print(this.print, "\nImport process was successful.\n");
 					this.isReImportingSuccessful = true;
 				} else {
 					System.err.println("\nError while importing!\n");
 					return;
 				}
 			} else {
-				this.smHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
+				this.akiHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
 				return;
 			}
 

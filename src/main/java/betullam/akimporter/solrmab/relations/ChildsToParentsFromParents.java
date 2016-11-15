@@ -42,7 +42,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 /**
  * Class to link child records to parent records based on the information of the parent record.
@@ -59,7 +59,7 @@ public class ChildsToParentsFromParents {
 	private HttpSolrServer solrServer;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private RelationHelper relationHelper;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private int NO_OF_ROWS = 500;
 	private Set<String> parentSYSs = new HashSet<String>();
 	private boolean print = false;
@@ -279,7 +279,7 @@ public class ChildsToParentsFromParents {
 			}
 
 			counter = counter + 1;
-			this.smHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs + "                              \r");
+			this.akiHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs + "                              \r");
 			
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 

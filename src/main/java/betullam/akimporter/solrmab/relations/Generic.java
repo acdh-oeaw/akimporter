@@ -42,13 +42,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 public class Generic {
 
 	private HttpSolrServer solrServerBiblio;
 	private RelationHelper relationHelper;
-	private SolrMabHelper smHelper;
+	private AkImporterHelper akiHelper;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private int NO_OF_ROWS = 500;
 	private boolean print = false;
@@ -60,7 +60,7 @@ public class Generic {
 		this.solrServerBiblio = solrServerBiblio;
 		this.relationType = relationType;
 		this.print = print;
-		this.smHelper = new SolrMabHelper();
+		this.akiHelper = new AkImporterHelper();
 		this.relationHelper = new RelationHelper(solrServerBiblio, null, timeStamp);
 	}
 
@@ -228,7 +228,7 @@ public class Generic {
 			}
 
 			counter = counter + 1;
-			this.smHelper.print(this.print, "Linking \"" + consoleDisplayText + "\". Processing record no " + counter  + " of " + noOfDocs + "                                      \r");
+			this.akiHelper.print(this.print, "Linking \"" + consoleDisplayText + "\". Processing record no " + counter  + " of " + noOfDocs + "                                      \r");
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

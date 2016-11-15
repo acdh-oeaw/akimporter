@@ -33,9 +33,9 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlValidator;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.solrmab.Index;
 import main.java.betullam.akimporter.solrmab.Relate;
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
@@ -66,7 +66,7 @@ public class Updater {
 		String timeStamp = String.valueOf(new Date().getTime());
 		boolean useDefaultMabProperties = (defaultMabProperties) ? true : false;
 		String pathToMabPropertiesFile = (defaultMabProperties) ? null : pathToCustomMabProps;
-		SolrMabHelper smHelper = new SolrMabHelper(solrServerBiblio);
+		AkImporterHelper akiHelper = new AkImporterHelper(solrServerBiblio);
 		String localPathOriginal = stripFileSeperatorFromPath(localPath) + File.separator + "original" + File.separator + timeStamp;
 		String localPathExtracted = stripFileSeperatorFromPath(localPath) + File.separator + "extracted" + File.separator + timeStamp;
 		String localPathMerged = stripFileSeperatorFromPath(localPath) + File.separator + "merged" + File.separator + timeStamp;
@@ -74,9 +74,8 @@ public class Updater {
 		mkDirIfNoExists(localPathExtracted);
 		mkDirIfNoExists(localPathMerged);
 
-
-		smHelper.print(print, "\n-------------------------------------------");
-		smHelper.print(print, "\nUpdate starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(timeStamp))));
+		akiHelper.print(print, "\n-------------------------------------------");
+		akiHelper.print(print, "\nUpdate starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(timeStamp))));
 
 		FtpDownload ftpDownload = new FtpDownload();
 		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, print);
@@ -84,23 +83,23 @@ public class Updater {
 		if (isDownloadSuccessful) {
 
 			// Extract downloaded .tar.gz file(s):
-			smHelper.print(print, "Extracting downloaded files to "+localPathExtracted+" ... ");
+			akiHelper.print(print, "Extracting downloaded files to "+localPathExtracted+" ... ");
 			ExtractTarGz etg = new ExtractTarGz();
 			etg.extractTarGz(localPathOriginal, timeStamp, localPathExtracted);
-			smHelper.print(print, "Done");
+			akiHelper.print(print, "Done");
 
 			// Merge extracted files from downloaded .tar.gz file(se):
-			smHelper.print(print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
+			akiHelper.print(print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
 			String pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
 			xmlm.mergeElements(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
-			smHelper.print(print, "Done");
+			akiHelper.print(print, "Done");
 
 			// Validate merged XML file:
-			smHelper.print(print, "\nValidating merged file ... ");
+			akiHelper.print(print, "\nValidating merged file ... ");
 			XmlValidator bxh = new XmlValidator();
 			boolean hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
-			smHelper.print(print, "Done");
+			akiHelper.print(print, "Done");
 
 			// Index XML file:
 			if (hasValidationPassed) {
@@ -108,65 +107,65 @@ public class Updater {
 				if (useDefaultMabProperties) {
 					pathToMabPropertiesFile = "/main/resources/mab.properties";
 					directoryOfTranslationFiles = "/main/resources";
-					smHelper.print(print, "\nUse default mab.properties file for indexing.");
+					akiHelper.print(print, "\nUse default mab.properties file for indexing.");
 				} else {
 					directoryOfTranslationFiles = new File(pathToMabPropertiesFile).getParent();
-					smHelper.print(print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
+					akiHelper.print(print, "\nUse custom mab.properties file for indexing: " + pathToMabPropertiesFile);
 				}
 
-				smHelper.print(print, "\nStart indexing ... ");
+				akiHelper.print(print, "\nStart indexing ... ");
 
 				// Index metadata so Solr
 				Index index = new Index(pathToMabXmlFile, solrServerBiblio, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, timeStamp, false, false);
 				boolean isIndexingSuccessful = index.isIndexingSuccessful();
 
 				if (isIndexingSuccessful) {
-					smHelper.print(print, "Done");
+					akiHelper.print(print, "Done");
 				}
 
-				smHelper.print(print, "\nStart linking parent and child records ... ");
+				akiHelper.print(print, "\nStart linking parent and child records ... ");
 
 				// Connect child and parent volumes:
 				Relate relate = new Relate(solrServerBiblio, timeStamp, false, false);
 				boolean isRelateSuccessful = relate.isRelateSuccessful();
 
 				if (isRelateSuccessful) {
-					smHelper.print(print, "Done");
+					akiHelper.print(print, "Done");
 				}
 
 				if (authFlagOnly) {
-					smHelper.print(print, "\nStart setting flags of existance to authority records ... ");
+					akiHelper.print(print, "\nStart setting flags of existance to authority records ... ");
 					AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false, false);
 					af.setFlagOfExistance();
-					smHelper.print(print, "Done");
+					akiHelper.print(print, "Done");
 				}
 
 				if (authMerge) {
-					smHelper.print(print, "\nStart merging authority records to bibliographic records ... ");
+					akiHelper.print(print, "\nStart merging authority records to bibliographic records ... ");
 					// If -f is not set, we should set flag of existance to authority anyway!
 					if (!authFlagOnly) {
-						smHelper.print(print, "\nStart setting flags of existance to authority records ... ");
+						akiHelper.print(print, "\nStart setting flags of existance to authority records ... ");
 						AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, timeStamp, false, false);
 						af.setFlagOfExistance();
-						smHelper.print(print, "Done");
+						akiHelper.print(print, "Done");
 					}
 					AuthorityMerge ai = new AuthorityMerge(solrServerBiblio, solrServerAuth, timeStamp, false, false);
 					ai.mergeAuthorityToBiblio(entities);
-					smHelper.print(print, "Done");
+					akiHelper.print(print, "Done");
 				}
 
 				if (optimize) {
-					smHelper.print(print, "\nOptimizing Solr Server ... ");
-					smHelper.solrOptimize();
-					smHelper.print(print, "Done");
+					akiHelper.print(print, "\nOptimizing Solr Server ... ");
+					akiHelper.solrOptimize();
+					akiHelper.print(print, "Done");
 				}
 
 
 				if (isIndexingSuccessful && isRelateSuccessful) {
-					smHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL!");
+					akiHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL!");
 					isUpdateSuccessful = true;
 				} else {
-					smHelper.print(print, "\nError while importing!\n");
+					akiHelper.print(print, "\nError while importing!\n");
 					isUpdateSuccessful = false;
 				}
 
@@ -178,7 +177,7 @@ public class Updater {
 			isUpdateSuccessful = false;
 		}
 
-		smHelper.print(print, "\n-------------------------------------------");
+		akiHelper.print(print, "\n-------------------------------------------");
 		return isUpdateSuccessful;
 
 	}

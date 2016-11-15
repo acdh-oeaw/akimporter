@@ -26,7 +26,6 @@
 package main.java.betullam.akimporter.solrmab;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -48,6 +47,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
+import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.main.Main;
 import main.java.betullam.akimporter.solrmab.indexing.Controlfield;
 import main.java.betullam.akimporter.solrmab.indexing.Datafield;
@@ -71,7 +71,7 @@ public class Index {
 	private long endTime;
 	boolean optimizeSolr = true;
 	private String timeStamp = null;
-	private SolrMabHelper smHelper = null;
+	private AkImporterHelper akiHelper = null;
 	private boolean isIndexingSuccessful = false;
 	public static List<SolrField> customTextFields = new ArrayList<SolrField>();
 	private boolean indexSampleData = false;
@@ -86,7 +86,7 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
-		this.smHelper = new SolrMabHelper(solrServer);
+		this.akiHelper = new AkImporterHelper(solrServer);
 
 		this.startIndexing();
 	};
@@ -101,7 +101,7 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
-		this.smHelper = new SolrMabHelper(solrServer);
+		this.akiHelper = new AkImporterHelper(solrServer);
 
 		this.startIndexing();
 	};
@@ -144,14 +144,13 @@ public class Index {
 				inputSource = new InputSource(reader);
 			}
 			
-
 			// Set ContentHandler:
 			MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.timeStamp, this.print);
 			xmlReader.setContentHandler(marcContentHandler);
 
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
-			this.smHelper.print(print, "\n");
+			this.akiHelper.print(print, "\n");
 
 			// Commit records:
 			this.solrServer.commit();
@@ -159,12 +158,12 @@ public class Index {
 			isIndexingSuccessful = true;
 
 			if (optimizeSolr) {
-				this.smHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
-				this.smHelper.solrOptimize();
-				this.smHelper.print(print, "Done optimizing Solr index.\n");
+				this.akiHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
+				this.akiHelper.solrOptimize();
+				this.akiHelper.print(print, "Done optimizing Solr index.\n");
 			}
 			endTime = System.currentTimeMillis();
-			smHelper.print(print, "Done indexing to Solr. Execution time: " + smHelper.getExecutionTime(startTime, endTime) + "\n\n");
+			akiHelper.print(print, "Done indexing to Solr. Execution time: " + akiHelper.getExecutionTime(startTime, endTime) + "\n\n");
 
 			isIndexingSuccessful = true;
 
@@ -450,7 +449,7 @@ public class Index {
 						Matcher matcher = pattern.matcher(translateConnectedSubfieldsString);
 						translateConnectedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 						if (translateConnectedSubfieldsFilename != null) {
-							translateConnectedSubfieldsProperties = getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles);
+							translateConnectedSubfieldsProperties = this.akiHelper.getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles, useDefaultMabProperties);
 						}
 					}
 				}
@@ -507,7 +506,7 @@ public class Index {
 						Matcher matcher = pattern.matcher(translateConcatenatedSubfieldsString);
 						translateConcatenatedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 						if (translateConcatenatedSubfieldsFilename != null) {
-							translateConcatenatedSubfieldsProperties = getTranslateProperties(translateConcatenatedSubfieldsFilename, pathToTranslationFiles);
+							translateConcatenatedSubfieldsProperties = this.akiHelper.getTranslateProperties(translateConcatenatedSubfieldsFilename, pathToTranslationFiles, useDefaultMabProperties);
 						}
 					}
 				}
@@ -666,7 +665,7 @@ public class Index {
 					if (filename != null) {
 
 						// Get the mapping values from .properties file:
-						translateProperties = getTranslateProperties(filename, pathToTranslationFiles);
+						translateProperties = this.akiHelper.getTranslateProperties(filename, pathToTranslationFiles, useDefaultMabProperties);
 
 						// Get the count of characters that should be matched (e. g. 051[1-3]: get 1 and 3) and add it to a List<String>.
 						// Then add everything to a HashMap<String, List<String>>.
@@ -823,6 +822,7 @@ public class Index {
 	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
 	 * @return							A HashMap<String, String> representing the rules defined in a translation file.
 	 */
+	/*
 	private HashMap<String, String> getTranslateProperties(String filename, String pathToTranslationFiles) {
 
 		HashMap<String, String> translateProperties = new HashMap<String, String>();
@@ -855,6 +855,7 @@ public class Index {
 
 		return translateProperties;
 	}
+	*/
 
 
 	/**

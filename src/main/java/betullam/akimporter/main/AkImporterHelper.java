@@ -22,8 +22,12 @@
  * @license  http://www.gnu.org/licenses/gpl-3.0.html
  * @link     http://wien.arbeiterkammer.at/service/bibliothek/
  */
-package main.java.betullam.akimporter.solrmab;
+package main.java.betullam.akimporter.main;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +35,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -40,7 +45,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-public class SolrMabHelper {
+public class AkImporterHelper {
 
 	private HttpSolrServer solrServer = null;
 	private String timeStamp = null;
@@ -48,12 +53,53 @@ public class SolrMabHelper {
 	private int INDEX_RATE = 500;
 	private Collection<SolrInputDocument> docsForAtomicUpdates;
 
-	public SolrMabHelper() {}
+	public AkImporterHelper() {}
 
-	public SolrMabHelper(HttpSolrServer solrServer) {
+	public AkImporterHelper(HttpSolrServer solrServer) {
 		this.solrServer = solrServer;
 	}
 
+	
+	/**
+	 * Getting the rules defined in a translation file.
+	 * 
+	 * @param filename					File name of the translation file.
+	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
+	 * @return							A HashMap<String, String> representing the rules defined in a translation file.
+	 */
+	public HashMap<String, String> getTranslateProperties(String filename, String pathToTranslationFiles, boolean useDefaultProperties) {
+
+		HashMap<String, String> translateProperties = new HashMap<String, String>();
+
+		Properties properties = new Properties();
+		String translationFile = pathToTranslationFiles + File.separator + filename;
+		BufferedInputStream translationStream = null;
+
+		try {
+			// Get .properties file and load contents:
+			if (useDefaultProperties) {
+				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
+			} else {
+				translationStream = new BufferedInputStream(new FileInputStream(translationFile));
+			}
+			properties.load(translationStream);
+			translationStream.close();
+		} catch (FileNotFoundException e) {
+			System.err.println("Error: File not found! Please check if the file \"" + translationFile + "\" is in the same directory as mab.properties.\n");
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		for (Map.Entry<?, ?> property : properties.entrySet()) {
+			String key = (String)property.getKey();
+			String value = (String)property.getValue();
+			translateProperties.put(key, value);
+		}
+
+		return translateProperties;
+	}
+	
 
 	/**
 	 * De-duplicate multivalued Solr fields with atomic updates.

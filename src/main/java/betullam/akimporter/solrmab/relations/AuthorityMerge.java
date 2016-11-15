@@ -44,13 +44,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 public class AuthorityMerge {
 
 
 	private RelationHelper relationHelper;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private HttpSolrServer solrServerBiblio;
 	private HttpSolrServer solrServerAuth;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
@@ -118,7 +118,7 @@ public class AuthorityMerge {
 				queryResults.clear();
 				queryResults = null;
 
-				this.smHelper.print(this.print, "\nGetting " + noOfDocs + " records with " + ent + " GND IDs ... \n");
+				this.akiHelper.print(this.print, "\nGetting " + noOfDocs + " records with " + ent + " GND IDs ... \n");
 
 				// Calculate the number of solr result pages we need to iterate over
 				long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -160,7 +160,7 @@ public class AuthorityMerge {
 					addAuthInfoToBiblio(biblioRecords, currentEntity, currentEntitySolrFields);
 				}
 
-				this.smHelper.print(this.print, "\nDone");
+				this.akiHelper.print(this.print, "\nDone");
 
 				try {
 					// Commit the changes to Solr
@@ -323,7 +323,7 @@ public class AuthorityMerge {
 					}
 				}
 				
-				this.smHelper.print(this.print, "Integrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords + "                                   \r");
+				this.akiHelper.print(this.print, "Integrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords + "                                   \r");
 
 				// Add documents from the class variable which was set before to Solr
 				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr

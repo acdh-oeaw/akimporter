@@ -42,7 +42,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 public class ChildsToParentsFromChilds {
 
@@ -50,7 +50,7 @@ public class ChildsToParentsFromChilds {
 	private HttpSolrServer solrServer;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private RelationHelper relationHelper;
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private int NO_OF_ROWS = 500;
 	private int CHILD_INDEX_RATE = 250;
 	private Set<String> parentSYSs = new HashSet<String>();
@@ -294,7 +294,7 @@ public class ChildsToParentsFromChilds {
 				}
 
 
-				this.smHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
+				this.akiHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
 			}
 		}
 	}

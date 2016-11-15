@@ -36,11 +36,10 @@ import org.apache.commons.io.FileUtils;
 
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlSplitter;
-import main.java.betullam.akimporter.solrmab.SolrMabHelper;
 
 public class Consolidate {
 
-	private SolrMabHelper smHelper = new SolrMabHelper();
+	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private String pathToInitialDataset = null;
 	private String pathToUpdateDir = null;
 	private String pathToConsolidatedFile = null;
@@ -84,7 +83,7 @@ public class Consolidate {
 
 		// Split XMLs. Older records will be overwritten by newer records:
 		for (File fileForSplitting : filesForSplitting) {
-			this.smHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
+			this.akiHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
 			Map<String, String> condAttrs = new HashMap<String, String>();
 			condAttrs.put("tag", "SYS");
 			xmls.split(fileForSplitting.getAbsolutePath(), "record", 0, "controlfield", condAttrs);
@@ -97,7 +96,7 @@ public class Consolidate {
 		boolean isMergingSuccessful = xmlm.mergeElements(pathToSplittedFilesDir, this.pathToConsolidatedFile, "collection", "record", 0);
 
 		if (isMergingSuccessful) {
-			this.smHelper.print(this.print, "\nConsolidating data into file " + this.pathToConsolidatedFile + " was successful.\n");
+			this.akiHelper.print(this.print, "\nConsolidating data into file " + this.pathToConsolidatedFile + " was successful.\n");
 		} else {
 			System.err.println("\nError while consolidating! Cancelled process.\n");
 			return;
