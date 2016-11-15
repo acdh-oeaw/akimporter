@@ -68,7 +68,7 @@ public class Generic {
 	/**
 	 * Adding link to related records based on the information of the current indexed record. 
 	 */
-	public void addOtherEditions() {
+	public void addGenericLink() {
 
 		// Get all currently indexed records that are containing data for generic related records
 		SolrDocumentList queryResults = relationHelper.getCurrentlyIndexedRecordsWithGenericRelations(relationType, true, null);

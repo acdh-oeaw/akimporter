@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import main.java.betullam.akimporter.solrmab.relations.ChildsToParentsFromChilds;
 import main.java.betullam.akimporter.solrmab.relations.ChildsToParentsFromParents;
-import main.java.betullam.akimporter.solrmab.relations.OtherEdition;
+import main.java.betullam.akimporter.solrmab.relations.Generic;
 import main.java.betullam.akimporter.solrmab.relations.ParentToChilds;
 import main.java.betullam.akimporter.solrmab.relations.UnlinkChildsFromParents;
 
@@ -92,10 +92,18 @@ public class Relate {
 		this.smHelper.print(this.print, "\n");
 
 
-		// 5. Linking "other editions":
-		OtherEdition oe = new OtherEdition(this.solrServer, this.timeStamp, this.print);
-		oe.addOtherEditions();
+		// 5. Generic linking:
+		Generic gen = null;
+		gen = new Generic(this.solrServer, "otherEdition", this.timeStamp, this.print);
+		gen.addGenericLink();
 		this.smHelper.print(this.print, "\n");
+		gen = new Generic(this.solrServer, "attachment", this.timeStamp, this.print);
+		gen.addGenericLink();
+		this.smHelper.print(this.print, "\n");
+		gen = new Generic(this.solrServer, "attachementTo", this.timeStamp, this.print);
+		gen.addGenericLink();
+		this.smHelper.print(this.print, "\n");
+		
 
 
 		if (optimize) {
