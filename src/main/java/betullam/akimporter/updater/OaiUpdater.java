@@ -41,7 +41,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -61,6 +63,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.w3c.dom.Document;
+import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -72,6 +75,7 @@ import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.main.Authority;
 import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.indexing.MetsContentHandler;
+import main.java.betullam.akimporter.solrmab.indexing.XmlContentHandler;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityFlag;
 import main.java.betullam.akimporter.solrmab.relations.AuthorityMerge;
 
@@ -107,27 +111,43 @@ public class OaiUpdater {
 			
 			// Creating instance of AkImporterHelper
 			akiHelper = new AkImporterHelper(sServerBiblio);
-			
+			/*
 			akiHelper.print(print, "\n-------------------------------------------");
 			akiHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
-			 
-			// First start of downloading and mergeing XML files from OAI interface:
+			
+			// Start downloading and merging XML files from OAI interface
 			String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
 			
 			// Create InputSource from XML file
 			FileReader xmlData = new FileReader(mergedOaiDataFileName);
 			InputSource inputSource = new InputSource(xmlData);
+			*/
 			
-			// Create content handler for Mets/Mods data
-			MetsContentHandler metsContentHandler = new MetsContentHandler(sServerBiblio, structElements, strIndexTimestamp, print);
+			// TESTING SSOAR - BEGIN
+			FileReader xmlData = new FileReader("/home/betullam/AK/AKsearch/AkImporterBinary/Releases/dev/beispiele/SSOAR_oai_genios.xml");
+			InputSource inputSource = new InputSource(xmlData);
+			// TESTING SSOAR - END
+			
+			// Create variable for content handler
+			ContentHandler contentHandler = null;
+			
+			if (format.contains("mets")) {
+				// Create content handler for Mets/Mods data (e. g. from Goobi)
+				//MetsContentHandler metsContentHandler = new MetsContentHandler(sServerBiblio, structElements, strIndexTimestamp, print);
+				contentHandler = new MetsContentHandler(sServerBiblio, structElements, strIndexTimestamp, print);
+			} else {
+				// Create content handler for generic XML data (e. g. from SSOAR)
+				contentHandler = new XmlContentHandler(sServerBiblio, elementsToMerge, oaiPropertiesFile, strIndexTimestamp, print);
+			}
 			
 			// Create SAX parser and set content handler:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
-			xmlReader.setContentHandler(metsContentHandler);
+			xmlReader.setContentHandler(contentHandler);
 			
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
 
+			/*
 			// Connect child and parent volumes:
 			akiHelper.print(print, "\nStart linking parent and child records ... ");
 			Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
@@ -141,6 +161,7 @@ public class OaiUpdater {
 				akiHelper.solrOptimize();
 				akiHelper.print(print, "Done");
 			}
+			*/
 		
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -225,6 +246,9 @@ public class OaiUpdater {
 	}
 
 
+	
+	
+	
 	/**
 	 * Downloads, saves and merges data from an OAI interface.
 	 * 

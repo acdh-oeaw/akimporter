@@ -449,7 +449,7 @@ public class Index {
 						Matcher matcher = pattern.matcher(translateConnectedSubfieldsString);
 						translateConnectedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 						if (translateConnectedSubfieldsFilename != null) {
-							translateConnectedSubfieldsProperties = this.akiHelper.getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles, useDefaultMabProperties);
+							translateConnectedSubfieldsProperties = AkImporterHelper.getTranslateProperties(translateConnectedSubfieldsFilename, pathToTranslationFiles, useDefaultMabProperties);
 						}
 					}
 				}
@@ -506,7 +506,7 @@ public class Index {
 						Matcher matcher = pattern.matcher(translateConcatenatedSubfieldsString);
 						translateConcatenatedSubfieldsFilename = (matcher.find()) ? matcher.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
 						if (translateConcatenatedSubfieldsFilename != null) {
-							translateConcatenatedSubfieldsProperties = this.akiHelper.getTranslateProperties(translateConcatenatedSubfieldsFilename, pathToTranslationFiles, useDefaultMabProperties);
+							translateConcatenatedSubfieldsProperties = AkImporterHelper.getTranslateProperties(translateConcatenatedSubfieldsFilename, pathToTranslationFiles, useDefaultMabProperties);
 						}
 					}
 				}
@@ -665,7 +665,7 @@ public class Index {
 					if (filename != null) {
 
 						// Get the mapping values from .properties file:
-						translateProperties = this.akiHelper.getTranslateProperties(filename, pathToTranslationFiles, useDefaultMabProperties);
+						translateProperties = AkImporterHelper.getTranslateProperties(filename, pathToTranslationFiles, useDefaultMabProperties);
 
 						// Get the count of characters that should be matched (e. g. 051[1-3]: get 1 and 3) and add it to a List<String>.
 						// Then add everything to a HashMap<String, List<String>>.

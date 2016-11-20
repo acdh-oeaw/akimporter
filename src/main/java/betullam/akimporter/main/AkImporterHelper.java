@@ -67,7 +67,7 @@ public class AkImporterHelper {
 	 * @param pathToTranslationFiles	Path to the directory where the translation files are stored.
 	 * @return							A HashMap<String, String> representing the rules defined in a translation file.
 	 */
-	public HashMap<String, String> getTranslateProperties(String filename, String pathToTranslationFiles, boolean useDefaultProperties) {
+	public static HashMap<String, String> getTranslateProperties(String filename, String pathToTranslationFiles, boolean useDefaultProperties) {
 
 		HashMap<String, String> translateProperties = new HashMap<String, String>();
 

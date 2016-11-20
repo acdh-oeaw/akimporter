@@ -28,6 +28,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -37,6 +38,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
@@ -60,8 +62,13 @@ import org.apache.logging.log4j.status.StatusLogger;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 import main.java.betullam.akimporter.solrmab.Relate;
+import main.java.betullam.akimporter.solrmab.indexing.XmlContentHandler;
 import main.java.betullam.akimporter.updater.OaiUpdater;
 import main.java.betullam.akimporter.updater.Updater;
 
@@ -78,8 +85,8 @@ import main.java.betullam.akimporter.updater.Updater;
 public class Main {
 
 	// General
-	static String pathToAkImporterJar = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath(); // Path to AkImporter.jar
-	static String akImporterExecutionPath = new File(pathToAkImporterJar).getParent(); // AkImporter.jar execution path
+	public static String pathToAkImporterJar = Main.class.getProtectionDomain().getCodeSource().getLocation().getPath(); // Path to AkImporter.jar
+	public static String akImporterExecutionPath = new File(pathToAkImporterJar).getParent(); // AkImporter.jar execution path
 	static boolean optimize = false;
 	static boolean print = false;
 	static boolean test = false;
@@ -179,57 +186,7 @@ public class Main {
 			switch (selectedMainOption) {
 
 			case "k": { // FOR TESTING ONLY
-				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
-
-				/*
-				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - BEGIN
-				System.out.println("Start re-importing ongoing data updates ...");
-				// Start import process of ongoing updates (from "merged data" directory):				
-				ReImport reImport = new ReImport(print, optimize);
-				reImport.reImportOngoing(
-						uLocalPath,
-						iValidation,
-						uSolr,
-						uDefaultMabProperties,
-						uCustomMabProperties
-						);
-
-				// TODO: Do not use static variable in Index class for customTextFields!
-				//       As long as we do it, we will have to reset it after each "new Index()" call if we start a second one.
-				Index.customTextFields = new ArrayList<Mabfield>();
-				// To be sure to have no bugs, reset also other static variables
-				Index.multiValuedFields = new ArrayList<String>();
-				Index.translateFields = new HashMap<String, List<String>>();
-
-				// Start authority merge
-				Authority auth = new Authority(
-						flag,
-						merge,
-						aMergeEntities,
-						aPath,
-						aDefaultMabProperties,
-						aCustomMabProperties,
-						aSolrAuth,
-						aSolrBibl,
-						null,
-						print,
-						optimize
-						);
-				auth.indexAuthority();
-				 */
-				// TEST INDEXING PART OF DATE (E. G. UPDATE) AND AUTHORITY INTEGRATION FOR ONLY THIS PART (WITH TIMESTAMP) - END
-
-
-				/*
-				// Test case-insensitivity flag for regex:
-				String testString = "Der Teststring";
-				String strPattern = "^(?iu)(\")?(\\.\\.\\.*\\s*)?(<.*?>)?(der|die[sermn]*|das|den|dem|ein[esrmn]*|a|the|ein|il|le|el|le[s]*)*[^\\w\\d\\$§@\u20ACöäüß]*[^\\w\\d\\$§@\u20ACöäüß]";
-				Pattern pattern = java.util.regex.Pattern.compile(strPattern); // Get everything between square brackets and the brackets themselve (we will remove them later)
-				Matcher matcher = pattern.matcher(testString);
-				String result = (matcher.find()) ? matcher.group().replace("[", "").replace("]", "").trim() : null;
-				System.out.println(result);
-				 */
-
+				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");				
 				break;
 			}
 
@@ -571,7 +528,7 @@ public class Main {
 				String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
 				String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
 				int elementsToMergeLevel = Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel"));
-				List<String> structElements = Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*"));
+				List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
 				
 				/*
 				System.out.println("OAI oaiUrl: " + oaiUrl);
