@@ -12,10 +12,12 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Document;
 
 public class Rules {
 
 	public static String oaiPropertiesFilePath;
+	public static Document document;
 	private static String[] dataRuleNames = new String[] {
 			"multiValued",
 			"customText",
@@ -40,7 +42,7 @@ public class Rules {
 
 
 	public static List<String> applyDataRules(String value, List<String> dataRules) {
-		List<String> treatedValues = null;
+		List<String> treatedValues = new ArrayList<String>();
 		String treatedValue = null;
 		
 		for (String dataRule : dataRules) {
@@ -60,12 +62,14 @@ public class Rules {
 			}
 		}
 		
+		if (treatedValues.isEmpty()) {
+			treatedValues = null;
+		}
+		
 		return treatedValues;
 	}
 
 	public static List<PropertyBag> getPropertyBags(String oaiPropertiesFile) {
-		String oaiPropertiesFileParentPath = new File(oaiPropertiesFile).getParent();
-		setOaiPropertiesFilePath(oaiPropertiesFileParentPath);
 		
 		List<PropertyBag> propertyBags = new ArrayList<PropertyBag>();
 		Map<String, String> propertiesAsMap = getPropertiesAsMap(oaiPropertiesFile);
@@ -179,7 +183,16 @@ public class Rules {
 
 	public static void setOaiPropertiesFilePath(String oaiPropertiesFilePath) {
 		Rules.oaiPropertiesFilePath = oaiPropertiesFilePath;
-	}	
+	}
+
+	public static Document getDocument() {
+		return document;
+	}
+
+	public static void setDocument(Document document) {
+		Rules.document = document;
+	}
+	
 }
 
 

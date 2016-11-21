@@ -1,5 +1,6 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ public class XmlContentHandler implements ContentHandler {
 		this.timeStamp = timeStamp;
 		this.print = print;
 		this.propertyBags = Rules.getPropertyBags(oaiPropertiesFile);
+		Rules.setOaiPropertiesFilePath(new File(oaiPropertiesFile).getParent());
 	}
 
 	@Override
@@ -126,6 +128,7 @@ public class XmlContentHandler implements ContentHandler {
 	private XmlSolrRecord getXmlSolrRecord(String xmlRecord) {
 		XmlSolrRecord xmlSolrRecord = new XmlSolrRecord();
 		Document document = getDomDocument(xmlRecord);
+		Rules.setDocument(document);
 
 		XmlParser xmlParser = new XmlParser();
 
@@ -140,7 +143,7 @@ public class XmlContentHandler implements ContentHandler {
 			List<String> dataRules = propertyBag.getDataRules();
 
 			for (String dataField : dataFields) {
-				String treatedValue = null;
+				List<String> treatedValue = null;
 				if (dataRules.contains("customText")) {
 					// It's not an xPath but a custom text
 					treatedValue = Rules.applyDataRules(dataField, dataRules);
