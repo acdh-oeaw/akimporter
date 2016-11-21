@@ -1,4 +1,4 @@
-package main.java.betullam.akimporter.Rules;
+package main.java.betullam.akimporter.rules;
 
 public class CustomText {
 

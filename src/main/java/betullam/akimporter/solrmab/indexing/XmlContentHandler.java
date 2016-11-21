@@ -21,8 +21,8 @@ import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
 import ak.xmlhelper.XmlParser;
-import main.java.betullam.akimporter.Rules.PropertyBag;
-import main.java.betullam.akimporter.Rules.Rules;
+import main.java.betullam.akimporter.rules.PropertyBag;
+import main.java.betullam.akimporter.rules.Rules;
 
 public class XmlContentHandler implements ContentHandler {
 

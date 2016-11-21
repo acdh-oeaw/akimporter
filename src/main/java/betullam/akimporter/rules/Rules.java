@@ -1,4 +1,4 @@
-package main.java.betullam.akimporter.Rules;
+package main.java.betullam.akimporter.rules;
 
 import java.io.BufferedInputStream;
 import java.io.File;
