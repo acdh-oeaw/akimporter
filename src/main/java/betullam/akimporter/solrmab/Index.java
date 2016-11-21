@@ -71,7 +71,6 @@ public class Index {
 	private long endTime;
 	boolean optimizeSolr = true;
 	private String timeStamp = null;
-	private AkImporterHelper akiHelper = null;
 	private boolean isIndexingSuccessful = false;
 	public static List<SolrField> customTextFields = new ArrayList<SolrField>();
 	private boolean indexSampleData = false;
@@ -86,7 +85,6 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
-		this.akiHelper = new AkImporterHelper(solrServer);
 
 		this.startIndexing();
 	};
@@ -101,7 +99,6 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
-		this.akiHelper = new AkImporterHelper(solrServer);
 
 		this.startIndexing();
 	};
@@ -150,7 +147,7 @@ public class Index {
 
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
-			this.akiHelper.print(print, "\n");
+			AkImporterHelper.print(print, "\n");
 
 			// Commit records:
 			this.solrServer.commit();
@@ -158,12 +155,12 @@ public class Index {
 			isIndexingSuccessful = true;
 
 			if (optimizeSolr) {
-				this.akiHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
-				this.akiHelper.solrOptimize();
-				this.akiHelper.print(print, "Done optimizing Solr index.\n");
+				AkImporterHelper.print(print, "Start optimizing Solr index. This could take a while. Please wait ...\n");
+				AkImporterHelper.solrOptimize(this.solrServer);
+				AkImporterHelper.print(print, "Done optimizing Solr index.\n");
 			}
 			endTime = System.currentTimeMillis();
-			akiHelper.print(print, "Done indexing to Solr. Execution time: " + akiHelper.getExecutionTime(startTime, endTime) + "\n\n");
+			AkImporterHelper.print(print, "Done indexing to Solr. Execution time: " + AkImporterHelper.getExecutionTime(startTime, endTime) + "\n\n");
 
 			isIndexingSuccessful = true;
 

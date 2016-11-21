@@ -49,7 +49,6 @@ public class Authority {
 	private String timeStamp = null;
 	private boolean print = false;
 	private boolean optimize = false;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 
 
 	/**
@@ -127,11 +126,11 @@ public class Authority {
 			AuthorityFlag af = new AuthorityFlag(solrServerBiblio, solrServerAuth, null, false, print);
 			af.setFlagOfExistance();
 			
-			this.akiHelper.print(this.print, "\nDone setting flag of existance to authority records.");
+			AkImporterHelper.print(this.print, "\nDone setting flag of existance to authority records.");
 			
 			if (this.merge) {
 				this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
-				this.akiHelper.print(this.print, "\nDone merging authority records to bibliographic records.");
+				AkImporterHelper.print(this.print, "\nDone merging authority records to bibliographic records.");
 			}
 			
 			returnValue = true;
@@ -165,7 +164,7 @@ public class Authority {
 					this.mergeAuthToBib(solrServerBiblio, solrServerAuth, null, entities);
 				}
 				
-				this.akiHelper.print(this.print, "\nDone indexing authority records.");
+				AkImporterHelper.print(this.print, "\nDone indexing authority records.");
 				returnValue = true;
 			} else {
 				System.err.println("Error indexing authority records!");

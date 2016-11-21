@@ -39,7 +39,6 @@ import ak.xmlhelper.XmlSplitter;
 
 public class Consolidate {
 
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private String pathToInitialDataset = null;
 	private String pathToUpdateDir = null;
 	private String pathToConsolidatedFile = null;
@@ -83,7 +82,7 @@ public class Consolidate {
 
 		// Split XMLs. Older records will be overwritten by newer records:
 		for (File fileForSplitting : filesForSplitting) {
-			this.akiHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
+			AkImporterHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
 			Map<String, String> condAttrs = new HashMap<String, String>();
 			condAttrs.put("tag", "SYS");
 			xmls.split(fileForSplitting.getAbsolutePath(), "record", 0, "controlfield", condAttrs);
@@ -96,7 +95,7 @@ public class Consolidate {
 		boolean isMergingSuccessful = xmlm.mergeElements(pathToSplittedFilesDir, this.pathToConsolidatedFile, "collection", "record", 0);
 
 		if (isMergingSuccessful) {
-			this.akiHelper.print(this.print, "\nConsolidating data into file " + this.pathToConsolidatedFile + " was successful.\n");
+			AkImporterHelper.print(this.print, "\nConsolidating data into file " + this.pathToConsolidatedFile + " was successful.\n");
 		} else {
 			System.err.println("\nError while consolidating! Cancelled process.\n");
 			return;

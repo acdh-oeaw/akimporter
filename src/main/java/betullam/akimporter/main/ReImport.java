@@ -48,7 +48,6 @@ public class ReImport {
 	private String timeStamp = null;
 	private boolean print = false;
 	private boolean optimize = false;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	boolean isReImportingSuccessful = false;
 
 	/**
@@ -83,7 +82,7 @@ public class ReImport {
 		boolean allFilesValid = false;
 
 		if (isValidationOk) {
-			this.akiHelper.print(this.print, "\nStart validating all data ...");
+			AkImporterHelper.print(this.print, "\nStart validating all data ...");
 			XmlValidator bxh = new XmlValidator();
 
 			for (File file : fileList) {
@@ -100,7 +99,7 @@ public class ReImport {
 
 			// If all files are valid, go on with the import process
 			if (allFilesValid) {
-				this.akiHelper.print(this.print, "\nValidation of all data was successful.\n");
+				AkImporterHelper.print(this.print, "\nValidation of all data was successful.\n");
 
 				// If there are errors in at lease one file, stop the import process:
 			} else {
@@ -108,7 +107,7 @@ public class ReImport {
 				return;
 			}
 		} else {
-			this.akiHelper.print(this.print, "\nSkipped validation!");
+			AkImporterHelper.print(this.print, "\nSkipped validation!");
 		}
 
 		// Variables
@@ -134,7 +133,7 @@ public class ReImport {
 			}
 		}
 
-		this.akiHelper.print(this.print, propertiesFileInfo + "\n");
+		AkImporterHelper.print(this.print, propertiesFileInfo + "\n");
 
 		boolean isIndexingSuccessful = false;
 		boolean isRelateSuccessful = false;
@@ -146,10 +145,10 @@ public class ReImport {
 		for (File file : fileList) {
 			this.timeStamp = String.valueOf(new Date().getTime());
 
-			this.akiHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
+			AkImporterHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
 			String originalTimestamp = file.getName().replace(".xml", "");
 			String originalUpDate = DateFormatUtils.format(Long.valueOf(originalTimestamp), "dd.MM.yyyy HH:mm:ss");
-			this.akiHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
+			AkImporterHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
 			
 			// Index metadata to Solr
 			Index index = new Index(file.getAbsolutePath(), this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
@@ -168,11 +167,10 @@ public class ReImport {
 
 		if (isIndexingSuccessful && isRelateSuccessful) {
 			if(this.optimize) {
-				this.akiHelper = new AkImporterHelper(this.solrServer);
-				this.akiHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
-				this.akiHelper.solrOptimize();
+				AkImporterHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
+				AkImporterHelper.solrOptimize(this.solrServer);
 			}
-			this.akiHelper.print(this.print, "\nRe-Importing of ongoing data updates is sucessfully done.\n");
+			AkImporterHelper.print(this.print, "\nRe-Importing of ongoing data updates is sucessfully done.\n");
 			this.isReImportingSuccessful = true;
 		} else {
 			System.err.println("\nError while re-importing ongoing data updates!\n");
@@ -211,7 +209,7 @@ public class ReImport {
 			boolean allFilesValid = false;
 
 			if (isValidationOk.equals("V")) {
-				this.akiHelper.print(this.print, "\nStart validating data ...");
+				AkImporterHelper.print(this.print, "\nStart validating data ...");
 				XmlValidator bxh = new XmlValidator();
 
 				for (File file : fileList) {
@@ -228,7 +226,7 @@ public class ReImport {
 
 				// If all files are valid, go on with the import process
 				if (allFilesValid) {
-					this.akiHelper.print(this.print, "\nValidation was successful.\n");
+					AkImporterHelper.print(this.print, "\nValidation was successful.\n");
 
 					// If there are errors in at lease one file, stop the import process:
 				} else {
@@ -236,7 +234,7 @@ public class ReImport {
 					return;
 				}
 			} else if (isValidationOk.equals("S")) {
-				this.akiHelper.print(this.print, "\nSkipped validation!");
+				AkImporterHelper.print(this.print, "\nSkipped validation!");
 			}
 
 			// At this point, all files should have passed the validation process. No, ask the user for the Solr server address:
@@ -295,10 +293,10 @@ public class ReImport {
 				for (File file : fileList) {
 					this.timeStamp = String.valueOf(new Date().getTime());
 
-					this.akiHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
+					AkImporterHelper.print(this.print, "\nIndexing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
 					String originalTimestamp = file.getName().replace(".xml", "");
 					String originalUpDate = DateFormatUtils.format(Long.valueOf(originalTimestamp), "dd.MM.yyyy HH:mm:ss");
-					this.akiHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
+					AkImporterHelper.print(this.print, "Original update time: " + originalUpDate + "\n");
 					
 					// Index metadata so Solr
 					Index index = new Index(file.getAbsolutePath(), this.solrServer, useDefaultMabProperties, pathToMabPropertiesFile, directoryOfTranslationFiles, this.timeStamp, false, this.print);
@@ -317,18 +315,17 @@ public class ReImport {
 
 				if (isIndexingSuccessful && isRelateSuccessful) {
 					if(this.optimize) {
-						this.akiHelper = new AkImporterHelper(this.solrServer);
-						this.akiHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
-						this.akiHelper.solrOptimize();
+						AkImporterHelper.print(print, "\nStart optimizing Solr index. This could take a while. Please wait ...");
+						AkImporterHelper.solrOptimize(this.solrServer);
 					}
-					this.akiHelper.print(this.print, "\nImport process was successful.\n");
+					AkImporterHelper.print(this.print, "\nImport process was successful.\n");
 					this.isReImportingSuccessful = true;
 				} else {
 					System.err.println("\nError while importing!\n");
 					return;
 				}
 			} else {
-				this.akiHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
+				AkImporterHelper.print(this.print, "\nImport process cancelled as requested by user.\n");
 				return;
 			}
 

@@ -46,7 +46,6 @@ public class ParentToChilds {
 	private HttpSolrServer solrServer;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private RelationHelper relationHelper;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private int NO_OF_ROWS = 500;
 	private int counter = 0;
 	private long noOfDocs = 0;
@@ -187,7 +186,7 @@ public class ParentToChilds {
 				}
 			}
 			
-			this.akiHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "                 \r");
+			AkImporterHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "                 \r");
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

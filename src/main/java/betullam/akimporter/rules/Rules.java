@@ -1,7 +1,6 @@
 package main.java.betullam.akimporter.rules;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,10 +13,13 @@ import java.util.Properties;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 
+import ak.xmlhelper.XmlParser;
+
 public class Rules {
 
 	public static String oaiPropertiesFilePath;
 	public static Document document;
+	public static XmlParser xmlParser = new XmlParser();
 	private static String[] dataRuleNames = new String[] {
 			"multiValued",
 			"customText",
@@ -38,59 +40,82 @@ public class Rules {
 			"applyToFields",
 			"getAllFields",
 			"getFullRecordAsXML"
-			};
+	};
 
 
-	public static List<String> applyDataRules(String value, List<String> dataRules) {
+	public static List<String> applyDataRules(String solrField, List<String> dataFieldValues, List<String> dataRules) {
+
 		List<String> treatedValues = new ArrayList<String>();
-		String treatedValue = null;
-		
-		for (String dataRule : dataRules) {
 
-			if (dataRule.equals("customText")) {
-				treatedValue = CustomText.getCustomText(value);
-				treatedValues.add(treatedValue);
+		if (dataRules != null && !dataRules.isEmpty()) {
+
+			for (String dataRule : dataRules) {
+
+				if (dataRule.equals("customText")) {
+					treatedValues.addAll(CustomText.getCustomText(dataFieldValues));
+				}
+
+				if (dataRule.contains("translateValue")) {
+					treatedValues.addAll(TranslateValue.getTranslatedValues(dataFieldValues, dataRule));
+				}
+
+				if (dataRule.contains("connectedSubfields")) {
+					treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
+				}
 			}
-			
-			if (dataRule.contains("translateValue")) {
-				treatedValue = TranslateValue.getTranslatedValue(value, dataRule);
-				treatedValues.add(treatedValue);
+
+			// None of the rules above applied, so we fill the "treatedValues" List, that is still empty by now, with the original values
+			if (treatedValues.isEmpty()) {
+				treatedValues.addAll(dataFieldValues);
 			}
-			
-			if (dataRule.contains("connectedSubfields")) {
-				treatedValues = ConnectedSubfields.getConnectedSubfields(value, dataRule);
+
+			// The last rules to apply are the following
+			if (!treatedValues.isEmpty()) {
+				if (!dataRules.contains("multiValued")) {
+					List<String> firstValue = MultiValued.getFirstValue(treatedValues);
+					treatedValues.clear();
+					treatedValues = firstValue;
+				} else {
+					if (!dataRules.contains("allowDuplicates")) {
+						List<String> dedupValues = AllowDuplicates.getDeduplicatedList(treatedValues);
+						treatedValues.clear();
+						treatedValues = dedupValues;
+					}
+				}
+			} else {
+				treatedValues = null;
 			}
+		} else {
+			// There are nor rules to apply, so return the original values
+			treatedValues = dataFieldValues;
 		}
-		
-		if (treatedValues.isEmpty()) {
-			treatedValues = null;
-		}
-		
+
 		return treatedValues;
 	}
 
+	
 	public static List<PropertyBag> getPropertyBags(String oaiPropertiesFile) {
-		
+
 		List<PropertyBag> propertyBags = new ArrayList<PropertyBag>();
 		Map<String, String> propertiesAsMap = getPropertiesAsMap(oaiPropertiesFile);
-		
+
 		for (Entry<String, String> property : propertiesAsMap.entrySet()) {
 			PropertyBag propertyBag = new PropertyBag();
 			String solrFieldName = property.getKey();
 			List<String> propertyValues = getPropertyValues(property.getValue());
 			List<String> dataFields = getDataFields(propertyValues);
 			List<String> dataRules = getDataRules(propertyValues);
-			
+
 			propertyBag.setSolrField(solrFieldName);
 			propertyBag.setDataFields(dataFields);
 			propertyBag.setDataRules(dataRules);
-			
+
 			propertyBags.add(propertyBag);
 		}
 		return propertyBags;
 	}
 
-	
+
 	public static List<String> getDataFields(List<String> propertyValues) {
 		List<String> dataFields = new ArrayList<String>();
 		for (String propertyValue : propertyValues) {
@@ -192,7 +217,7 @@ public class Rules {
 	public static void setDocument(Document document) {
 		Rules.document = document;
 	}
-	
+
 }
 
 

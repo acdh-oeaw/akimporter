@@ -48,7 +48,6 @@ public class Generic {
 
 	private HttpSolrServer solrServerBiblio;
 	private RelationHelper relationHelper;
-	private AkImporterHelper akiHelper;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private int NO_OF_ROWS = 500;
 	private boolean print = false;
@@ -60,7 +59,6 @@ public class Generic {
 		this.solrServerBiblio = solrServerBiblio;
 		this.relationType = relationType;
 		this.print = print;
-		this.akiHelper = new AkImporterHelper();
 		this.relationHelper = new RelationHelper(solrServerBiblio, null, timeStamp);
 	}
 
@@ -228,7 +226,7 @@ public class Generic {
 			}
 
 			counter = counter + 1;
-			this.akiHelper.print(this.print, "Linking \"" + consoleDisplayText + "\". Processing record no " + counter  + " of " + noOfDocs + "                                      \r");
+			AkImporterHelper.print(this.print, "Linking \"" + consoleDisplayText + "\". Processing record no " + counter  + " of " + noOfDocs + "                                      \r");
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

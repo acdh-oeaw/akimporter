@@ -120,7 +120,6 @@ public class MetsContentHandler implements ContentHandler {
 	private List<Participant> participants = null;
 	private List<MetsSolrRecord> metsSolrRecords = null;
 	
-	private AkImporterHelper akiHelper = null;
 	private HashMap<String, String> translateProperties = null;
 
 	
@@ -134,7 +133,6 @@ public class MetsContentHandler implements ContentHandler {
 		this.timeStamp = timeStamp;
 		this.print = print;
 		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
-		this.akiHelper = new AkImporterHelper(solrServer);
 		this.translateProperties = AkImporterHelper.getTranslateProperties("roles.properties", null, true);
 	}
 

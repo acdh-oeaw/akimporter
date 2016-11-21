@@ -49,7 +49,6 @@ import main.java.betullam.akimporter.main.AkImporterHelper;
 public class AuthorityFlag {
 
 	private RelationHelper relationHelper;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private HttpSolrServer solrServerAuthority;
 	private boolean isAuthUpdate = false;
@@ -99,7 +98,7 @@ public class AuthorityFlag {
 			queryResults.clear();
 			queryResults = null;
 
-			this.akiHelper.print(this.print, "Getting distinct authority records ... ");
+			AkImporterHelper.print(this.print, "Getting distinct authority records ... ");
 
 			// Calculate the number of solr result pages we need to iterate over
 			long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -123,8 +122,8 @@ public class AuthorityFlag {
 				setGndNos(isFirstPage, lastDocId);
 			}
 
-			this.akiHelper.print(this.print, "Done\n");
-			this.akiHelper.print(this.print, "Found " + gndIds.size() + " distinct authority records used in bibliograpic index.\n");
+			AkImporterHelper.print(this.print, "Done\n");
+			AkImporterHelper.print(this.print, "Found " + gndIds.size() + " distinct authority records used in bibliograpic index.\n");
 
 			
 			// Add flag of existance to authority records
@@ -187,7 +186,7 @@ public class AuthorityFlag {
 					}
 				}
 
-				this.akiHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                                         \r");
+				AkImporterHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                                         \r");
 
 
 				// Add documents from the class variable which was set before to Solr
@@ -220,7 +219,7 @@ public class AuthorityFlag {
 	 */
 	private void deleteAuhtorityWithoutHeading() {
 		try {
-			this.akiHelper.print(this.print, "\nDeleting wrong authority records");
+			AkImporterHelper.print(this.print, "\nDeleting wrong authority records");
 			solrServerAuthority.deleteByQuery("-heading:*");
 		} catch (SolrServerException e) {
 			e.printStackTrace();
@@ -236,7 +235,7 @@ public class AuthorityFlag {
 	 */
 	private void deleteAuhtorityWithoutFlag() {
 		try {
-			this.akiHelper.print(this.print, "\nDeleting authority records without flag of existance.");
+			AkImporterHelper.print(this.print, "\nDeleting authority records without flag of existance.");
 			solrServerAuthority.deleteByQuery("-existsInBiblio_str:\"true\"");
 		} catch (SolrServerException e) {
 			e.printStackTrace();

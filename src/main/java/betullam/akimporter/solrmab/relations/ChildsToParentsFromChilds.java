@@ -50,7 +50,6 @@ public class ChildsToParentsFromChilds {
 	private HttpSolrServer solrServer;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private RelationHelper relationHelper;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private int NO_OF_ROWS = 500;
 	private int CHILD_INDEX_RATE = 250;
 	private Set<String> parentSYSs = new HashSet<String>();
@@ -294,7 +293,7 @@ public class ChildsToParentsFromChilds {
 				}
 
 
-				this.akiHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
+				AkImporterHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
 			}
 		}
 	}

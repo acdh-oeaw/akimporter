@@ -47,7 +47,6 @@ public class UnlinkChildsFromParents {
 	HttpSolrServer solrServer;
 	Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	RelationHelper relationHelper;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	int NO_OF_ROWS = 500;
 	List<String> parentAcs = new ArrayList<String>();
 	boolean print = false;
@@ -241,7 +240,7 @@ public class UnlinkChildsFromParents {
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-				this.akiHelper.print(this.print, "Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "                   \r");
+				AkImporterHelper.print(this.print, "Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "                   \r");
 			}
 
 		}

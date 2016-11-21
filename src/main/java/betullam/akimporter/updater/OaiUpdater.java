@@ -41,9 +41,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -85,7 +83,6 @@ public class OaiUpdater {
 	//String indexTimeStamp;
 	//private HttpSolrServer solrServer = null;
 	private long indexTimestamp;
-	private AkImporterHelper akiHelper = null;
 
 
 	public void oaiGenericUpdate(
@@ -110,10 +107,9 @@ public class OaiUpdater {
 			HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
 			
 			// Creating instance of AkImporterHelper
-			akiHelper = new AkImporterHelper(sServerBiblio);
-			/*
-			akiHelper.print(print, "\n-------------------------------------------");
-			akiHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+			
+			AkImporterHelper.print(print, "\n-------------------------------------------");
+			AkImporterHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 			
 			// Start downloading and merging XML files from OAI interface
 			String mergedOaiDataFileName = oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, 0, print);
@@ -121,11 +117,11 @@ public class OaiUpdater {
 			// Create InputSource from XML file
 			FileReader xmlData = new FileReader(mergedOaiDataFileName);
 			InputSource inputSource = new InputSource(xmlData);
-			*/
+			
 			
 			// TESTING SSOAR - BEGIN
-			FileReader xmlData = new FileReader("/home/betullam/AK/AKsearch/AkImporterBinary/Releases/dev/beispiele/SSOAR_oai_genios.xml");
-			InputSource inputSource = new InputSource(xmlData);
+			//FileReader xmlData = new FileReader("/home/mbirkner/AkSearch/AkImporterBinary/Releases/dev/beispiele/SSOAR_oai_genios.xml");
+			//InputSource inputSource = new InputSource(xmlData);
 			// TESTING SSOAR - END
 			
 			// Create variable for content handler
@@ -147,21 +143,21 @@ public class OaiUpdater {
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
 
-			/*
+			
 			// Connect child and parent volumes:
-			akiHelper.print(print, "\nStart linking parent and child records ... ");
+			AkImporterHelper.print(print, "\nStart linking parent and child records ... ");
 			Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
 			boolean isRelateSuccessful = relate.isRelateSuccessful();
 			if (isRelateSuccessful) {
-				akiHelper.print(print, "Done");
+				AkImporterHelper.print(print, "Done");
 			}
 			
 			if (optimize) {
-				akiHelper.print(print, "\nOptimizing Solr Server ... ");
-				akiHelper.solrOptimize();
-				akiHelper.print(print, "Done");
+				AkImporterHelper.print(print, "\nOptimizing Solr Server ... ");
+				AkImporterHelper.solrOptimize(sServerBiblio);
+				AkImporterHelper.print(print, "Done");
 			}
-			*/
+			
 		
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -197,14 +193,14 @@ public class OaiUpdater {
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
-		akiHelper.print(print, "\n-------------------------------------------");
-		akiHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		AkImporterHelper.print(print, "\n-------------------------------------------");
+		AkImporterHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 
 		// First start of downloading and mergeing XML files from OAI interface:
 		String mergedAuthFileName = oaiDownload(oaiUrl, format, set, destinationPath, "slim:record", 1, oaiDatefile, this.indexTimestamp, 0, print);
 
 		if (mergedAuthFileName != null) {
-			akiHelper.print(print, "\nIndexing new authority data ... ");
+			AkImporterHelper.print(print, "\nIndexing new authority data ... ");
 			// Index authority data from merged XML file:
 			Authority auth = new Authority(
 					false,
@@ -220,7 +216,7 @@ public class OaiUpdater {
 					optimize
 					);
 			isAuthorityUpdateSuccessful = auth.indexAuthority();
-			akiHelper.print(print, "Done");
+			AkImporterHelper.print(print, "Done");
 		}
 
 		if (isAuthorityUpdateSuccessful) {
@@ -238,7 +234,7 @@ public class OaiUpdater {
 				am.mergeAuthorityToBiblio(entities);
 			}
 
-			akiHelper.print(print, "\nDone updating from OAI interface.\nEVERYTHING WAS SUCCESSFUL!");
+			AkImporterHelper.print(print, "\nDone updating from OAI interface.\nEVERYTHING WAS SUCCESSFUL!");
 		} else {
 			System.err.print("\nERROR WHILE UPDATING AUTHORITY DATA!");
 		}
@@ -296,7 +292,7 @@ public class OaiUpdater {
 
 			if (httpResponseCode == 200) {
 
-				akiHelper.print(print, "\nHarvesting date range: " + from + " - " + until);
+				AkImporterHelper.print(print, "\nHarvesting date range: " + from + " - " + until);
 
 				// Set variables
 				String oaiPathOriginal = stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
@@ -308,7 +304,7 @@ public class OaiUpdater {
 
 				// Download updates from OAI interface and save them to a file. If there is a resumptionToken ("pages"),
 				// then download all resumptions and save each to a sepearate file:
-				akiHelper.print(print, "\nDownloading XML data ... ");
+				AkImporterHelper.print(print, "\nDownloading XML data ... ");
 				String resumptionToken = null;
 				do {
 					counter++;
@@ -329,7 +325,7 @@ public class OaiUpdater {
 						resumptionToken = null;
 					}
 				} while (resumptionToken != null);
-				akiHelper.print(print, "Done");
+				AkImporterHelper.print(print, "Done");
 
 				// Write current date/time to date/time-file for next update:
 				this.writeOaiDateFile(oaiDatefile, until);
@@ -339,14 +335,14 @@ public class OaiUpdater {
 					oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, counter, print);
 				} else {
 					// Reached today - stop downloading and start merging
-					akiHelper.print(print, "\nAll OAI updates are downloaded.");
+					AkImporterHelper.print(print, "\nAll OAI updates are downloaded.");
 
 					// Start merging all downloaded updates into one file:
-					akiHelper.print(print, "\nMerging downloaded XML data ... ");
+					AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
 					mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
 					boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, elementsToMerge, elementsToMergeLevel);
 					if (isMergeSuccessful) {
-						akiHelper.print(print, "Done");
+						AkImporterHelper.print(print, "Done");
 					} else {
 						System.err.print("\nERROR: Merging downloaded files from OAI was not successful!");
 						mergedFileName = null;

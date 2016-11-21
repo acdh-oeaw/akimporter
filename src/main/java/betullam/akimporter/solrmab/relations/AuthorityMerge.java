@@ -50,7 +50,6 @@ public class AuthorityMerge {
 
 
 	private RelationHelper relationHelper;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private HttpSolrServer solrServerBiblio;
 	private HttpSolrServer solrServerAuth;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
@@ -118,7 +117,7 @@ public class AuthorityMerge {
 				queryResults.clear();
 				queryResults = null;
 
-				this.akiHelper.print(this.print, "\nGetting " + noOfDocs + " records with " + ent + " GND IDs ... \n");
+				AkImporterHelper.print(this.print, "\nGetting " + noOfDocs + " records with " + ent + " GND IDs ... \n");
 
 				// Calculate the number of solr result pages we need to iterate over
 				long wholePages = (noOfDocs/NO_OF_ROWS);
@@ -160,7 +159,7 @@ public class AuthorityMerge {
 					addAuthInfoToBiblio(biblioRecords, currentEntity, currentEntitySolrFields);
 				}
 
-				this.akiHelper.print(this.print, "\nDone");
+				AkImporterHelper.print(this.print, "\nDone");
 
 				try {
 					// Commit the changes to Solr
@@ -323,7 +322,7 @@ public class AuthorityMerge {
 					}
 				}
 				
-				this.akiHelper.print(this.print, "Integrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords + "                                   \r");
+				AkImporterHelper.print(this.print, "Integrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords + "                                   \r");
 
 				// Add documents from the class variable which was set before to Solr
 				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr

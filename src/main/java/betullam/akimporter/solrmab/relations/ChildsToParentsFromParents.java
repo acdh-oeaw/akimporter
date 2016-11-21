@@ -59,7 +59,6 @@ public class ChildsToParentsFromParents {
 	private HttpSolrServer solrServer;
 	private Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 	private RelationHelper relationHelper;
-	private AkImporterHelper akiHelper = new AkImporterHelper();
 	private int NO_OF_ROWS = 500;
 	private Set<String> parentSYSs = new HashSet<String>();
 	private boolean print = false;
@@ -279,7 +278,7 @@ public class ChildsToParentsFromParents {
 			}
 
 			counter = counter + 1;
-			this.akiHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs + "                              \r");
+			AkImporterHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs + "                              \r");
 			
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 

@@ -4,7 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -12,7 +16,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.common.SolrInputDocument;
 import org.w3c.dom.Document;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -21,6 +27,7 @@ import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
 import ak.xmlhelper.XmlParser;
+import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.rules.PropertyBag;
 import main.java.betullam.akimporter.rules.Rules;
 
@@ -34,10 +41,10 @@ public class XmlContentHandler implements ContentHandler {
 	private String xmlRecord;
 	private boolean isRecord = false;
 	private List<String> xmlRecords;
-	private List<XmlSolrRecord> xmlSolrRecords = null;
-	//private Rules rules;
+	private List<Map<String, List<String>>> xmlSolrRecords = null;
 	private List<PropertyBag> propertyBags;
 
+	
 	public XmlContentHandler(HttpSolrServer solrServer, String recordName, String oaiPropertiesFile, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.recordName = recordName;
@@ -47,10 +54,11 @@ public class XmlContentHandler implements ContentHandler {
 		Rules.setOaiPropertiesFilePath(new File(oaiPropertiesFile).getParent());
 	}
 
+	
 	@Override
 	public void startDocument() throws SAXException {
 		xmlRecords = new ArrayList<String>();
-		xmlSolrRecords = new ArrayList<XmlSolrRecord>();
+		xmlSolrRecords = new ArrayList<Map<String, List<String>>>();
 	}
 
 
@@ -58,7 +66,6 @@ public class XmlContentHandler implements ContentHandler {
 	public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
 		// Clear element content for fresh start
 		elementContent = "";
-
 		String startElement = "";
 
 		if (qName.equals(recordName)) {
@@ -82,9 +89,6 @@ public class XmlContentHandler implements ContentHandler {
 			startElement += ">";
 			xmlRecord += startElement;
 		}
-
-
-
 	}
 
 
@@ -103,8 +107,8 @@ public class XmlContentHandler implements ContentHandler {
 			isRecord = false;
 			xmlRecords.add(xmlRecord);
 
-			xmlSolrRecords.add(getXmlSolrRecord(xmlRecord));
-
+			Map<String, List<String>> xmlSolrRecord = getXmlSolrRecord(xmlRecord);
+			xmlSolrRecords.add(xmlSolrRecord);
 		}
 
 		// Clear element content for fresh start
@@ -114,7 +118,10 @@ public class XmlContentHandler implements ContentHandler {
 
 	@Override
 	public void endDocument() throws SAXException {
-		//System.out.println(xmlRecords);
+		AkImporterHelper.print(print, "\nIndexing documents to Solr ... ");
+		addRecordsToSolr(this.solrServer, this.xmlSolrRecords);
+		AkImporterHelper.print(print, "Done");
+		this.xmlSolrRecords = null;
 	}
 
 
@@ -123,57 +130,94 @@ public class XmlContentHandler implements ContentHandler {
 		elementContent += new String(ch, start, length).replaceAll("\\s+", " ");
 	}
 
+	
+	private void addRecordsToSolr(HttpSolrServer solrServer, List<Map<String, List<String>>> xmlSolrRecords) {
+		// Create a collection of all documents
+		Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+
+		for (Map<String, List<String>> xmlSolrRecord : xmlSolrRecords) {
+			// Create a Solr input document
+			SolrInputDocument doc = new SolrInputDocument();
+			
+			// Add fields to Solr document
+			for (Entry<String, List<String>> dataField : xmlSolrRecord.entrySet()) {
+				String solrFieldName = dataField.getKey();
+				List<String> solrFieldValue = dataField.getValue();
+				if (solrFieldValue != null && !solrFieldValue.isEmpty()) {
+					doc.addField(solrFieldName, solrFieldValue);
+				}
+				
+			}
+			
+			// Add the Solr document to a Solr document collection if it is not empty
+			if (!doc.isEmpty()) {
+				docs.add(doc);
+			}
+		}
+		
+		// If the Solr document collection is not empty, add the Solr documents to Solr
+		if (!docs.isEmpty()) {
+			// Now add the collection of documents to Solr:
+			try {
+				solrServer.add(docs);
+				solrServer.commit();
+			} catch (SolrServerException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			// Set "docs" to "null" (save memory):
+			docs = null;
+		}
+	}
 
 
-	private XmlSolrRecord getXmlSolrRecord(String xmlRecord) {
-		XmlSolrRecord xmlSolrRecord = new XmlSolrRecord();
+	private Map<String, List<String>> getXmlSolrRecord(String xmlRecord) {
+		Map<String, List<String>> xmlSolrRecord = new TreeMap<String, List<String>>();
 		Document document = getDomDocument(xmlRecord);
 		Rules.setDocument(document);
 
 		XmlParser xmlParser = new XmlParser();
 
-		//String id = xmlParser.getTextValue(document, "/record/header/identifier");
-		//List<String> id = xmlParser.getXpathResult(document, "/record/header//setSpec");
-		//List<String> id = xmlParser.getXpathResult(document, "/record/metadata//dcvalue[@element='date']");
-		//List<String> id = xmlParser.getXpathResult(document, "//dcvalue[@element='contributor' and @qualifier='author'][position()>2]");
-
 		for (PropertyBag propertyBag : propertyBags) {
 			String solrField = propertyBag.getSolrField();
 			List<String> dataFields = propertyBag.getDataFields();
 			List<String> dataRules = propertyBag.getDataRules();
+			List<String> dataFieldValues = new ArrayList<String>();
+			List<String> treatedValues = new ArrayList<String>();
 
 			for (String dataField : dataFields) {
-				List<String> treatedValue = null;
-				if (dataRules.contains("customText")) {
-					// It's not an xPath but a custom text
-					treatedValue = Rules.applyDataRules(dataField, dataRules);
+				if (dataRules.contains("customText") || dataRules.contains("getAllFields") || dataRules.contains("getFullRecordAsXML")) {
+					// It's not an xPath but a rule with other funcionalities (e. g. customText)
+					dataFieldValues.add(dataField);
 				} else {
-					// It should be an xPath
+					// It should be an xPath expression, so we try to execute it and get a result from it
 					try {
 						List<String> values = xmlParser.getXpathResult(document, dataField);
 						if (values != null) {
-							for (String value : values) {
-								treatedValue = Rules.applyDataRules(value, dataRules);
-								//System.out.println("treatedValue: " + treatedValue);
-								//String treatedValue = Rules.applyRules(value, rules);
-								//System.out.println(solrField + ": " + treatedValue);
-							}
+							dataFieldValues.addAll(values);
 						}
 					} catch (XPathExpressionException e) {
 						e.printStackTrace();
-					}	
+					}
 				}
-
-				if (treatedValue != null) {
-					System.out.println("treatedValue: " + treatedValue);
-				}
-
 			}
 
-			//System.out.println(solrField + ": " + values);
+			treatedValues = Rules.applyDataRules(solrField, dataFieldValues, dataRules);
+			xmlSolrRecord.put(solrField, treatedValues);
 		}
+		
+		// Add indexing timestamp to record
+		if (!xmlSolrRecord.isEmpty()) {
+			List<String> timeStampAsList = new ArrayList<String>();
+			timeStampAsList.add(timeStamp);
+			xmlSolrRecord.put("indexTimestamp_str", timeStampAsList);
+		}
+		
 		return xmlSolrRecord;
 	}
+
 
 	private static Document getDomDocument(String xmlRecord) {
 		Document domDocument = null;
