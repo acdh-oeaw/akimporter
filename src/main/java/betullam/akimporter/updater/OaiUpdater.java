@@ -88,7 +88,7 @@ public class OaiUpdater {
 	public void oaiGenericUpdate(
 			String oaiUrl,
 			String format,
-			String set,
+			List<String> sets,
 			List<String> structElements,
 			String destinationPath,
 			String elementsToMerge,
@@ -187,7 +187,7 @@ public class OaiUpdater {
 	 * @param print						boolean indicating whether to print status messages or not
 	 * @param optimize					boolean indicating whether to optimize the solr index not
 	 */
-	public void oaiGndUpdate(String oaiUrl, String format, String set, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
+	public void oaiGndUpdate(String oaiUrl, String format, List<String> sets, String destinationPath, String oaiDatefile, boolean useDefaultAuthProps, String customAuthProps, String solrServerAuth, String solrServerBiblio, String entities, boolean merge, boolean print, boolean optimize) {
 
 		boolean isAuthorityUpdateSuccessful = false;
 		this.indexTimestamp = new Date().getTime();

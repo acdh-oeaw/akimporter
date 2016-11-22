@@ -118,9 +118,8 @@ public class Main {
 	static String aUpdateLocalPath = importerProperties.getProperty("authority.update.localPath");
 	static String aUpdateOaiUrl = importerProperties.getProperty("authority.update.oaiUrl");
 	static String aUpdateFormat = importerProperties.getProperty("authority.update.format");
-	static String aUpdateOaiSet = importerProperties.getProperty("authority.update.set");
+	static List<String> aUpdateOaiSets = (importerProperties.getProperty("authority.update.set") != null) ? Arrays.asList(importerProperties.getProperty("authority.update.set").split("\\s*,\\s*")) : null;
 	static String aMergeEntities = importerProperties.getProperty("authority.merge.entities");
-
 
 
 
@@ -476,7 +475,7 @@ public class Main {
 						oaiUpdater.oaiGndUpdate(
 								aUpdateOaiUrl,
 								aUpdateFormat,
-								aUpdateOaiSet,
+								aUpdateOaiSets,
 								aUpdateLocalPath,
 								aUpdateLastUpdateFile,
 								aDefaultMabProperties,
@@ -514,7 +513,7 @@ public class Main {
 				
 				String oaiUrl = importerProperties.getProperty("oai." + oaiName + ".url");
 				String format = importerProperties.getProperty("oai." + oaiName + ".format");
-				String set = importerProperties.getProperty("oai." + oaiName + ".set");
+				List<String> sets = (importerProperties.getProperty("oai." + oaiName + ".set") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".set").split("\\s*,\\s*")) : null;
 				String destinationPath = importerProperties.getProperty("oai." + oaiName + ".destinationPath");
 				String oaiDatefile = importerProperties.getProperty("oai." + oaiName + ".dateFile");
 				String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
@@ -540,7 +539,7 @@ public class Main {
 				oaiUpdater.oaiGenericUpdate(
 						oaiUrl,
 						format,
-						set,
+						sets,
 						structElements,
 						destinationPath,
 						elementsToMerge,
