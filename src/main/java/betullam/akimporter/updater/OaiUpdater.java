@@ -40,6 +40,7 @@ import java.net.URLConnection;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -59,6 +60,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.w3c.dom.Document;
 import org.xml.sax.ContentHandler;
@@ -69,6 +71,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
 
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlParser;
+import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.main.Authority;
 import main.java.betullam.akimporter.solrmab.Relate;
@@ -117,44 +120,181 @@ public class OaiUpdater {
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
-		try {
-			AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
-			AkImporterHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
+		AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
+		AkImporterHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 
-			// Creating Solr server
-			HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
+		// Creating Solr server
+		HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
 
-			// Set variables
-			String oaiPathOriginal = stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
-			String oaiPathMerged = stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
+		// Set variables
+		String oaiPathOriginal = stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
+		String oaiPathMerged = stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
 
-			// Create directories if they do not exist
-			mkDirIfNoExists(oaiPathOriginal);
-			mkDirIfNoExists(oaiPathMerged);
+		// Create directories if they do not exist
+		mkDirIfNoExists(oaiPathOriginal);
+		mkDirIfNoExists(oaiPathMerged);
 
-			// Get "from" date/time from .properties file
-			Properties oaiDateTimeOriginal = getOaiDateTime(oaiDatefile);
-			String fromOriginal = oaiDateTimeOriginal.getProperty("from"); // Should be something like 2016-01-13T14:00:00Z
+		// Get "from" date/time from .properties file
+		Properties oaiDateTimeOriginal = getOaiDateTime(oaiDatefile);
+		String fromOriginal = oaiDateTimeOriginal.getProperty("from"); // Should be something like 2016-01-13T14:00:00Z
 
-			for (String set : sets) {
-				// Before downloading a set, write original "from" date/time to date/time-file so that every set downloads "from" and "until" the same time
-				this.writeOaiDateFile(oaiDatefile, fromOriginal);
+		for (String set : sets) {
+			// Before downloading a set, write original "from" date/time to date/time-file so that every set downloads "from" and "until" the same time
+			this.writeOaiDateFile(oaiDatefile, fromOriginal);
 
-				// Download XML data of one set from an OAI interface
-				oaiDownload(oaiUrl, format, set, oaiPathOriginal, oaiDatefile, this.indexTimestamp, print);
+			// Download XML data of one set from an OAI interface
+			oaiDownload(oaiUrl, format, set, oaiPathOriginal, oaiDatefile, this.indexTimestamp, print);
+		}
+
+		// Start merging all downloaded updates into one file
+		AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
+		String mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
+		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, elementsToMerge, elementsToMergeLevel);
+		if (isMergeSuccessful) {
+			AkImporterHelper.print(print, "Done");
+		} else {
+			System.err.print("\nERROR: Merging downloaded files from OAI was not successful!");
+			mergedFileName = null;
+		}
+
+		boolean isIndexingSuccessful = indexDownloadedOaiData(mergedFileName, format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, oaiPropertiesFile, print);
+
+		if (isIndexingSuccessful) {
+			try {
+				// Commit to Solr server:
+				sServerBiblio.commit();
+
+				// Connect child and parent volumes:
+				AkImporterHelper.print(print, "\nStart linking parent and child records ... ");
+				Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
+				boolean isRelateSuccessful = relate.isRelateSuccessful();
+				if (isRelateSuccessful) {
+					AkImporterHelper.print(print, "Done");
+				}
+
+				if (optimize) {
+					AkImporterHelper.print(print, "\nOptimizing Solr Server ... ");
+					AkImporterHelper.solrOptimize(sServerBiblio);
+					AkImporterHelper.print(print, "Done");
+				}
+			} catch (SolrServerException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	/**
+	 * Reindex already downloaded data from OAI
+	 * @param pathToOaiDir
+	 * @param isValidationOk
+	 * @param format
+	 * @param sServerBiblio
+	 * @param structElements
+	 * @param elementsToMerge
+	 * @param strIndexTimestamp
+	 * @param oaiPropertiesFile
+	 * @param optimize
+	 * @param print
+	 * @return
+	 */
+	public boolean reImportOaiData(String pathToOaiDir, boolean isValidationOk, String format, String solrServerBiblio, List<String> structElements, String elementsToMerge, String oaiPropertiesFile, boolean optimize, boolean print) {
+		boolean isReindexingSuccessful = false;
+		
+		this.indexTimestamp = new Date().getTime();
+		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
+		
+		// Creating Solr server
+		HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
+		
+		// Get a sorted list (oldest to newest) from all ongoing data deliveries:
+		File fPathToMergedDir = new File(stripFileSeperatorFromPath(pathToOaiDir) + File.separator + "merged");
+		List<File> fileList = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
+		Collections.sort(fileList); // Sort oldest to newest
+
+		boolean allFilesValid = false;
+
+		if (isValidationOk) {
+			AkImporterHelper.print(print, "\nStart validating all data ... ");
+			XmlValidator bxh = new XmlValidator();
+
+			for (File file : fileList) {
+				boolean hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
+
+				if (hasValidationPassed) {
+					allFilesValid = true;
+				} else {
+					allFilesValid = false;
+					System.err.println("Error in file " + file.getName() + ". Import process was cancelled.");
+					return allFilesValid;
+				}
 			}
 
-			// Start merging all downloaded updates into one file
-			AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
-			String mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
-			boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, elementsToMerge, elementsToMergeLevel);
-			if (isMergeSuccessful) {
+			// If all files are valid, go on with the import process
+			if (allFilesValid) {
 				AkImporterHelper.print(print, "Done");
 			} else {
-				System.err.print("\nERROR: Merging downloaded files from OAI was not successful!");
-				mergedFileName = null;
+				// If there are errors in at least one file, stop the import process:
+				System.err.println("\nError while validating. Import process was cancelled!\n");
+				return false;
 			}
+		} else {
+			AkImporterHelper.print(print, "\nSkipped validation!");
+		}
+		
+		
+		for (File file : fileList) {
+			boolean isIndexingSuccessful = indexDownloadedOaiData(file.getAbsolutePath(), format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, oaiPropertiesFile, print);
 
+			if (isIndexingSuccessful) {
+				try {
+					
+					// Commit to Solr server:
+					sServerBiblio.commit();
+
+					// Connect child and parent volumes:
+					AkImporterHelper.print(print, "\nStart linking parent and child records ... ");
+					Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
+					boolean isRelateSuccessful = relate.isRelateSuccessful();
+					if (isRelateSuccessful) {
+						AkImporterHelper.print(print, "Done");
+					}
+
+					if (optimize) {
+						AkImporterHelper.print(print, "\nOptimizing Solr Server ... ");
+						AkImporterHelper.solrOptimize(sServerBiblio);
+						AkImporterHelper.print(print, "Done");
+					}
+				} catch (SolrServerException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		return isReindexingSuccessful;
+	}
+
+
+	/**
+	 * Start the parsing and indexing process of the downloaded XML data.
+	 * 
+	 * @param mergedFileName		String:			The paht to a file containing the downloaded XML data from the OAI interface
+	 * @param format				String:			The format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
+	 * @param solrServerBiblio		String:			An URL incl. core name of the Solr bibliographic index (e. g. http://localhost:8080/solr/biblio)
+	 * @param structElements		List<String>:	If harvesting METS/MODS data with structure type data (e. g. from Goobi), define which structure types should be indexed.
+	 * @param elementsToMerge		String:			The elements of the original XML that should be merged (e. g. "record")
+	 * @param strIndexTimestamp		String:			The current index timestamp
+	 * @param oaiPropertiesFile		String:			A path to a .properties file that contains instructions for parsing the XML data. The contents should be like "solrfield: /xpath/expression[1], /xpath/expression[2], rule1, rule2". Example: /path/to/oai_parsing.properties.
+	 * @param print					boolean:		True if status messages sould be print, false otherwise
+	 * @return						boolean:		True if the index process was successful, false otherwise
+	 */
+	public boolean indexDownloadedOaiData(String mergedFileName, String format, HttpSolrServer sServerBiblio, List<String> structElements, String elementsToMerge, String strIndexTimestamp, String oaiPropertiesFile, boolean print) {
+		boolean isIndexingSuccessful = false;
+		try {
 			// Create InputSource from XML file
 			FileReader xmlData = new FileReader(mergedFileName);
 			InputSource inputSource = new InputSource(xmlData);
@@ -177,19 +317,7 @@ public class OaiUpdater {
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
 
-			// Connect child and parent volumes:
-			AkImporterHelper.print(print, "\nStart linking parent and child records ... ");
-			Relate relate = new Relate(sServerBiblio, strIndexTimestamp, false, false);
-			boolean isRelateSuccessful = relate.isRelateSuccessful();
-			if (isRelateSuccessful) {
-				AkImporterHelper.print(print, "Done");
-			}
-
-			if (optimize) {
-				AkImporterHelper.print(print, "\nOptimizing Solr Server ... ");
-				AkImporterHelper.solrOptimize(sServerBiblio);
-				AkImporterHelper.print(print, "Done");
-			}
+			isIndexingSuccessful = true;
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -197,7 +325,9 @@ public class OaiUpdater {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}	 
+		}
+
+		return isIndexingSuccessful;
 	}
 
 
@@ -300,7 +430,7 @@ public class OaiUpdater {
 		}
 
 	}
-	
+
 
 	/**
 	 * Downloading XML data from OAI interface.
@@ -344,7 +474,7 @@ public class OaiUpdater {
 
 			if (httpResponseCode == 200) {
 
-				AkImporterHelper.print(print, "\nDownloading XML from OAI interface ...\n\tSource:\t" + oaiUrl + "\n\tFormat:\t" + format + "\n\tSet:\t" + set + "\n\tTime:\t" + from + " - " + until + "\n");
+				AkImporterHelper.print(print, "\nDownloading XML from OAI interface ...\n\tSource:\t" + oaiUrl + "\n\tFormat:\t" + format + "\n\tSet:\t" + set + "\n\tTime:\t" + from + " - " + until);
 
 				// Download updates from OAI interface and save them to a file. If there is a resumptionToken ("pages"),
 				// then download all resumptions and save each to a sepearate file:
@@ -391,7 +521,7 @@ public class OaiUpdater {
 		}
 	}
 
-	
+
 	/**
 	 * ORIGINAL
 	 * Downloads, saves and merges data from an OAI interface.
@@ -724,7 +854,7 @@ public class OaiUpdater {
 		return path;
 	}
 
-	
+
 	/**
 	 * Creates a directory if it does not exist.
 	 * 
@@ -736,5 +866,5 @@ public class OaiUpdater {
 			dir.mkdirs();
 		}
 	}
-	
+
 }

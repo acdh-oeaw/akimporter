@@ -502,15 +502,15 @@ public class Main {
 						);
 				break;
 			}
-			
+
 			case "O": {
-				
+
 				System.out.println("Starting OAI harvesting ...");
 				//options.getOption("O").getOp
 				String oaiName = cmd.getOptionValue("O");
-				
+
 				System.out.println("OAI Name: " + oaiName);
-				
+
 				String oaiUrl = importerProperties.getProperty("oai." + oaiName + ".url");
 				String format = importerProperties.getProperty("oai." + oaiName + ".format");
 				List<String> sets = (importerProperties.getProperty("oai." + oaiName + ".set") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".set").split("\\s*,\\s*")) : null;
@@ -521,7 +521,7 @@ public class Main {
 				String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
 				int elementsToMergeLevel = Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel"));
 				List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
-				
+
 				/*
 				System.out.println("OAI oaiUrl: " + oaiUrl);
 				System.out.println("OAI format: " + format);
@@ -532,9 +532,9 @@ public class Main {
 				System.out.println("OAI solrServerBiblio: " + solrServerBiblio);
 				System.out.println("OAI elementsToMerge: " + elementsToMerge);
 				System.out.println("OAI elementsToMergeLevel: " + elementsToMergeLevel);
-				*/
+				 */
 
-				
+
 				OaiUpdater oaiUpdater = new OaiUpdater();
 				oaiUpdater.oaiGenericUpdate(
 						oaiUrl,
@@ -549,7 +549,35 @@ public class Main {
 						solrServerBiblio,
 						print,
 						optimize);
-						
+
+				break;
+			}
+			
+			case "oai_reimport": {
+				
+				String oaiName = cmd.getOptionValue("oai_reimport");
+				
+				AkImporterHelper.print(print, "Start reimporting OAI data from " + oaiName + " ...");
+
+				String format = importerProperties.getProperty("oai." + oaiName + ".format");
+				String destinationPath = importerProperties.getProperty("oai." + oaiName + ".destinationPath");
+				String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
+				String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
+				String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
+				List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
+
+				OaiUpdater oaiUpdater = new OaiUpdater();
+				oaiUpdater.reImportOaiData(
+						destinationPath,
+						true,
+						format,
+						solrServerBiblio,
+						structElements,
+						elementsToMerge,
+						oaiPropertiesFile,
+						optimize,
+						print);
+				AkImporterHelper.print(print, "\nDone reimporting OAI data from " + oaiName + ".");
 				break;
 			}
 
@@ -1364,12 +1392,22 @@ public class Main {
 				.desc("Indexing or updating data from an OAI-PMH interface.")
 				.build();
 
+		// O (OAI-PMH Import/Update)
+		Option oOaiReImport = Option
+				.builder()
+				.required(false)
+				.longOpt("oai_reimport")
+				.hasArg(true)
+				.numberOfArgs(1)
+				.desc("Index already downloaded OAI data again.")
+				.build();
+
 		// index_sampledata (index sample data)
 		Option oIndexSampleData = Option
 				.builder()
 				.required(false)
 				.longOpt("index_sampledata")
-				.desc("Index sample data from AK Bibliothek Wien")
+				.desc("Index sample data from AK Bibliothek Wien.")
 				.build();
 
 		optionGroup.addOption(oAkTest);
@@ -1383,6 +1421,7 @@ public class Main {
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
 		optionGroup.addOption(oOaiImport);
+		optionGroup.addOption(oOaiReImport);
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);

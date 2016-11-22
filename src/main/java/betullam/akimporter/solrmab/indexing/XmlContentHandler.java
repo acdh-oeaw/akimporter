@@ -113,6 +113,9 @@ public class XmlContentHandler implements ContentHandler {
 
 		// Clear element content for fresh start
 		elementContent = "";
+		
+		// TODO: Every n-th, execute "addRecordsToSolr(this.solrServer, this.xmlSolrRecords);" and set variables to null.
+		// If not: HEAP SPACE PROBLEM!
 	}
 
 
@@ -160,7 +163,7 @@ public class XmlContentHandler implements ContentHandler {
 			// Now add the collection of documents to Solr:
 			try {
 				solrServer.add(docs);
-				solrServer.commit();
+				//solrServer.commit();
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
