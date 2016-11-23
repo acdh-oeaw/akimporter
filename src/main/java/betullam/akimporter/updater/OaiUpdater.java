@@ -234,7 +234,7 @@ public class OaiUpdater {
 
 			// If all files are valid, go on with the import process
 			if (allFilesValid) {
-				AkImporterHelper.print(print, "Done");
+				AkImporterHelper.print(print, "Done\n");
 			} else {
 				// If there are errors in at least one file, stop the import process:
 				System.err.println("\nError while validating. Import process was cancelled!\n");

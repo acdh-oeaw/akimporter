@@ -62,6 +62,22 @@ public class Rules {
 				if (dataRule.contains("connectedSubfields")) {
 					treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
 				}
+				
+				if (dataRule.contains("regEx[")) {
+					treatedValues.addAll(RegEx.getRegexValues(dataFieldValues, dataRule));
+				}
+				
+				if (dataRule.contains("regExStrict")) {
+					treatedValues.addAll(RegExStrict.getRegexStrictValues(dataFieldValues, dataRule));
+				}
+				
+				if (dataRule.contains("regExReplace")) {
+					treatedValues.addAll(RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
+				}
+			}
+			
+			if (treatedValues.isEmpty()) {
+				treatedValues = dataFieldValues;
 			}
 			
 		} else {
@@ -132,8 +148,6 @@ public class Rules {
 		}		
 		return dataRules;
 	}
-
-
 
 
 	private static List<String> getPropertyValues(String propertyValue) {
