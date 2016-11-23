@@ -1009,7 +1009,7 @@ public class MetsContentHandler implements ContentHandler {
 			if (!docs.isEmpty()) {
 				// Now add the collection of documents to Solr:
 				solrServer.add(docs);
-				solrServer.commit();
+				//solrServer.commit();
 				// Set "docs" to "null" (save memory):
 				docs = null;
 			}

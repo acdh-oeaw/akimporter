@@ -63,37 +63,33 @@ public class Rules {
 					treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
 				}
 			}
-
+			
+		} else {
 			// None of the rules above applied, so we fill the "treatedValues" List, that is still empty by now, with the original values
-			if (treatedValues.isEmpty()) {
-				treatedValues.addAll(dataFieldValues);
-			}
+			treatedValues = dataFieldValues;
+		}
 
-			// The last rules to apply are the following
-			if (!treatedValues.isEmpty()) {
-				if (!dataRules.contains("multiValued")) {
-					List<String> firstValue = MultiValued.getFirstValue(treatedValues);
+		// These rules always apply, as they have a meaning when they are absent
+		if (!treatedValues.isEmpty()) {
+			if (!dataRules.contains("multiValued")) { // If multiValued is NOT applied, return only a single value
+				List<String> firstValue = MultiValued.getFirstValue(treatedValues);
+				treatedValues.clear();
+				treatedValues = firstValue;
+			} else { // If allowDuplicates is NOT applied, return a list with unique (de-duplicated) values
+				if (!dataRules.contains("allowDuplicates")) {
+					List<String> dedupValues = AllowDuplicates.getDeduplicatedList(treatedValues);
 					treatedValues.clear();
-					treatedValues = firstValue;
-				} else {
-					if (!dataRules.contains("allowDuplicates")) {
-						List<String> dedupValues = AllowDuplicates.getDeduplicatedList(treatedValues);
-						treatedValues.clear();
-						treatedValues = dedupValues;
-					}
+					treatedValues = dedupValues;
 				}
-			} else {
-				treatedValues = null;
 			}
 		} else {
-			// There are nor rules to apply, so return the original values
-			treatedValues = dataFieldValues;
+			treatedValues = null;
 		}
 
 		return treatedValues;
 	}
 
-	
+
 	public static List<PropertyBag> getPropertyBags(String oaiPropertiesFile) {
 
 		List<PropertyBag> propertyBags = new ArrayList<PropertyBag>();

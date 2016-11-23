@@ -40,11 +40,12 @@ public class XmlContentHandler implements ContentHandler {
 	private String elementContent;
 	private String xmlRecord;
 	private boolean isRecord = false;
-	private List<String> xmlRecords;
 	private List<Map<String, List<String>>> xmlSolrRecords = null;
 	private List<PropertyBag> propertyBags;
+	private int recordCounter = 0;
+	private int NO_OF_DOCS = 500;
 
-	
+
 	public XmlContentHandler(HttpSolrServer solrServer, String recordName, String oaiPropertiesFile, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.recordName = recordName;
@@ -54,10 +55,9 @@ public class XmlContentHandler implements ContentHandler {
 		Rules.setOaiPropertiesFilePath(new File(oaiPropertiesFile).getParent());
 	}
 
-	
+
 	@Override
 	public void startDocument() throws SAXException {
-		xmlRecords = new ArrayList<String>();
 		xmlSolrRecords = new ArrayList<Map<String, List<String>>>();
 	}
 
@@ -104,27 +104,35 @@ public class XmlContentHandler implements ContentHandler {
 
 		if (qName.equals(recordName)) {
 			// End of record
+			recordCounter = recordCounter + 1;
 			isRecord = false;
-			xmlRecords.add(xmlRecord);
 
 			Map<String, List<String>> xmlSolrRecord = getXmlSolrRecord(xmlRecord);
 			xmlSolrRecords.add(xmlSolrRecord);
+			xmlSolrRecord = null;
+
+			AkImporterHelper.print(print, "Indexing record no. " + recordCounter + "                                                        \r");
+			
+			// Every n-th record (= NO_OF_DOCS), add the generic XML records to Solr. Then we will empty all objects (set to "null") to save memory
+			// and go on with the next n records. If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. NO_OF_DOCS 
+			// is set to 100 and we have 733 records, but at this point, only 700 are indexed. The 33 remaining records will be indexed in endDocument() method.
+			if (recordCounter % NO_OF_DOCS == 0) {
+				addRecordsToSolr(this.solrServer, this.xmlSolrRecords);
+				xmlSolrRecords = null;
+				xmlSolrRecords = new ArrayList<Map<String, List<String>>>();
+			}
 		}
 
 		// Clear element content for fresh start
 		elementContent = "";
-		
-		// TODO: Every n-th, execute "addRecordsToSolr(this.solrServer, this.xmlSolrRecords);" and set variables to null.
-		// If not: HEAP SPACE PROBLEM!
 	}
 
 
 	@Override
 	public void endDocument() throws SAXException {
-		AkImporterHelper.print(print, "\nIndexing documents to Solr ... ");
 		addRecordsToSolr(this.solrServer, this.xmlSolrRecords);
-		AkImporterHelper.print(print, "Done");
-		this.xmlSolrRecords = null;
+		xmlSolrRecords = null;
+		propertyBags = null;
 	}
 
 
@@ -133,7 +141,12 @@ public class XmlContentHandler implements ContentHandler {
 		elementContent += new String(ch, start, length).replaceAll("\\s+", " ");
 	}
 
-	
+
+	/**
+	 * Actually adds our data to the Solr server.
+	 * @param solrServer		HttpSolrServer: The Solr server to which the data should be added
+	 * @param xmlSolrRecords	List&lt;Map&lt;String, List&lt;String&gt;&gt;&gt;: A list of Maps, each representing a record that should be added to solr.
+	 */
 	private void addRecordsToSolr(HttpSolrServer solrServer, List<Map<String, List<String>>> xmlSolrRecords) {
 		// Create a collection of all documents
 		Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -141,7 +154,7 @@ public class XmlContentHandler implements ContentHandler {
 		for (Map<String, List<String>> xmlSolrRecord : xmlSolrRecords) {
 			// Create a Solr input document
 			SolrInputDocument doc = new SolrInputDocument();
-			
+
 			// Add fields to Solr document
 			for (Entry<String, List<String>> dataField : xmlSolrRecord.entrySet()) {
 				String solrFieldName = dataField.getKey();
@@ -149,33 +162,37 @@ public class XmlContentHandler implements ContentHandler {
 				if (solrFieldValue != null && !solrFieldValue.isEmpty()) {
 					doc.addField(solrFieldName, solrFieldValue);
 				}
-				
 			}
-			
+
 			// Add the Solr document to a Solr document collection if it is not empty
 			if (!doc.isEmpty()) {
 				docs.add(doc);
 			}
 		}
-		
+
 		// If the Solr document collection is not empty, add the Solr documents to Solr
 		if (!docs.isEmpty()) {
 			// Now add the collection of documents to Solr:
 			try {
 				solrServer.add(docs);
-				//solrServer.commit();
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 			// Set "docs" to "null" (save memory):
 			docs = null;
 		}
 	}
 
 
+	/**
+	 * Converts an XML record with the help of xPath to a Map that can be added to Solr.
+	 * @param xmlRecord		String: The XML record as a String. It will be converted to a DOM document that can be queried with xPath.
+	 * @return				Map&lt;String, List&lt;String&gt;&gt;: A Map that is used to add the data from the XML to Solr.
+	 * 						The key (String) is the Solr fieldname, the value (List&lt;String&gt;) are the values that should be indexed into this field.
+	 */
 	private Map<String, List<String>> getXmlSolrRecord(String xmlRecord) {
 		Map<String, List<String>> xmlSolrRecord = new TreeMap<String, List<String>>();
 		Document document = getDomDocument(xmlRecord);
@@ -208,23 +225,28 @@ public class XmlContentHandler implements ContentHandler {
 			}
 
 			treatedValues = Rules.applyDataRules(solrField, dataFieldValues, dataRules);
+			
 			xmlSolrRecord.put(solrField, treatedValues);
 		}
-		
+
 		// Add indexing timestamp to record
 		if (!xmlSolrRecord.isEmpty()) {
 			List<String> timeStampAsList = new ArrayList<String>();
 			timeStampAsList.add(timeStamp);
 			xmlSolrRecord.put("indexTimestamp_str", timeStampAsList);
 		}
-		
+
 		return xmlSolrRecord;
 	}
 
 
+	/**
+	 * Get a DOM Document from a String representing an XML record.
+	 * @param xmlRecord		String: The XML record as a String. It will be converted to a DOM document.
+	 * @return				Document: A DOM Document
+	 */
 	private static Document getDomDocument(String xmlRecord) {
 		Document domDocument = null;
-
 		try {
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -240,7 +262,6 @@ public class XmlContentHandler implements ContentHandler {
 
 		return domDocument;
 	}
-
 
 
 
