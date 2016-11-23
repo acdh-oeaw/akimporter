@@ -214,8 +214,8 @@ public class XmlContentHandler implements ContentHandler {
 				} else {
 					// It should be an xPath expression, so we try to execute it and get a result from it
 					try {
-						List<String> values = xmlParser.getXpathResult(document, dataField);
-						if (values != null) {
+						List<String> values = xmlParser.getXpathResult(document, dataField);						
+						if (values != null && !values.isEmpty()) {
 							dataFieldValues.addAll(values);
 						}
 					} catch (XPathExpressionException e) {
@@ -224,8 +224,10 @@ public class XmlContentHandler implements ContentHandler {
 				}
 			}
 
+			// Apply rules specified in .properties file
 			treatedValues = Rules.applyDataRules(solrField, dataFieldValues, dataRules);
 			
+			// Add the Solr field name and the values for the Solr field to a Map
 			xmlSolrRecord.put(solrField, treatedValues);
 		}
 
