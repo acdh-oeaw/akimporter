@@ -112,7 +112,7 @@ public class XmlContentHandler implements ContentHandler {
 			xmlSolrRecord = null;
 
 			AkImporterHelper.print(print, "Indexing record no. " + recordCounter + "                                                        \r");
-			
+
 			// Every n-th record (= NO_OF_DOCS), add the generic XML records to Solr. Then we will empty all objects (set to "null") to save memory
 			// and go on with the next n records. If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. NO_OF_DOCS 
 			// is set to 100 and we have 733 records, but at this point, only 700 are indexed. The 33 remaining records will be indexed in endDocument() method.
@@ -214,7 +214,7 @@ public class XmlContentHandler implements ContentHandler {
 				} else {
 					// It should be an xPath expression, so we try to execute it and get a result from it
 					try {
-						List<String> values = xmlParser.getXpathResult(document, dataField);						
+						List<String> values = xmlParser.getXpathResult(document, dataField, false);						
 						if (values != null && !values.isEmpty()) {
 							dataFieldValues.addAll(values);
 						}
@@ -224,11 +224,13 @@ public class XmlContentHandler implements ContentHandler {
 				}
 			}
 
-			// Apply rules specified in .properties file
-			treatedValues = Rules.applyDataRules(solrField, dataFieldValues, dataRules);
-			
-			// Add the Solr field name and the values for the Solr field to a Map
-			xmlSolrRecord.put(solrField, treatedValues);
+			if (dataFieldValues != null && !dataFieldValues.isEmpty()) {
+				// Apply rules specified in .properties file
+				treatedValues = Rules.applyDataRules(dataFieldValues, dataRules);
+
+				// Add the Solr field name and the values for the Solr field to a Map
+				xmlSolrRecord.put(solrField, treatedValues);
+			}
 		}
 
 		// Add indexing timestamp to record

@@ -43,7 +43,7 @@ public class Rules {
 	};
 
 
-	public static List<String> applyDataRules(String solrField, List<String> dataFieldValues, List<String> dataRules) {
+	public static List<String> applyDataRules(List<String> dataFieldValues, List<String> dataRules) {
 
 		List<String> treatedValues = new ArrayList<String>();
 

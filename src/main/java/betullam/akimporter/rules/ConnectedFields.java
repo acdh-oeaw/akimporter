@@ -16,14 +16,16 @@ public class ConnectedFields {
 	public static List<String> getConnectedFields(List<String> dataFieldValues, String dataRule) {
 
 		List<String> returnValue = new ArrayList<String>();
-		
+		int valueCounter = 0;
+
 		for (String dataFieldValue : dataFieldValues) {
+
 			// Add the main value to the list
 			returnValue.add(dataFieldValue);
-			
+
 			String connectedDefaultValue = null;
 			LinkedHashMap<Integer, String> connectedFields = AkImporterHelper.getBracketValues(dataRule);
-			
+
 			for (Entry<Integer, String> connectedField : connectedFields.entrySet()) {
 				// TODO: Splitting with colon can be tricky because XML element names with namespaces have colons in them also.
 				List<String> immutableList = Arrays.asList(connectedField.getValue().split("\\s*:\\s*"));
@@ -36,12 +38,14 @@ public class ConnectedFields {
 				String textToUse = null;
 				for (String connectedFieldsCode : connectedFieldsCodes) {
 					try {
-						List<String> connectedFieldValues = Rules.xmlParser.getXpathResult(Rules.document, connectedFieldsCode);
+						List<String> connectedFieldValues = Rules.xmlParser.getXpathResult(Rules.document, connectedFieldsCode, true);
+						int noOfConnectedFieldValues = connectedFieldValues.size();
+
 						if (connectedFieldValues != null && !connectedFieldValues.isEmpty()) {
-							for (String connectedFieldValue : connectedFieldValues) {
-								// Set text only if textToUse is not null. Otherwise we would overwrite a value that was added in a loop before.
-								if (textToUse == null) {
-									textToUse = connectedFieldValue;
+							// Set text only if textToUse is not null. Otherwise we would overwrite a value that was added in a loop before.
+							if (textToUse == null) {
+								if (valueCounter < noOfConnectedFieldValues) {
+									textToUse = connectedFieldValues.get(valueCounter);
 								}
 							}
 						}
@@ -49,6 +53,8 @@ public class ConnectedFields {
 						// Do nothing. If there is an error with the xPath query, the default value should be used.
 					}
 				}
+
+
 
 				// Set default value if no other value was found
 				if (textToUse == null) {
@@ -59,15 +65,18 @@ public class ConnectedFields {
 				// TODO: Handle translation of connected values: Here or maybe better in AN OWN CLASS!
 				boolean isTranslateConnectedFields = relevantPropertiesObject.isTranslateConnectedFields();
 				if (isTranslateConnectedFields) {
-					
+
 				}
 				 */
-				
+
 				returnValue.add(textToUse);
 			}
+
+			// Increase the counter:
+			valueCounter = valueCounter + 1;
 		}
-		
+
 		return returnValue;
 	}
-	
+
 }
