@@ -41,16 +41,20 @@ public class XmlContentHandler implements ContentHandler {
 	private String xmlRecord;
 	private boolean isRecord = false;
 	private List<Map<String, List<String>>> xmlSolrRecords = null;
+	List<String> includes;
+	List<String> excludes;
 	private List<PropertyBag> propertyBags;
 	private int recordCounter = 0;
 	private int NO_OF_DOCS = 500;
 
 
-	public XmlContentHandler(HttpSolrServer solrServer, String recordName, String oaiPropertiesFile, String timeStamp, boolean print) {
+	public XmlContentHandler(HttpSolrServer solrServer, String recordName, List<String> includes, List<String> excludes, String oaiPropertiesFile, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.recordName = recordName;
 		this.timeStamp = timeStamp;
 		this.print = print;
+		this.includes = includes;
+		this.excludes = excludes;
 		this.propertyBags = Rules.getPropertyBags(oaiPropertiesFile);
 		Rules.setOaiPropertiesFilePath(new File(oaiPropertiesFile).getParent());
 	}
@@ -108,8 +112,10 @@ public class XmlContentHandler implements ContentHandler {
 			isRecord = false;
 
 			Map<String, List<String>> xmlSolrRecord = getXmlSolrRecord(xmlRecord);
-			xmlSolrRecords.add(xmlSolrRecord);
-			xmlSolrRecord = null;
+			if (xmlSolrRecord != null) {
+				xmlSolrRecords.add(xmlSolrRecord);
+				xmlSolrRecord = null;
+			}
 
 			AkImporterHelper.print(print, "Indexing record no. " + recordCounter + "                                                        \r");
 
@@ -197,8 +203,41 @@ public class XmlContentHandler implements ContentHandler {
 		Map<String, List<String>> xmlSolrRecord = new TreeMap<String, List<String>>();
 		Document document = getDomDocument(xmlRecord);
 		Rules.setDocument(document);
+		boolean isInclude = false;
 
 		XmlParser xmlParser = new XmlParser();
+
+		// Check for includes and excludes (filtes to define in AkImporter.properties, if the document should be indexed or not)
+		try {
+			if (includes != null) {
+				for (String includeXpath : includes) {
+					List<String> includeValues = xmlParser.getXpathResult(document, includeXpath, false);
+					//System.out.println("INCLUDES: " + includeValues);
+					if (includeValues != null && includeValues.size() > 0) {
+						isInclude = true;
+					}
+				}
+			} else {
+				// If there is no include rule at all, set isInclude to true by default
+				isInclude = true;
+			}
+
+			if (excludes != null) {
+				for (String excludeXpath : excludes) {
+					List<String> excludeValues = xmlParser.getXpathResult(document, excludeXpath, true);
+					if (excludeValues != null && excludeValues.size() > 0) {
+						isInclude = false;
+					}
+				}
+			}
+		} catch (XPathExpressionException e) {
+			e.printStackTrace();
+		}
+
+		// Do not index the record
+		if (!isInclude) {
+			return null;
+		}
 
 		for (PropertyBag propertyBag : propertyBags) {
 			String solrField = propertyBag.getSolrField();
@@ -214,7 +253,7 @@ public class XmlContentHandler implements ContentHandler {
 				} else {
 					// It should be an xPath expression, so we try to execute it and get a result from it
 					try {
-						List<String> values = xmlParser.getXpathResult(document, dataField, false);						
+						List<String> values = xmlParser.getXpathResult(document, dataField, false);
 						if (values != null && !values.isEmpty()) {
 							dataFieldValues.addAll(values);
 						}

@@ -112,11 +112,14 @@ public class OaiUpdater {
 			String elementsToMerge,
 			int elementsToMergeLevel,
 			String oaiDatefile,
+			List<String> include,
+			List<String> exclude,
 			String oaiPropertiesFile,
 			String solrServerBiblio,
 			boolean print,
 			boolean optimize
 			) {
+		
 		this.indexTimestamp = new Date().getTime();
 		String strIndexTimestamp = String.valueOf(this.indexTimestamp);
 
@@ -157,7 +160,7 @@ public class OaiUpdater {
 			mergedFileName = null;
 		}
 
-		boolean isIndexingSuccessful = indexDownloadedOaiData(mergedFileName, format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, oaiPropertiesFile, print);
+		boolean isIndexingSuccessful = indexDownloadedOaiData(mergedFileName, format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, include, exclude, oaiPropertiesFile, print);
 
 		if (isIndexingSuccessful) {
 			try {
@@ -200,7 +203,19 @@ public class OaiUpdater {
 	 * @param print
 	 * @return
 	 */
-	public boolean reImportOaiData(String pathToOaiDir, boolean isValidationOk, String format, String solrServerBiblio, List<String> structElements, String elementsToMerge, String oaiPropertiesFile, boolean optimize, boolean print) {
+	public boolean reImportOaiData(
+			String pathToOaiDir,
+			boolean isValidationOk,
+			String format,
+			String solrServerBiblio,
+			List<String> structElements,
+			String elementsToMerge,
+			List<String> include,
+			List<String> exclude,
+			String oaiPropertiesFile,
+			boolean optimize,
+			boolean print) {
+		
 		boolean isReindexingSuccessful = false;
 		
 		this.indexTimestamp = new Date().getTime();
@@ -246,7 +261,7 @@ public class OaiUpdater {
 		
 		
 		for (File file : fileList) {
-			boolean isIndexingSuccessful = indexDownloadedOaiData(file.getAbsolutePath(), format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, oaiPropertiesFile, print);
+			boolean isIndexingSuccessful = indexDownloadedOaiData(file.getAbsolutePath(), format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, include, exclude, oaiPropertiesFile, print);
 
 			if (isIndexingSuccessful) {
 				try {
@@ -292,7 +307,18 @@ public class OaiUpdater {
 	 * @param print					boolean:		True if status messages sould be print, false otherwise
 	 * @return						boolean:		True if the index process was successful, false otherwise
 	 */
-	public boolean indexDownloadedOaiData(String mergedFileName, String format, HttpSolrServer sServerBiblio, List<String> structElements, String elementsToMerge, String strIndexTimestamp, String oaiPropertiesFile, boolean print) {
+	public boolean indexDownloadedOaiData(
+			String mergedFileName,
+			String format,
+			HttpSolrServer sServerBiblio,
+			List<String> structElements,
+			String elementsToMerge,
+			String strIndexTimestamp,
+			List<String> include,
+			List<String> exclude,
+			String oaiPropertiesFile,
+			boolean print) {
+		
 		boolean isIndexingSuccessful = false;
 		try {
 			// Create InputSource from XML file
@@ -307,7 +333,7 @@ public class OaiUpdater {
 				contentHandler = new MetsContentHandler(sServerBiblio, structElements, strIndexTimestamp, print);
 			} else {
 				// Create content handler for generic XML data (e. g. from SSOAR)
-				contentHandler = new XmlContentHandler(sServerBiblio, elementsToMerge, oaiPropertiesFile, strIndexTimestamp, print);
+				contentHandler = new XmlContentHandler(sServerBiblio, elementsToMerge, include, exclude, oaiPropertiesFile, strIndexTimestamp, print);
 			}
 
 			// Create SAX parser and set content handler:

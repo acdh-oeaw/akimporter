@@ -122,7 +122,6 @@ public class Main {
 	static String aMergeEntities = importerProperties.getProperty("authority.merge.entities");
 
 
-
 	/**
 	 * Main method of AkImporter.
 	 * This is the starting point for all following actions.
@@ -173,6 +172,28 @@ public class Main {
 			if (cmd.hasOption("m")) {
 				merge = true;
 			}
+			
+			// Get OAI import properties. We need to get them here because we need the "cmd" variable for it.
+			String oaiName = null;
+			if (cmd.hasOption("O")) {
+				oaiName = cmd.getOptionValue("O");
+			}
+			if (cmd.hasOption("oai_reimport")) {
+				oaiName = cmd.getOptionValue("oai_reimport");
+			}
+			
+			String oaiUrl = importerProperties.getProperty("oai." + oaiName + ".url");
+			String format = importerProperties.getProperty("oai." + oaiName + ".format");
+			List<String> sets = (importerProperties.getProperty("oai." + oaiName + ".set") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".set").split("\\s*,\\s*")) : null;
+			String destinationPath = importerProperties.getProperty("oai." + oaiName + ".destinationPath");
+			String oaiDatefile = importerProperties.getProperty("oai." + oaiName + ".dateFile");
+			String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
+			String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
+			String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
+			int elementsToMergeLevel = (importerProperties.getProperty("oai." + oaiName + ".elementsLevel") != null) ? Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel")) : null;
+			List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
+			List<String> include = (importerProperties.getProperty("oai." + oaiName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".include").split("\\s*,\\s*")) : null;
+			List<String> exclude = (importerProperties.getProperty("oai." + oaiName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".exclude").split("\\s*,\\s*")) : null;
 
 			// Switch between main options
 			switch (selectedMainOption) {
@@ -505,35 +526,7 @@ public class Main {
 
 			case "O": {
 
-				System.out.println("Starting OAI harvesting ...");
-				//options.getOption("O").getOp
-				String oaiName = cmd.getOptionValue("O");
-
-				System.out.println("OAI Name: " + oaiName);
-
-				String oaiUrl = importerProperties.getProperty("oai." + oaiName + ".url");
-				String format = importerProperties.getProperty("oai." + oaiName + ".format");
-				List<String> sets = (importerProperties.getProperty("oai." + oaiName + ".set") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".set").split("\\s*,\\s*")) : null;
-				String destinationPath = importerProperties.getProperty("oai." + oaiName + ".destinationPath");
-				String oaiDatefile = importerProperties.getProperty("oai." + oaiName + ".dateFile");
-				String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
-				String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
-				String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
-				int elementsToMergeLevel = Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel"));
-				List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
-
-				/*
-				System.out.println("OAI oaiUrl: " + oaiUrl);
-				System.out.println("OAI format: " + format);
-				System.out.println("OAI set: " + set);
-				System.out.println("OAI destinationPath: " + destinationPath);
-				System.out.println("OAI oaiDatefile: " + oaiDatefile);
-				System.out.println("OAI oaiPropertiesFile: " + oaiPropertiesFile);
-				System.out.println("OAI solrServerBiblio: " + solrServerBiblio);
-				System.out.println("OAI elementsToMerge: " + elementsToMerge);
-				System.out.println("OAI elementsToMergeLevel: " + elementsToMergeLevel);
-				 */
-
+				System.out.println("Starting OAI harvesting for " + oaiName + " ...");
 
 				OaiUpdater oaiUpdater = new OaiUpdater();
 				oaiUpdater.oaiGenericUpdate(
@@ -545,6 +538,8 @@ public class Main {
 						elementsToMerge,
 						elementsToMergeLevel,
 						oaiDatefile,
+						include,
+						exclude,
 						oaiPropertiesFile,
 						solrServerBiblio,
 						print,
@@ -554,18 +549,9 @@ public class Main {
 			}
 			
 			case "oai_reimport": {
+								
+				AkImporterHelper.print(print, "Start reimporting OAI data for " + oaiName + " ...");
 				
-				String oaiName = cmd.getOptionValue("oai_reimport");
-				
-				AkImporterHelper.print(print, "Start reimporting OAI data from " + oaiName + " ...");
-
-				String format = importerProperties.getProperty("oai." + oaiName + ".format");
-				String destinationPath = importerProperties.getProperty("oai." + oaiName + ".destinationPath");
-				String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
-				String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
-				String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
-				List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
-
 				OaiUpdater oaiUpdater = new OaiUpdater();
 				oaiUpdater.reImportOaiData(
 						destinationPath,
@@ -574,6 +560,8 @@ public class Main {
 						solrServerBiblio,
 						structElements,
 						elementsToMerge,
+						include,
+						exclude,
 						oaiPropertiesFile,
 						optimize,
 						print);
