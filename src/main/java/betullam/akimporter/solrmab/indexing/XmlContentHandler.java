@@ -84,16 +84,23 @@ public class XmlContentHandler implements ContentHandler {
 			for (int i = 0; i < atts.getLength(); i++) {
 				String attQName = atts.getQName(i);
 				String attValue = atts.getValue(i);
+				
+				/*
 				// Add the xsi namespace if appropriate:
+				// Not necessary as we set namespace awareness for SAX parser (see class "OaiUpdater")
 				if (attQName.contains("xsi:")) {
 					startElement += " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
 				}
+				*/
+				
 				startElement += " " + attQName + "=\"" + StringEscapeUtils.escapeXml10(attValue).trim() + "\"";
 			}
 			startElement += ">";
 			xmlRecord += startElement;
 		}
 	}
+	
+	
 
 
 	@Override
@@ -292,6 +299,7 @@ public class XmlContentHandler implements ContentHandler {
 		Document domDocument = null;
 		try {
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			documentBuilderFactory.setNamespaceAware(true); // Set namespace awareness for DOM builder factory. Important if we want to use namspaces in xPath!
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			InputSource inputSource = new InputSource(new StringReader(xmlRecord));
 			domDocument = documentBuilder.parse(inputSource);
@@ -310,7 +318,6 @@ public class XmlContentHandler implements ContentHandler {
 
 
 
-
 	// Methods from ContentHandler that are not used at the moment:
 	@Override
 	public void startPrefixMapping(String prefix, String uri) throws SAXException {}
@@ -324,4 +331,6 @@ public class XmlContentHandler implements ContentHandler {
 	public void processingInstruction(String target, String data) throws SAXException {}
 	@Override
 	public void skippedEntity(String name) throws SAXException {}
+	
+
 }

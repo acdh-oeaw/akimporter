@@ -338,6 +338,11 @@ public class OaiUpdater {
 
 			// Create SAX parser and set content handler:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+			
+			// Set SAX parser namespace aware (namespaceawareness)
+			xmlReader.setFeature("http://xml.org/sax/features/namespace-prefixes", true);
+			
+			// Set the content handler for the SAX parser
 			xmlReader.setContentHandler(contentHandler);
 
 			// Start parsing & indexing:
