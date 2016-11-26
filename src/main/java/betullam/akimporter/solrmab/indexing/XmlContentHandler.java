@@ -219,7 +219,6 @@ public class XmlContentHandler implements ContentHandler {
 			if (includes != null) {
 				for (String includeXpath : includes) {
 					List<String> includeValues = xmlParser.getXpathResult(document, includeXpath, false);
-					//System.out.println("INCLUDES: " + includeValues);
 					if (includeValues != null && includeValues.size() > 0) {
 						isInclude = true;
 					}
