@@ -62,24 +62,24 @@ public class Rules {
 				if (dataRule.contains("connectedSubfields")) {
 					treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
 				}
-				
+
 				if (dataRule.contains("regEx[")) {
 					treatedValues.addAll(RegEx.getRegexValues(dataFieldValues, dataRule));
 				}
-				
+
 				if (dataRule.contains("regExStrict")) {
 					treatedValues.addAll(RegExStrict.getRegexStrictValues(dataFieldValues, dataRule));
 				}
-				
+
 				if (dataRule.contains("regExReplace")) {
 					treatedValues.addAll(RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
 				}
 			}
-			
+
 			if (treatedValues.isEmpty()) {
 				treatedValues = dataFieldValues;
 			}
-			
+
 		} else {
 			// None of the rules above applied, so we fill the "treatedValues" List, that is still empty by now, with the original values
 			treatedValues = dataFieldValues;
@@ -155,6 +155,7 @@ public class Rules {
 
 		String value = "";
 		int bracketCounter = 0;
+		int parenthesesCounter = 0;
 
 		// Iterate over each character of the property value (comma separated string)
 		for (int i = 0; i < propertyValue.length(); i++) {
@@ -170,15 +171,23 @@ public class Rules {
 			if (s.equals("[")) {
 				bracketCounter = bracketCounter + 1;
 			}
+			// Check if the current character is an opening parentheses
+			if (s.equals("(")) {
+				parenthesesCounter = parenthesesCounter + 1;
+			}
 
 			// Check if the current character is a closing bracket
 			if (s.equals("]")) {
 				bracketCounter = bracketCounter - 1;
 			}
+			// Check if the current character is a closing parentheses
+			if (s.equals(")")) {
+				parenthesesCounter = parenthesesCounter - 1;
+			}
 
-			// Check if the current character is a comma and is not within brackets (to avoid the splitting of values at commas within RegEx expressions) or
-			// if it is the last part of the property value (as this does not end with a comma, it would not be added to the List<String> without that check).
-			if ((s.equals(",") && bracketCounter <= 0) || (i == (propertyValue.length()-1))) {
+			// Check if the current character is a comma and is not within brackets or parantheses (to avoid the splitting of values at commas within RegEx expressions)
+			// or if it is the last part of the property value (as this does not end with a comma, it would not be added to the List<String> without that check).
+			if ((s.equals(",") && bracketCounter <= 0 && parenthesesCounter <= 0) || (i == (propertyValue.length()-1))) {
 				// Add the property value Replace comma at the last position.
 				propertyValues.add(value.trim().replaceAll(",$", ""));
 				// Reset the variable for the next value.

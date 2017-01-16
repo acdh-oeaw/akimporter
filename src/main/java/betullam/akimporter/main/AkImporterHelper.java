@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
@@ -145,7 +146,34 @@ public class AkImporterHelper {
 		executionTime = hours + ":" + minutes + ":" + seconds;
 		return executionTime;
 	}
+	
+	
+	public static void deleteRecordsByQuery(HttpSolrServer solrServer, String solrQuery) {
+		try {
+			//solrQuery = StringEscapeUtils.escapeJava(solrQuery);
+			solrQuery = solrQuery.replaceAll("\"","\\\"");
+			solrServer.deleteByQuery(solrQuery);
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
+	
+	
+	/**
+	 * Remove last file separator character of a String representing a path to a directory
+	 *  
+	 * @param path	String:	A path to a directory.
+	 * @return		String:	The path without the last file separator character.
+	 */
+	public static String stripFileSeperatorFromPath(String path) {
+		if (!path.equals(File.separator) && (path.length() > 0) && (path.charAt(path.length()-1) == File.separatorChar)) {
+			path = path.substring(0, path.length()-1);
+		}
+		return path;
+	}
 	
 	/**
 	 * Starts an optimize action for a Solr core.

@@ -77,10 +77,12 @@ public class XmlContentHandler implements ContentHandler {
 			isRecord = true;
 			xmlRecord = "";
 			xmlRecord += "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+			
 		}
 
 		if (isRecord) {
-			startElement += "<" + qName;
+			startElement += "<" + qName;			
+			
 			for (int i = 0; i < atts.getLength(); i++) {
 				String attQName = atts.getQName(i);
 				String attValue = atts.getValue(i);
@@ -99,8 +101,6 @@ public class XmlContentHandler implements ContentHandler {
 			xmlRecord += startElement;
 		}
 	}
-	
-	
 
 
 	@Override
@@ -313,9 +313,7 @@ public class XmlContentHandler implements ContentHandler {
 		return domDocument;
 	}
 
-
-
-
+	
 
 	// Methods from ContentHandler that are not used at the moment:
 	@Override
@@ -330,6 +328,4 @@ public class XmlContentHandler implements ContentHandler {
 	public void processingInstruction(String target, String data) throws SAXException {}
 	@Override
 	public void skippedEntity(String name) throws SAXException {}
-	
-
 }

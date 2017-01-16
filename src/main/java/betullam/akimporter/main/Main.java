@@ -62,8 +62,10 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
 import main.java.betullam.akimporter.solrmab.Relate;
+import main.java.betullam.akimporter.solrmab.XmlIndex;
 import main.java.betullam.akimporter.updater.OaiUpdater;
 import main.java.betullam.akimporter.updater.Updater;
+import sun.security.validator.ValidatorException;
 
 /** TODO:
  * 
@@ -181,7 +183,6 @@ public class Main {
 			if (cmd.hasOption("oai_reimport")) {
 				oaiName = cmd.getOptionValue("oai_reimport");
 			}
-			
 			String oaiUrl = importerProperties.getProperty("oai." + oaiName + ".url");
 			String format = importerProperties.getProperty("oai." + oaiName + ".format");
 			List<String> sets = (importerProperties.getProperty("oai." + oaiName + ".set") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".set").split("\\s*,\\s*")) : null;
@@ -190,11 +191,35 @@ public class Main {
 			String oaiPropertiesFile = importerProperties.getProperty("oai." + oaiName + ".propertiesFile");
 			String solrServerBiblio = importerProperties.getProperty("oai." + oaiName + ".solrBibl");
 			String elementsToMerge = importerProperties.getProperty("oai." + oaiName + ".elements");
-			int elementsToMergeLevel = (importerProperties.getProperty("oai." + oaiName + ".elementsLevel") != null) ? Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel")) : null;
+			//System.out.println("Elements Level for " + oaiName + ": " + importerProperties.getProperty("oai." + oaiName + ".elementsLevel"));
+			//if (importerProperties.getProperty("oai." + oaiName + ".elementsLevel") != null) { System.out.println ("Is NOT Null"); } else { System.out.println ("Is Null"); };
+			int elementsToMergeLevel = (importerProperties.getProperty("oai." + oaiName + ".elementsLevel") != null) ? Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel")) : 1;
 			List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
 			List<String> include = (importerProperties.getProperty("oai." + oaiName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".include").split("\\s*,\\s*")) : null;
 			List<String> exclude = (importerProperties.getProperty("oai." + oaiName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".exclude").split("\\s*,\\s*")) : null;
+			String deleteBeforeImport = importerProperties.getProperty("oai." + oaiName + ".deleteBeforeImport");
 
+			
+			// Get XML import properties. We need to get them here because we need the "cmd" variable for it.
+			String xmlName = null;
+			if (cmd.hasOption("X")) {
+				xmlName = cmd.getOptionValue("X");
+			}
+			String xmlPath = importerProperties.getProperty("xml." + xmlName + ".path");
+			String xmlPropertiesFile = importerProperties.getProperty("xml." + xmlName + ".propertiesFile");
+			String xmlSolrServerBiblio = importerProperties.getProperty("xml." + xmlName + ".solrBibl");
+			String xmlElements = importerProperties.getProperty("xml." + xmlName + ".elements");
+			List<String> xmlInclude = (importerProperties.getProperty("xml." + xmlName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("xml." + xmlName + ".include").split("\\s*,\\s*")) : null;
+			List<String> xmlExclude = (importerProperties.getProperty("xml." + xmlName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("xml." + xmlName + ".exclude").split("\\s*,\\s*")) : null;
+			String xmlDeleteBeforeImport = importerProperties.getProperty("xml." + xmlName + ".deleteBeforeImport");
+			/*String xmlFtpHost = importerProperties.getProperty("xml." + xmlName + ".ftpHost");
+			String xmlFtpPort = importerProperties.getProperty("xml." + xmlName + ".ftpPort");
+			String xmlFtpUser = importerProperties.getProperty("xml." + xmlName + ".ftpUser");
+			String xmlFtpPass = importerProperties.getProperty("xml." + xmlName + ".ftpPass");
+			String xmlFtpRemotePath = importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath");
+			String xmlFtpLocalPath = importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath");*/
+			
+			
 			// Switch between main options
 			switch (selectedMainOption) {
 
@@ -526,25 +551,30 @@ public class Main {
 
 			case "O": {
 
-				System.out.println("Starting OAI harvesting for " + oaiName + " ...");
-
+				System.out.println("Starting OAI harvesting for " + oaiName + " ...");				
+				
 				OaiUpdater oaiUpdater = new OaiUpdater();
-				oaiUpdater.oaiGenericUpdate(
-						oaiUrl,
-						format,
-						sets,
-						structElements,
-						destinationPath,
-						elementsToMerge,
-						elementsToMergeLevel,
-						oaiDatefile,
-						include,
-						exclude,
-						oaiPropertiesFile,
-						solrServerBiblio,
-						print,
-						optimize);
-
+				try {
+					oaiUpdater.oaiGenericUpdate(
+							oaiUrl,
+							format,
+							sets,
+							structElements,
+							destinationPath,
+							elementsToMerge,
+							elementsToMergeLevel,
+							oaiDatefile,
+							include,
+							exclude,
+							deleteBeforeImport,
+							oaiPropertiesFile,
+							solrServerBiblio,
+							print,
+							optimize);
+				} catch (main.java.betullam.akimporter.updater.OaiUpdater.ValidatorException e) {
+					e.printStackTrace();
+				}
+				
 				break;
 			}
 			
@@ -553,22 +583,35 @@ public class Main {
 				AkImporterHelper.print(print, "Start reimporting OAI data for " + oaiName + " ...");
 				
 				OaiUpdater oaiUpdater = new OaiUpdater();
-				oaiUpdater.reImportOaiData(
-						destinationPath,
-						true,
-						format,
-						solrServerBiblio,
-						structElements,
-						elementsToMerge,
-						include,
-						exclude,
-						oaiPropertiesFile,
-						optimize,
-						print);
-				AkImporterHelper.print(print, "\nDone reimporting OAI data from " + oaiName + ".");
+				try {
+					oaiUpdater.reImportOaiData(
+							destinationPath,
+							false,
+							format,
+							solrServerBiblio,
+							structElements,
+							elementsToMerge,
+							include,
+							exclude,
+							deleteBeforeImport,
+							oaiPropertiesFile,
+							optimize,
+							print);
+				} catch (main.java.betullam.akimporter.updater.OaiUpdater.ValidatorException e) {
+					e.printStackTrace();
+				}
+				AkImporterHelper.print(print, "\nDone reimporting OAI data for " + oaiName + ".");
 				break;
 			}
 
+			case "X": {
+
+				System.out.println("Starting XML import for " + xmlName + " ...");
+				new XmlIndex(xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, print, optimize);
+				System.out.println("Done importing XML for " + xmlName + ".");
+				break;
+			}
+			
 			case "h": {
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
@@ -1390,6 +1433,16 @@ public class Main {
 				.desc("Index already downloaded OAI data again.")
 				.build();
 
+		// X (XML Import)
+		Option oXmlImport = Option
+				.builder("X")
+				.required(false)
+				.longOpt("xml_import")
+				.hasArg(true)
+				.numberOfArgs(1)
+				.desc("Indexing or updating data from an OAI-PMH interface.")
+				.build();
+				
 		// index_sampledata (index sample data)
 		Option oIndexSampleData = Option
 				.builder()
@@ -1410,6 +1463,7 @@ public class Main {
 		optionGroup.addOption(oAuthoritySilent);
 		optionGroup.addOption(oOaiImport);
 		optionGroup.addOption(oOaiReImport);
+		optionGroup.addOption(oXmlImport);
 		optionGroup.addOption(oConsolidate);
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);

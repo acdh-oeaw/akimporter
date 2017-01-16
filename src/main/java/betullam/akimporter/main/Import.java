@@ -214,7 +214,7 @@ public class Import {
 					if (isXmlCleanOk.equals("Y")) {
 						// Start cleaning XML
 						XmlCleaner xmlc = new XmlCleaner();
-						boolean cleaningProcessDone = xmlc.cleanXml(pathToMabXmlFile);
+						boolean cleaningProcessDone = xmlc.cleanXml(pathToMabXmlFile, false);
 						boolean isNewXmlFileClean = false;
 						if (cleaningProcessDone == true) {
 							pathToMabXmlFile = xmlc.getCleanedFile();
