@@ -813,6 +813,7 @@ public class MetsContentHandler implements ContentHandler {
 						doc.addField("recordtype", "mab");
 						doc.addField("locationCode_str_mv", "goobi");
 						doc.addField("location_txtF_mv", "eMedien");
+						doc.addField("locationDigital_txtF_mv", "eMedien");
 						doc.addField("contentType_str_mv", "txt");
 						doc.addField("format", "electronic");
 						doc.addField("urlText_txtF_mv", urlText);
