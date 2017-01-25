@@ -27,7 +27,6 @@ import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
 import ak.xmlhelper.XmlParser;
-import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.rules.PropertyBag;
 import main.java.betullam.akimporter.rules.Rules;
 
@@ -35,7 +34,7 @@ public class XmlContentHandler implements ContentHandler {
 
 	private HttpSolrServer solrServer;
 	private String timeStamp;
-	private boolean print;
+	//private boolean print;
 	private String recordName;
 	private String elementContent;
 	private String xmlRecord;
@@ -52,7 +51,7 @@ public class XmlContentHandler implements ContentHandler {
 		this.solrServer = solrServer;
 		this.recordName = recordName;
 		this.timeStamp = timeStamp;
-		this.print = print;
+		//this.print = print;
 		this.includes = includes;
 		this.excludes = excludes;
 		this.propertyBags = Rules.getPropertyBags(oaiPropertiesFile);
@@ -124,7 +123,8 @@ public class XmlContentHandler implements ContentHandler {
 				xmlSolrRecord = null;
 			}
 
-			AkImporterHelper.print(print, "Indexing record no. " + recordCounter + "                                                        \r");
+			// This generates too much output when using cron jobs or nohup:
+			//AkImporterHelper.print(print, "Indexing record no. " + recordCounter + "                                                        \r");
 
 			// Every n-th record (= NO_OF_DOCS), add the generic XML records to Solr. Then we will empty all objects (set to "null") to save memory
 			// and go on with the next n records. If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. NO_OF_DOCS 

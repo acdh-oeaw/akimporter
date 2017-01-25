@@ -158,10 +158,16 @@ public class XmlIndex {
 			xmlReader.setContentHandler(contentHandler);
 
 			// Start parsing & indexing:
+			AkImporterHelper.print(print, "\nIndexing documents to Solr ... ");
 			xmlReader.parse(inputSource);
-
 			isIndexingSuccessful = true;
-
+			if (isIndexingSuccessful) {
+				AkImporterHelper.print(print, "Done");
+				AkImporterHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL");
+			} else {
+				AkImporterHelper.print(print, "ERROR");
+			}
+			
 		} catch (FileNotFoundException e) {
 			isIndexingSuccessful = false;
 			e.printStackTrace();

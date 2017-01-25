@@ -654,9 +654,7 @@ public class MetsContentHandler implements ContentHandler {
 
 	@Override
 	public void endDocument() throws SAXException {
-		print(print, "\nIndexing documents to Solr ... ");
 		solrAddRecordSet(solrServer, metsSolrRecords);
-		print(print, "Done");
 	}
 
 

@@ -154,7 +154,7 @@ public class OaiUpdater {
 			oaiDownload(oaiUrl, format, set, oaiPathOriginal, oaiDatefile, this.indexTimestamp, print);
 		}
 
-		// TODO: Test validation and cleaning of downloaded original files
+		// Validate and clean downloaded files (max. 3 tries)
 		for (File xmlOriginal : new File(oaiPathOriginal).listFiles()) {
 			String pathToXmlFile = xmlOriginal.getAbsolutePath();
 			int count = 0;
@@ -198,9 +198,10 @@ public class OaiUpdater {
 			AkImporterHelper.deleteRecordsByQuery(sServerBiblio, deleteBeforeImport);
 		}
 
+		AkImporterHelper.print(print, "\nIndexing documents to Solr ... ");
 		boolean isIndexingSuccessful = indexDownloadedOaiData(mergedFileName, format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, include, exclude, oaiPropertiesFile, print);
-
 		if (isIndexingSuccessful) {
+			AkImporterHelper.print(print, "Done");
 			try {
 				// Commit to Solr server:
 				sServerBiblio.commit();
@@ -218,11 +219,15 @@ public class OaiUpdater {
 					AkImporterHelper.solrOptimize(sServerBiblio);
 					AkImporterHelper.print(print, "Done");
 				}
+				
+				AkImporterHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL");
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		} else {
+			AkImporterHelper.print(print, "ERROR");
 		}
 
 	}
@@ -272,10 +277,7 @@ public class OaiUpdater {
 		boolean allFilesValid = false;
 
 
-
-
-
-		// TODO: Test validation and cleaning of downloaded original files
+		// Validate and clean downloaded original files (max. 3 tries)
 		for (File xmlOriginal : fileList) {
 			String pathToXmlFile = xmlOriginal.getAbsolutePath();
 			int count = 0;
@@ -307,8 +309,6 @@ public class OaiUpdater {
 				}
 			}
 		}
-
-
 
 
 
@@ -345,9 +345,10 @@ public class OaiUpdater {
 		}
 
 		for (File file : fileList) {
+			AkImporterHelper.print(print, "\nIndexing documents to Solr from file " + file.getAbsolutePath() + " ... ");
 			boolean isIndexingSuccessful = indexDownloadedOaiData(file.getAbsolutePath(), format, sServerBiblio, structElements, elementsToMerge, strIndexTimestamp, include, exclude, oaiPropertiesFile, print);
-
 			if (isIndexingSuccessful) {
+				AkImporterHelper.print(print, "Done");
 				try {
 
 					// Commit to Solr server:
@@ -365,15 +366,16 @@ public class OaiUpdater {
 						AkImporterHelper.print(print, "\nOptimizing Solr Server ... ");
 						AkImporterHelper.solrOptimize(sServerBiblio);
 						AkImporterHelper.print(print, "Done");
-					}
+					}					
 				} catch (SolrServerException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+			} else {
+				AkImporterHelper.print(print, "ERROR");
 			}
 		}
-
 
 		return isReindexingSuccessful;
 	}
@@ -432,9 +434,7 @@ public class OaiUpdater {
 
 			// Start parsing & indexing:
 			xmlReader.parse(inputSource);
-
 			isIndexingSuccessful = true;
-
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
