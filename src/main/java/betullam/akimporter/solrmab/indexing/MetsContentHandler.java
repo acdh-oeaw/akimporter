@@ -56,7 +56,7 @@ public class MetsContentHandler implements ContentHandler {
 	private HttpSolrServer solrServer;
 	List<String> structElements;
 	private String timeStamp;
-	private boolean print = true;
+	//private boolean print = true;
 	RelationHelper relationHelper = null;
 	
 	private String elementContent;
@@ -131,7 +131,7 @@ public class MetsContentHandler implements ContentHandler {
 		this.solrServer = solrServer;
 		this.structElements = structElements;
 		this.timeStamp = timeStamp;
-		this.print = print;
+		//this.print = print;
 		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
 		this.translateProperties = AkImporterHelper.getTranslateProperties("roles.properties", null, true);
 	}
@@ -1248,11 +1248,13 @@ public class MetsContentHandler implements ContentHandler {
 	 * @param print		boolean: true if the text should be print, false otherwise
 	 * @param text		String: a text message to print.
 	 */
+	/*
 	private void print(boolean print, String text) {
 		if (print) {
 			System.out.print(text);
 		}
 	}
+	*/
 	
 	// Methods of ContentHandler that are not used at the moment
 	@Override

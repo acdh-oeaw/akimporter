@@ -65,7 +65,6 @@ import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.XmlIndex;
 import main.java.betullam.akimporter.updater.OaiUpdater;
 import main.java.betullam.akimporter.updater.Updater;
-import sun.security.validator.ValidatorException;
 
 /** TODO:
  * 

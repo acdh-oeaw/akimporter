@@ -995,7 +995,7 @@ public class OaiUpdater {
 	}
 
 	public class ValidatorException extends Exception {
-
+		private static final long serialVersionUID = 7719466919745492845L;
 	}
 
 }
