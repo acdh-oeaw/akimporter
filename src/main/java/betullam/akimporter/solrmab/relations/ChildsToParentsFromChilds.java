@@ -168,7 +168,7 @@ public class ChildsToParentsFromChilds {
 
 
 	/**
-	 * Set documents for atomic Solr update an index them.
+	 * Set documents for atomic Solr update and index them.
 	 */
 	private void setParentAtomicUpdateDocs() {
 
