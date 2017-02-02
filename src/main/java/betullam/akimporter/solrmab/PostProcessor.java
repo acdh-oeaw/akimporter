@@ -39,14 +39,30 @@ public class PostProcessor {
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
 				solrServerBiblio.add(docsForAtomicUpdates);
-				solrServerBiblio.commit();
-				if (optimize) {
-					solrServerBiblio.optimize();
-				}
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
+			}
+			
+			// Commit
+			try {
+				solrServerBiblio.commit(true, false);
+			} catch (SolrServerException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			// Optimize
+			if (optimize) {
+				try {
+					solrServerBiblio.optimize();
+				} catch (SolrServerException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

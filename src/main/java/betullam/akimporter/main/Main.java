@@ -1382,7 +1382,7 @@ public class Main {
 				.builder()
 				.required(false)
 				.longOpt("post_process")
-				.desc("Sanitizing relations between parent and child records.")
+				.desc("Execute post processor.")
 				.build();
 
 		// u (update from ongoing data delivery)
