@@ -38,8 +38,13 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,6 +66,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
+import main.java.betullam.akimporter.solrmab.PostProcess;
+import main.java.betullam.akimporter.solrmab.PostProcessor;
 import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.XmlIndex;
 import main.java.betullam.akimporter.updater.OaiUpdater;
@@ -173,7 +180,7 @@ public class Main {
 			if (cmd.hasOption("m")) {
 				merge = true;
 			}
-			
+
 			// Get OAI import properties. We need to get them here because we need the "cmd" variable for it.
 			String oaiName = null;
 			if (cmd.hasOption("O")) {
@@ -198,7 +205,7 @@ public class Main {
 			List<String> exclude = (importerProperties.getProperty("oai." + oaiName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".exclude").split("\\s*,\\s*")) : null;
 			String deleteBeforeImport = importerProperties.getProperty("oai." + oaiName + ".deleteBeforeImport");
 
-			
+
 			// Get XML import properties. We need to get them here because we need the "cmd" variable for it.
 			String xmlName = null;
 			if (cmd.hasOption("X")) {
@@ -217,8 +224,8 @@ public class Main {
 			String xmlFtpPass = importerProperties.getProperty("xml." + xmlName + ".ftpPass");
 			String xmlFtpRemotePath = importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath");
 			String xmlFtpLocalPath = importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath");*/
-			
-			
+
+
 			// Switch between main options
 			switch (selectedMainOption) {
 
@@ -229,6 +236,7 @@ public class Main {
 
 			case "i": {
 				new Import(optimize, print);
+				postProcess();
 				break;
 			}
 
@@ -265,6 +273,7 @@ public class Main {
 									optimize,
 									print
 									);
+							postProcess();
 						}
 					}
 				} else if (startImport.equals("N")){
@@ -294,6 +303,7 @@ public class Main {
 								optimize,
 								print
 								);
+						postProcess();
 					}
 				}
 
@@ -340,6 +350,7 @@ public class Main {
 						if (isReImportingSuccessful) {
 							System.out.println("\n-----------------------------------\n");
 							System.out.println("Re-Importing of all data was successful.");
+							postProcess();
 						} else {
 							System.err.println("Error while re-importing of ongoing data updates.");
 						}
@@ -367,6 +378,7 @@ public class Main {
 								uDefaultMabProperties,
 								uCustomMabProperties
 								);
+						postProcess();
 					}
 				}
 
@@ -378,12 +390,18 @@ public class Main {
 				HttpSolrServer solrServer = new HttpSolrServer(iSolr);
 				Relate relate = new Relate(solrServer, null, optimize, print);
 				boolean isRelateSuccessful = relate.isRelateSuccessful();
-				if (cmd.hasOption("v")) {
-					if (isRelateSuccessful) {
+
+				if (isRelateSuccessful) {
+					if (cmd.hasOption("v")) {
 						System.out.println("Done linking parent and child records. Everything was successful.");
 					}
+					postProcess();
 				}
+				break;
+			}
 
+			case "post_process": {
+				postProcess();
 				break;
 			}
 
@@ -415,6 +433,7 @@ public class Main {
 								optimize,
 								print
 								);
+						postProcess();
 					}
 				}
 
@@ -551,7 +570,7 @@ public class Main {
 			case "O": {
 
 				System.out.println("Starting OAI harvesting for " + oaiName + " ...");				
-				
+
 				OaiUpdater oaiUpdater = new OaiUpdater();
 				try {
 					oaiUpdater.oaiGenericUpdate(
@@ -570,17 +589,18 @@ public class Main {
 							solrServerBiblio,
 							print,
 							optimize);
+					postProcess();
 				} catch (main.java.betullam.akimporter.updater.OaiUpdater.ValidatorException e) {
 					e.printStackTrace();
 				}
-				
+
 				break;
 			}
-			
+
 			case "oai_reimport": {
-								
+
 				AkImporterHelper.print(print, "Start reimporting OAI data for " + oaiName + " ...");
-				
+
 				OaiUpdater oaiUpdater = new OaiUpdater();
 				try {
 					oaiUpdater.reImportOaiData(
@@ -596,6 +616,7 @@ public class Main {
 							oaiPropertiesFile,
 							optimize,
 							print);
+					postProcess();
 				} catch (main.java.betullam.akimporter.updater.OaiUpdater.ValidatorException e) {
 					e.printStackTrace();
 				}
@@ -608,9 +629,10 @@ public class Main {
 				System.out.println("Starting XML import for " + xmlName + " ...");
 				new XmlIndex(xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, print, optimize);
 				System.out.println("Done importing XML for " + xmlName + ".");
+				postProcess();
 				break;
 			}
-			
+
 			case "h": {
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
@@ -960,6 +982,40 @@ public class Main {
 	}
 
 
+
+	private static void postProcess() {
+		HttpSolrServer postSolrServerBiblio = new HttpSolrServer(iSolr);
+
+		// Use TreeMap to keep sort order on ppIds:
+		Map<Integer, PostProcess> postprocesses = new TreeMap<Integer, PostProcess>();
+		SortedSet<Integer> allPpIds = new TreeSet<Integer>();
+
+		// Get all post process IDs that are defined in AkImporter.properties
+		for (Entry<Object, Object> entry : importerProperties.entrySet()) {
+			String propertiesKey = entry.getKey().toString();
+			if (propertiesKey.startsWith("import.postprocess.")) {
+				String[] keySegments = propertiesKey.split("\\.");
+				int ppId = Integer.valueOf(keySegments[2]);
+				allPpIds.add(ppId);
+			}
+		}
+
+		for (int ppId : allPpIds) {
+			String ppAction = (importerProperties.get("import.postprocess."+ppId+".action") != null) ? importerProperties.get("import.postprocess."+ppId+".action").toString() : null;
+			String ppQuery = (importerProperties.get("import.postprocess."+ppId+".query") != null) ? importerProperties.get("import.postprocess."+ppId+".query").toString() : null;
+			String ppField = (importerProperties.get("import.postprocess."+ppId+".value") != null) ? importerProperties.get("import.postprocess."+ppId+".field").toString() : null;
+			String ppValue = (importerProperties.get("import.postprocess."+ppId+".value") != null) ? importerProperties.get("import.postprocess."+ppId+".value").toString() : null;
+
+			if (ppAction != null && ppQuery != null && ppValue != null) {
+				PostProcess postprocess = new PostProcess(ppId, ppAction, ppQuery, ppField, ppValue);
+				postprocesses.put(ppId, postprocess);
+			}
+		}
+
+		if (!postprocesses.isEmpty()) {
+			new PostProcessor(postSolrServerBiblio, postprocesses, print, optimize);
+		}
+	}
 
 
 
@@ -1321,6 +1377,14 @@ public class Main {
 						+ "(see setting \"import.solr\" in AkImporter.properties file).")
 				.build();
 
+		// l (link parent and child records)
+		Option oPostprocess = Option
+				.builder()
+				.required(false)
+				.longOpt("post_process")
+				.desc("Sanitizing relations between parent and child records.")
+				.build();
+
 		// u (update from ongoing data delivery)
 		Option oUpdate = Option
 				.builder("u")
@@ -1441,7 +1505,7 @@ public class Main {
 				.numberOfArgs(1)
 				.desc("Indexing or updating data from an OAI-PMH interface.")
 				.build();
-				
+
 		// index_sampledata (index sample data)
 		Option oIndexSampleData = Option
 				.builder()
@@ -1457,6 +1521,7 @@ public class Main {
 		optionGroup.addOption(oReIndex);
 		optionGroup.addOption(oReIndexOngoing);
 		optionGroup.addOption(oLink);
+		optionGroup.addOption(oPostprocess);
 		optionGroup.addOption(oUpdate);
 		optionGroup.addOption(oAuthority);
 		optionGroup.addOption(oAuthoritySilent);
