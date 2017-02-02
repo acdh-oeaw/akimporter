@@ -39,27 +39,10 @@ public class PostProcessor {
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
 				this.solrServerBiblio.add(docsForAtomicUpdates);
-			} catch (SolrServerException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		// Commit
-		try {
-			System.out.println("Commiting ...");
-			this.solrServerBiblio.commit();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		// Optimize
-		if (optimize) {
-			try {
-				this.solrServerBiblio.optimize();
+				this.solrServerBiblio.commit(true, false);
+				if (optimize) {
+					this.solrServerBiblio.optimize();
+				}
 			} catch (SolrServerException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -73,11 +56,6 @@ public class PostProcessor {
 		String ppQuery = postprocess.getPpQuery();
 		String ppField = postprocess.getPpField();
 		String ppValue = postprocess.getPpValue();
-
-		System.out.println("ppQuery: " + ppQuery);
-		System.out.println("ppField: " + ppField);
-		System.out.println("ppValue: " + ppValue);
-
 		
 		// Set up variable
 		SolrDocumentList queryResult = null;

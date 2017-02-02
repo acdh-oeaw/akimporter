@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketException;
@@ -875,12 +876,10 @@ public class Main {
 	public static Properties getImporterProperties(String pathToImporterProperties) {
 
 		Properties importerProperties = new Properties();
-
-		// Load .properties file:
-		BufferedInputStream propertiesInputStream;
+		FileInputStream propertiesInputStream = null;
 		try {
-			propertiesInputStream = new BufferedInputStream(new FileInputStream(pathToImporterProperties));
-			importerProperties.load(propertiesInputStream);
+			propertiesInputStream = new FileInputStream(pathToImporterProperties);
+			importerProperties.load(new InputStreamReader(propertiesInputStream, "UTF-8"));
 			propertiesInputStream.close();
 		} catch (FileNotFoundException e) {
 			System.err.println("Properties file not found. Please make sure you have a file called \"AkImporter.properties\" in the same directory as AkImporter.jar");
