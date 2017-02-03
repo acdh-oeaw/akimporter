@@ -695,6 +695,7 @@ public class MetsContentHandler implements ContentHandler {
 			List<String> titleFields = new ArrayList<String>();
 			titleFields.add("allfields");
 			titleFields.add("title");
+			titleFields.add("title_sort");
 			titleFields.add("title_short");
 			titleFields.add("title_full");
 			titleFields.add("title_auth");
@@ -735,6 +736,7 @@ public class MetsContentHandler implements ContentHandler {
 			List<String> publishDateFields = new ArrayList<String>();
 			publishDateFields.add("publishDate");
 			publishDateFields.add("publishDateSort");
+			publishDateFields.add("datePublishSortStrict");
 			publishDateFields.add("articleParentYear_str");
 
 			List<String> publishPlaceFields = new ArrayList<String>();
@@ -821,7 +823,16 @@ public class MetsContentHandler implements ContentHandler {
 						if (isParentOfParent) {
 							doc.addField("id", parentOfParentUrn);
 							for (String solrFieldName : indexFields.get("titleFields")) {
-								doc.addField(solrFieldName, parentOfParentTitle);
+								if (solrFieldName.equalsIgnoreCase("title_sort")) {
+									if (parentOfParentTitle != null) {
+										String parentOfParentTitleRegexed = parentOfParentTitle.replaceAll("^(?iu)(\")?(\\.\\.\\.*\\s*)?(<.*?>)?(der|die[sermn]*|das|den|dem|ein[esrmn]*|a|the|ein|il|le|el|le[s]*)*[^\\w\\d\\$§@\u20ACöäüß]*[^\\w\\d\\$§@\u20ACöäüß]", "").trim();			
+										if (parentOfParentTitleRegexed != null && !parentOfParentTitleRegexed.isEmpty()) {
+											doc.addField(solrFieldName, parentOfParentTitleRegexed);
+										}
+									}
+								} else {
+									doc.addField(solrFieldName, parentOfParentTitle);
+								}
 							}
 							doc.addField("url", urlPrefix + parentOfParentUrn);
 							doc.addField("url", urlText);
@@ -840,7 +851,28 @@ public class MetsContentHandler implements ContentHandler {
 								doc.addField(solrFieldName, parentPublisher);
 							}
 							for (String solrFieldName : indexFields.get("publishDateFields")) {
-								doc.addField(solrFieldName, parentPublicationYear);
+								if (solrFieldName.equals("datePublishSortStrict")) {
+									// Only numbers are allowed in field datePublishSortStrict!
+									if (parentPublicationYear != null) {
+										Pattern pattern = java.util.regex.Pattern.compile("^\\d{3,8}");
+										Matcher matcher = pattern.matcher(parentPublicationYear);
+										String regexedStrictValue = "";
+										while (matcher.find()) {
+											regexedStrictValue = regexedStrictValue.concat(matcher.group());
+										}
+										if (!regexedStrictValue.trim().isEmpty()) {
+											regexedStrictValue = regexedStrictValue.trim();
+										} else {
+											regexedStrictValue = null; // Set null ("strict" regex)
+										}
+														
+										if (regexedStrictValue != null && !regexedStrictValue.isEmpty()) {
+											doc.addField(solrFieldName, regexedStrictValue);
+										}
+									}
+								} else {
+									doc.addField(solrFieldName, parentPublicationYear);
+								}
 							}
 							for (String solrFieldName : indexFields.get("publishPlaceFields")) {
 								doc.addField(solrFieldName, parentPlace);
@@ -924,7 +956,16 @@ public class MetsContentHandler implements ContentHandler {
 							doc.addField("id", parentUrn);
 							doc.addField("acNo_txt", parentAcNo);
 							for (String solrFieldName : indexFields.get("titleFields")) {
-								doc.addField(solrFieldName, parentTitle);
+								if (solrFieldName.equalsIgnoreCase("title_sort")) {
+									if (parentTitle != null) {
+										String parentTitleRegexed = parentTitle.replaceAll("^(?iu)(\")?(\\.\\.\\.*\\s*)?(<.*?>)?(der|die[sermn]*|das|den|dem|ein[esrmn]*|a|the|ein|il|le|el|le[s]*)*[^\\w\\d\\$§@\u20ACöäüß]*[^\\w\\d\\$§@\u20ACöäüß]", "").trim();			
+										if (parentTitleRegexed != null && !parentTitleRegexed.isEmpty()) {
+											doc.addField(solrFieldName, parentTitleRegexed);
+										}
+									}
+								} else {
+									doc.addField(solrFieldName, parentTitle);
+								}
 							}
 							for (String solrFieldName : indexFields.get("subTitleFields")) {
 								doc.addField(solrFieldName, parentSubtitle);
@@ -971,7 +1012,16 @@ public class MetsContentHandler implements ContentHandler {
 							doc.addField("id", childUrn);
 							doc.addField("sysNo_txt", childUrn);
 							for (String solrFieldName : indexFields.get("titleFields")) {
-								doc.addField(solrFieldName, childTitle);
+								if (solrFieldName.equalsIgnoreCase("title_sort")) {
+									if (childTitle != null) {
+										String childTitleRegexed = childTitle.replaceAll("^(?iu)(\")?(\\.\\.\\.*\\s*)?(<.*?>)?(der|die[sermn]*|das|den|dem|ein[esrmn]*|a|the|ein|il|le|el|le[s]*)*[^\\w\\d\\$§@\u20ACöäüß]*[^\\w\\d\\$§@\u20ACöäüß]", "").trim();			
+										if (childTitleRegexed != null && !childTitleRegexed.isEmpty()) {
+											doc.addField(solrFieldName, childTitleRegexed);
+										}
+									}
+								} else {
+									doc.addField(solrFieldName, childTitle);
+								}
 							}
 							for (String solrFieldName : indexFields.get("subTitleFields")) {
 								doc.addField(solrFieldName, childSubtitle);
