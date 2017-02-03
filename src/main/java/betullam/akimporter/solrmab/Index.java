@@ -576,7 +576,7 @@ public class Index {
 						// Extract the regex value in the square brackets:
 						Pattern patternRegexValue = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
 						Matcher matcherRegexValue = patternRegexValue.matcher(regexValueString);
-						regexValue = (matcherRegexValue.find()) ? matcherRegexValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
+						regexValue = (matcherRegexValue.find()) ? matcherRegexValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").replaceAll("\\\\,", ",").trim() : null;
 					}
 				}
 
@@ -593,7 +593,7 @@ public class Index {
 						// Extract the regex value in the square brackets:
 						Pattern patternRegexStrictValue = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between square brackets and the brackets themselve (we will remove them later)
 						Matcher matcherRegexStrictValue = patternRegexStrictValue.matcher(regexStrictValueString);
-						regexStrictValue = (matcherRegexStrictValue.find()) ? matcherRegexStrictValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").trim() : null;
+						regexStrictValue = (matcherRegexStrictValue.find()) ? matcherRegexStrictValue.group().replaceFirst("\\[", "").replaceFirst("\\]$", "").replaceAll("\\\\,", ",").trim() : null;
 					}
 				}
 
