@@ -333,14 +333,18 @@ public class MatchingOperations {
 							String rawFieldvalue = controlfield.getContent();
 							String regexedStrictValue = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
 							//System.out.println("regexedStrictValue: " + regexedStrictValue);
-							fieldValues.add(regexedStrictValue);
+							if (regexedStrictValue != null) {
+								fieldValues.add(regexedStrictValue);
+							}
 						}
 						if (type.equals("datafield")) {
 							for (Subfield subfield : copiedDatafield.getSubfields()) {
 								String rawFieldvalue = subfield.getContent();
 								String regexedStrictValue = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
 								//System.out.println("regexedStrictValue: " + regexedStrictValue);
-								fieldValues.add(regexedStrictValue);
+								if (regexedStrictValue != null) {
+									fieldValues.add(regexedStrictValue);
+								}
 							}
 						}
 					}
@@ -488,6 +492,9 @@ public class MatchingOperations {
 				if (solrField != null && !fieldValues.isEmpty()) {
 					solrField.setFieldvalues(fieldValues);
 					solrFields.add(solrField);
+					if (solrField.getFieldname().equals("datePublishSortStrict")) {
+						System.out.println(solrField + ": " + fieldValues.toString());
+					}
 				}
 			}
 		}
