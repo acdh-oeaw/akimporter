@@ -492,9 +492,6 @@ public class MatchingOperations {
 				if (solrField != null && !fieldValues.isEmpty()) {
 					solrField.setFieldvalues(fieldValues);
 					solrFields.add(solrField);
-					if (solrField.getFieldname().equals("datePublishSortStrict")) {
-						System.out.println(solrField + ": " + fieldValues.toString());
-					}
 				}
 			}
 		}
