@@ -26,6 +26,7 @@ public class PostProcessor {
 		this.solrServerBiblio = solrServerBiblio;
 		this.print = print;
 
+		AkImporterHelper.print(this.print, "\nStarting post processing ... ");
 		for (Entry<Integer, PostProcess> instruction : postProcesses.entrySet()) {
 			PostProcess postprocess = instruction.getValue();
 			String action = postprocess.getPpAction();
@@ -34,6 +35,7 @@ public class PostProcessor {
 				replace(postprocess);
 			}
 		}
+		AkImporterHelper.print(this.print, "Done");
 
 		// Add documents to Solr
 		if (!docsForAtomicUpdates.isEmpty()) {
@@ -88,7 +90,7 @@ public class PostProcessor {
 		// If there are some records, go on. If not, do nothing.
 		if (queryResult != null && numFound > 0) {
 
-			int counter = 0;
+			//int counter = 0;
 
 			for (SolrDocument solrDoc : queryResult) {
 				String id = (solrDoc.getFieldValue("id") != null) ?  solrDoc.getFieldValue("id").toString() : null;
@@ -109,8 +111,8 @@ public class PostProcessor {
 
 				}
 
-				counter = counter + 1;
-				AkImporterHelper.print(this.print, "Replace all values in field " + ppField + " with value " + ppValue + ". Processing record no " + counter  + " of " + numFound + "                       \r");
+				//counter = counter + 1;
+				//AkImporterHelper.print(this.print, "Replace all values in field " + ppField + " with value " + ppValue + ". Processing record no " + counter  + " of " + numFound + "                       \r");
 
 			}
 		}
