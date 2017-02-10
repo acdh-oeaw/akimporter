@@ -764,6 +764,7 @@ public class RelationHelper {
 		SolrQuery queryParent = new SolrQuery(); // New Solr query
 		queryParent.setQuery("acNo_txt:\""+parentAc+"\""); // Define a query
 		queryParent.setFields("id", "title"); // Set fields that should be given back from the query
+		queryParent.setFilterQueries("-deleted_str:Y"); // Do not use deleted records. We could get problems when doubled records exist with the same AC number and one is deleted, the other one not. This could lead to linking to the deleted record (other SYS-No, same AC-No)
 
 		try {
 			SolrDocumentList resultList = this.solrServerBiblio.query(queryParent).getResults();
