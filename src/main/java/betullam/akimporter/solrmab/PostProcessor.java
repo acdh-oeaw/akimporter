@@ -27,6 +27,7 @@ public class PostProcessor {
 		this.print = print;
 
 		AkImporterHelper.print(this.print, "\nStarting post processing ... ");
+		
 		for (Entry<Integer, PostProcess> instruction : postProcesses.entrySet()) {
 			PostProcess postprocess = instruction.getValue();
 			String action = postprocess.getPpAction();
@@ -35,8 +36,7 @@ public class PostProcessor {
 				replace(postprocess);
 			}
 		}
-		AkImporterHelper.print(this.print, "Done");
-
+		
 		// Add documents to Solr
 		if (!docsForAtomicUpdates.isEmpty()) {
 			try {
@@ -51,6 +51,8 @@ public class PostProcessor {
 				e.printStackTrace();
 			}
 		}
+		
+		AkImporterHelper.print(this.print, "Done");
 	}
 
 
