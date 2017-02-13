@@ -309,7 +309,9 @@ public class MatchingOperations {
 						}
 					}
 
-					// Handle regEx, but only if we do not have a translate value. For values that needs to be translated, regexing is done within the translation process.
+					// Handle regEx, but only if we do not have a translate value, connected value or concatenated value.
+					// For values that needs to be translated, regexing is done within the translation process.
+					// For connected and concatenated values, regexing is done while getting their values.
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasRegex && regexPattern != null)) {
 						if (type.equals("controlfield")) {
 							String rawFieldvalue = controlfield.getContent();
@@ -327,7 +329,9 @@ public class MatchingOperations {
 						}
 					}
 
-					// Handle regExStrict, but only if we do not have a translate value. For values that needs to be translated, regexing is done within the translation process.
+					// Handle regExStrict, but only if we do not have a translate value, connected value or concatenated value.
+					// For values that needs to be translated, regexing is done within the translation process.
+					// For connected and concatenated values, regexing is done while getting their values.
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasRegexStrict && regexStrictPattern != null)) {
 						if (type.equals("controlfield")) {
 							String rawFieldvalue = controlfield.getContent();
@@ -349,8 +353,10 @@ public class MatchingOperations {
 						}
 					}
 
-					// Handle regExReplace, but only if we do not have a translate value. For values that needs to be translated, regexing is done within the translation process.
-					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty())) {
+					// Handle regExReplace, but only if we do not have a translate value, connected value or concatenated value.
+					// For values that needs to be translated, regexing is done within the translation process.
+					// For connected and concatenated values, regexing is done while getting their values.
+					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex && !hasConnectedSubfields && !hasConcatenatedSubfields) && (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty())) {
 						if (type.equals("controlfield")) {
 							String rawFieldvalue = controlfield.getContent();
 							String regexedReplaceValue = rawFieldvalue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
@@ -364,7 +370,7 @@ public class MatchingOperations {
 								//System.out.println("regexedReplaceValue: " + regexedReplaceValue);
 								fieldValues.add(regexedReplaceValue);
 							}
-						}
+						}						
 					}
 
 					// Handle the combination between connectedSubfields and concatenatedSubfields, but only if we do not have a translate value. Translations are treated differently for connectedSubfields and concatenatedSubfields.
@@ -393,6 +399,15 @@ public class MatchingOperations {
 								
 								// Add the connected values (that contains the concatenated value) to Solr
 								for (String connectedSubfieldValue : connectedSubfields) {
+									if (hasRegex && regexPattern != null) { // Apply regEx
+										connectedSubfieldValue = getRegexValue(regexPattern, rawFieldvalue);
+									}
+									if (hasRegexStrict && regexStrictPattern != null) { // Apply regExStrict
+										connectedSubfieldValue = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
+									}
+									if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) { // Apply regExReplace
+										connectedSubfieldValue = connectedSubfieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();						
+									}
 									fieldValues.add(connectedSubfieldValue);
 								}
 							}
@@ -409,6 +424,15 @@ public class MatchingOperations {
 								connectedSubfields.add(0, rawFieldvalue);
 								//System.out.println("connectedSubfields: " + connectedSubfields);
 								for (String connectedSubfieldValue : connectedSubfields) {
+									if (hasRegex && regexPattern != null) { // Apply regEx
+										connectedSubfieldValue = getRegexValue(regexPattern, rawFieldvalue);
+									}
+									if (hasRegexStrict && regexStrictPattern != null) { // Apply regExStrict
+										connectedSubfieldValue = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
+									}
+									if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) { // Apply regExReplace
+										connectedSubfieldValue = connectedSubfieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();						
+									}
 									fieldValues.add(connectedSubfieldValue);
 								}
 							}
@@ -474,6 +498,19 @@ public class MatchingOperations {
 								} else {
 									valueToAdd = rawFieldvalue; // If the rule should not be applied to this subfield, add the original subfield content.
 								}
+								
+								if (hasRegex && regexPattern != null) { // Apply regEx
+									valueToAdd = getRegexValue(regexPattern, rawFieldvalue);
+								}
+								
+								if (hasRegexStrict && regexStrictPattern != null) { // Apply regExStrict
+									valueToAdd = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
+								}
+								
+								if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) { // Apply regExReplace
+									valueToAdd = valueToAdd.replaceAll(regexReplacePattern, regexReplaceValue).trim();						
+								}
+								
 								fieldValues.add(valueToAdd);
 							}
 						}
