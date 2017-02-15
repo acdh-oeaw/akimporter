@@ -277,7 +277,8 @@ public class OaiUpdater {
 		boolean allFilesValid = false;
 
 
-		// Validate and clean downloaded original files (max. 3 tries)
+		/*
+		// Validate and clean original files (max. 3 tries)
 		for (File xmlOriginal : fileList) {
 			String pathToXmlFile = xmlOriginal.getAbsolutePath();
 			int count = 0;
@@ -287,11 +288,9 @@ public class OaiUpdater {
 					XmlValidator xmlv = new XmlValidator();
 					boolean isXmlValid = xmlv.validateXML(pathToXmlFile);
 					if (isXmlValid) {
-						System.out.println("XML is valid");
 						// Break out of loop if XML is valid
 						break;
 					} else {
-						System.out.println("XML is NOT valid");
 						// Throw exception
 						throw new ValidatorException();
 					}
@@ -300,7 +299,7 @@ public class OaiUpdater {
 					XmlCleaner xmlc = new XmlCleaner();
 					xmlc.cleanXml(pathToXmlFile, true);
 					count = count + 1;
-					System.out.println("Retry no. " + count);
+					AkImporterHelper.print(print, "\nRetry no. " + count);
 
 					// Try max. 3 times to clean
 					if (count == maxTries) {
@@ -309,7 +308,7 @@ public class OaiUpdater {
 				}
 			}
 		}
-
+		*/
 
 
 		if (isValidationOk) {
