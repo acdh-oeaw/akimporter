@@ -48,7 +48,7 @@ public class AkImporterHelper {
 	 */
 	public static LinkedHashMap<Integer, String> getBracketValues(String rawValue) {		
 		LinkedHashMap<Integer, String> bracketValues = new LinkedHashMap<Integer, String>();
-
+		
 		String valueClean = "";
 		int outerBracketsCounter = 0;
 		int openBracketsCounter = 0; // Reuse variable from above
@@ -59,29 +59,44 @@ public class AkImporterHelper {
 		for (int i = 0; i < rawValue.length(); i++){
 			char c = rawValue.charAt(i);
 			String s = Character.toString(c);
+			
 			// Check if the current character is an opening bracket
 			if (s.equals("[")) {
-				openBracketsCounter = openBracketsCounter + 1;
-				bracketCounter = bracketCounter + 1;
-				// Check if we have an outer bracket (count value equals 1) {
-				if (bracketCounter == 1) {
-					outerBracketsCounter = outerBracketsCounter + 1;
-				}
+				// Only count if it is NOT an escaped square bracket (in RegEx)
+				if (!Character.toString(rawValue.charAt(i-1)).equals("\\")) {
+					openBracketsCounter = openBracketsCounter + 1;
+					bracketCounter = bracketCounter + 1;
+					// Check if we have an outer bracket (count value equals 1) {
+					if (bracketCounter == 1) {
+						outerBracketsCounter = outerBracketsCounter + 1;
+					}
+				}	
 			}
+			
 			// Add characters to the new string only if within an outer bracket (count value equals or higher 1)
 			if (bracketCounter >= 1) {
 				valueClean += s;
 			}
+			
 			// Check if the current character is a closing bracket
 			if (s.equals("]")) {
-				if (bracketCounter == 1) {								
-					bracketValues.put(outerBracketsCounter, valueClean.replaceFirst("\\[", "").replaceFirst("\\]$", ""));
-					valueClean = "";
+				// Only count if it is NOT an escaped square bracket (in RegEx)
+				if (!Character.toString(rawValue.charAt(i-1)).equals("\\")) {
+					if (bracketCounter == 1) {								
+						bracketValues.put(outerBracketsCounter, valueClean.replaceFirst("\\[", "").replaceFirst("\\]$", ""));
+						valueClean = "";
+					}
+					closeBracketsCounter = closeBracketsCounter + 1;
+					bracketCounter = bracketCounter - 1;
 				}
-				closeBracketsCounter = closeBracketsCounter + 1;
-				bracketCounter = bracketCounter - 1;		
 			}
 		}
+		
+		if(openBracketsCounter != closeBracketsCounter) {
+			System.err.println("Please check in your properties file if you forgot an opening [ or closing ] square bracket. "
+					+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it, e. g.: \\[");
+			System.exit(0);
+		}		
 
 		return bracketValues;
 	}
