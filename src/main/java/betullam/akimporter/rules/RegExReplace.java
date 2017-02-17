@@ -21,7 +21,12 @@ public class RegExReplace {
 		
 		for (String dataFieldValue : dataFieldValues) {
 			String returnValue = dataFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
-			regexReplaceValues.add(returnValue);
+			if (!returnValue.isEmpty()) {
+				regexReplaceValues.add(returnValue);
+			} else {
+				regexReplaceValues.add(null);
+			}
+			
 		}
 		return regexReplaceValues;
 	}
