@@ -271,6 +271,9 @@ public class XmlContentHandler implements ContentHandler {
 
 			if (dataFieldValues != null && !dataFieldValues.isEmpty()) {
 				// Apply rules specified in .properties file
+				/*if (solrField.equals("author")) {
+					System.out.println(dataFieldValues + ": " + dataRules);
+				}*/
 				treatedValues = Rules.applyDataRules(dataFieldValues, dataRules);
 
 				// Add the Solr field name and the values for the Solr field to a Map

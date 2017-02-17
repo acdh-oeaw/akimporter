@@ -43,11 +43,13 @@ public class Rules {
 	};
 
 
+	/*
 	public static List<String> applyDataRules(List<String> dataFieldValues, List<String> dataRules) {
 
 		List<String> treatedValues = new ArrayList<String>();
-
 		if (dataRules != null && !dataRules.isEmpty()) {
+			
+			System.out.println("---------------------");
 
 			for (String dataRule : dataRules) {
 
@@ -75,7 +77,7 @@ public class Rules {
 					treatedValues.addAll(RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
 				}
 			}
-
+			
 			if (treatedValues.isEmpty()) {
 				treatedValues = dataFieldValues;
 			}
@@ -104,6 +106,86 @@ public class Rules {
 
 		return treatedValues;
 	}
+	*/
+	
+	public static List<String> applyDataRules(List<String> dataFieldValues, List<String> dataRules) {
+
+		List<String> treatedValues = new ArrayList<String>();
+		//List<String> treatedValues = (dataFieldValues != null) ? dataFieldValues : new ArrayList<String>();
+		
+		if (dataRules != null && !dataRules.isEmpty()) {
+			
+			System.out.println("---------------------");
+
+			for (String dataRule : dataRules) {
+
+				if (dataRule.equals("customText")) {
+					treatedValues.addAll(CustomText.getCustomText(dataFieldValues));
+				}
+
+				if (dataRule.contains("translateValue")) {
+					treatedValues.addAll(TranslateValue.getTranslatedValues(dataFieldValues, dataRule));
+				}
+
+				if (dataRule.contains("connectedSubfields")) {
+					treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
+				}
+
+				if (dataRule.contains("regEx[")) {
+					treatedValues.addAll(RegEx.getRegexValues(dataFieldValues, dataRule));
+				}
+
+				if (dataRule.contains("regExStrict")) {
+					treatedValues.addAll(RegExStrict.getRegexStrictValues(dataFieldValues, dataRule));
+				}
+
+				if (dataRule.contains("regExReplace")) {
+					
+//					if (regexReplaceValues != null && !regexReplaceValues.isEmpty()) {
+//						regexReplaceValues = RegExReplace.getRegexReplaceValues(regexReplaceValues, dataRule);
+//						System.out.println("Original              : " + dataFieldValues);
+//						System.out.println("regexReplaceValues OLD: " + RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
+//						System.out.println("regexReplaceValues NEW: " + regexReplaceValues);
+//					}
+					
+					treatedValues = RegExReplace.getRegexReplaceValues(treatedValues, dataRule);
+					//treatedValues.addAll(RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
+				}
+			}
+
+			System.out.println("treatedValues: " + treatedValues);
+
+			
+			if (treatedValues.isEmpty()) {
+				treatedValues = dataFieldValues;
+			}
+
+		} else {
+			// None of the rules above applied, so we fill the "treatedValues" List, that is still empty by now, with the original values
+			treatedValues = dataFieldValues;
+		}
+
+		// These rules always apply, as they have a meaning when they are absent
+		if (!treatedValues.isEmpty()) {
+			if (!dataRules.contains("multiValued")) { // If multiValued is NOT applied, return only a single value
+				List<String> firstValue = MultiValued.getFirstValue(treatedValues);
+				treatedValues.clear();
+				treatedValues = firstValue;
+			} else { // If allowDuplicates is NOT applied, return a list with unique (de-duplicated) values
+				if (!dataRules.contains("allowDuplicates")) {
+					List<String> dedupValues = AllowDuplicates.getDeduplicatedList(treatedValues);
+					treatedValues.clear();
+					treatedValues = dedupValues;
+				}
+			}
+		} else {
+			treatedValues = null;
+		}
+
+		return treatedValues;
+	}
+	
+
 
 
 	public static List<PropertyBag> getPropertyBags(String oaiPropertiesFile) {
