@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 
@@ -48,7 +49,7 @@ public class Rules {
 
 		List<String> treatedValues = new ArrayList<String>();
 		if (dataRules != null && !dataRules.isEmpty()) {
-			
+
 			System.out.println("---------------------");
 
 			for (String dataRule : dataRules) {
@@ -77,7 +78,7 @@ public class Rules {
 					treatedValues.addAll(RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
 				}
 			}
-			
+
 			if (treatedValues.isEmpty()) {
 				treatedValues = dataFieldValues;
 			}
@@ -106,16 +107,15 @@ public class Rules {
 
 		return treatedValues;
 	}
-	*/
-	
+	 */
+
 	public static List<String> applyDataRules(List<String> dataFieldValues, List<String> dataRules) {
 
 		List<String> treatedValues = new ArrayList<String>();
 		//List<String> treatedValues = (dataFieldValues != null) ? dataFieldValues : new ArrayList<String>();
-		
+		List<String> tempValues = (dataFieldValues != null) ? dataFieldValues : new ArrayList<String>();
+
 		if (dataRules != null && !dataRules.isEmpty()) {
-			
-			System.out.println("---------------------");
 
 			for (String dataRule : dataRules) {
 
@@ -140,22 +140,22 @@ public class Rules {
 				}
 
 				if (dataRule.contains("regExReplace")) {
-					
-//					if (regexReplaceValues != null && !regexReplaceValues.isEmpty()) {
-//						regexReplaceValues = RegExReplace.getRegexReplaceValues(regexReplaceValues, dataRule);
-//						System.out.println("Original              : " + dataFieldValues);
-//						System.out.println("regexReplaceValues OLD: " + RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
-//						System.out.println("regexReplaceValues NEW: " + regexReplaceValues);
-//					}
-					
-					treatedValues = RegExReplace.getRegexReplaceValues(treatedValues, dataRule);
+					tempValues = RegExReplace.getRegexReplaceValues(tempValues, dataRule);
 					//treatedValues.addAll(RegExReplace.getRegexReplaceValues(dataFieldValues, dataRule));
 				}
 			}
 
-			System.out.println("treatedValues: " + treatedValues);
+			if (!tempValues.isEmpty()) {
+				
+				// Unescape HTML Entities, e. g. &#304;
+				for(String tempValue : tempValues) {
+					treatedValues.add(StringEscapeUtils.unescapeHtml4(tempValue));
+				}
+			}
+			//treatedValues.addAll(tempValues);
+			//System.out.println("treatedValues: " + treatedValues);
 
-			
+
 			if (treatedValues.isEmpty()) {
 				treatedValues = dataFieldValues;
 			}
@@ -184,7 +184,7 @@ public class Rules {
 
 		return treatedValues;
 	}
-	
+
 
 
 
