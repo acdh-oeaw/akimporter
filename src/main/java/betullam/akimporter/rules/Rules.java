@@ -115,28 +115,39 @@ public class Rules {
 		//List<String> treatedValues = (dataFieldValues != null) ? dataFieldValues : new ArrayList<String>();
 		List<String> tempValues = (dataFieldValues != null) ? dataFieldValues : new ArrayList<String>();
 
+		
 		if (dataRules != null && !dataRules.isEmpty()) {
 
 			for (String dataRule : dataRules) {
 
 				if (dataRule.equals("customText")) {
-					treatedValues.addAll(CustomText.getCustomText(dataFieldValues));
+					tempValues = CustomText.getCustomText(tempValues);
+					//treatedValues.addAll(CustomText.getCustomText(dataFieldValues));
 				}
 
 				if (dataRule.contains("translateValue")) {
-					treatedValues.addAll(TranslateValue.getTranslatedValues(dataFieldValues, dataRule));
+					tempValues = TranslateValue.getTranslatedValues(tempValues, dataRule);
+					//treatedValues.addAll(TranslateValue.getTranslatedValues(dataFieldValues, dataRule));
 				}
 
 				if (dataRule.contains("connectedSubfields")) {
-					treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
+					tempValues = ConnectedFields.getConnectedFields(tempValues, dataRule);
+					//System.out.println("connectedSubfields: " + tempValues);
+					//treatedValues.addAll(ConnectedFields.getConnectedFields(dataFieldValues, dataRule));
+				}
+				
+				if (dataRule.contains("translateConnectedSubfields")) {
+					tempValues = TranslateConnectedFields.translate(tempValues, dataRule);
 				}
 
 				if (dataRule.contains("regEx[")) {
-					treatedValues.addAll(RegEx.getRegexValues(dataFieldValues, dataRule));
+					tempValues = RegEx.getRegexValues(tempValues, dataRule);
+					//treatedValues.addAll(RegEx.getRegexValues(dataFieldValues, dataRule));
 				}
 
 				if (dataRule.contains("regExStrict")) {
-					treatedValues.addAll(RegExStrict.getRegexStrictValues(dataFieldValues, dataRule));
+					tempValues = RegExStrict.getRegexStrictValues(tempValues, dataRule);
+					//treatedValues.addAll(RegExStrict.getRegexStrictValues(dataFieldValues, dataRule));
 				}
 
 				if (dataRule.contains("regExReplace")) {
@@ -145,20 +156,19 @@ public class Rules {
 				}
 			}
 
+			
 			if (!tempValues.isEmpty()) {
-				
 				// Unescape HTML Entities, e. g. &#304;
 				for(String tempValue : tempValues) {
 					treatedValues.add(StringEscapeUtils.unescapeHtml4(tempValue));
 				}
 			}
-			//treatedValues.addAll(tempValues);
-			//System.out.println("treatedValues: " + treatedValues);
 
 
 			if (treatedValues.isEmpty()) {
 				treatedValues = dataFieldValues;
 			}
+
 
 		} else {
 			// None of the rules above applied, so we fill the "treatedValues" List, that is still empty by now, with the original values

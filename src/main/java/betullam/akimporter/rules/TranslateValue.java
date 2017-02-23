@@ -29,7 +29,7 @@ public class TranslateValue {
 	
 	private static String getTranslateFileName(String dataRule) {
 		String translateFileName = null;
-		if (dataRule.startsWith("translateValue")) {
+		if (dataRule.startsWith("translateValue") || dataRule.startsWith("translateConnectedSubfields")) {
 			Pattern patternPropFile = java.util.regex.Pattern.compile("\\[.*?\\]");
 			Matcher matcherPropFile = patternPropFile.matcher(dataRule);
 			if(matcherPropFile.find()) {

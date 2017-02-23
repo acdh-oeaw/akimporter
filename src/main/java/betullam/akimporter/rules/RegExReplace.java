@@ -20,8 +20,8 @@ public class RegExReplace {
 		}
 		
 		for (String dataFieldValue : dataFieldValues) {
-			String returnValue = dataFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
-			if (!returnValue.isEmpty()) {
+			String returnValue = (dataFieldValue != null) ? dataFieldValue.replaceAll(regexReplacePattern, regexReplaceValue).trim() : null;
+			if (returnValue != null && !returnValue.isEmpty()) {
 				regexReplaceValues.add(returnValue);
 			} else {
 				regexReplaceValues.add(null);
