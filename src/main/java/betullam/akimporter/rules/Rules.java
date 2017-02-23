@@ -157,7 +157,7 @@ public class Rules {
 			}
 
 			
-			if (!tempValues.isEmpty()) {
+			if (tempValues != null && !tempValues.isEmpty()) {
 				// Unescape HTML Entities, e. g. &#304;
 				for(String tempValue : tempValues) {
 					treatedValues.add(StringEscapeUtils.unescapeHtml4(tempValue));
