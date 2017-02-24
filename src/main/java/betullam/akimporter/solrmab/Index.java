@@ -108,8 +108,10 @@ public class Index {
 	 */
 	private void startIndexing() {
 
+		BufferedInputStream mabPropertiesInputStream = null;
+		BufferedInputStream xmlSampleDataStream = null;
+		FileReader reader = null;
 		try {
-			BufferedInputStream mabPropertiesInputStream = null;
 
 			// Load .properties file:
 			if (useDefaultMabProperties) {
@@ -134,10 +136,10 @@ public class Index {
 			// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
 			InputSource inputSource = null;
 			if (indexSampleData) {
-				BufferedInputStream xmlSampleDataStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/sampledata_aksearch.xml"));	
+				xmlSampleDataStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/sampledata_aksearch.xml"));	
 				inputSource = new InputSource(xmlSampleDataStream);
 			} else {
-				FileReader reader = new FileReader(mabXMLfile);
+				reader = new FileReader(mabXMLfile);
 				inputSource = new InputSource(reader);
 			}
 			
@@ -186,6 +188,16 @@ public class Index {
 		} catch (Exception e) {
 			isIndexingSuccessful = false;
 			e.printStackTrace();
+		} finally {
+			// Close all streams and readers and set variables to null to free memory
+			try {
+				if (mabPropertiesInputStream != null) { mabPropertiesInputStream.close(); }
+				if (xmlSampleDataStream != null) { xmlSampleDataStream.close(); }
+				if (reader != null) { reader.close(); }
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			listOfMatchingObjs = null;
 		}
 	}
 
