@@ -218,6 +218,10 @@ public class UnlinkChildsFromParents {
 					mapRemEdition.put("set", null);
 					deleteChild.setField("childEdition_str_mv", mapRemEdition);
 
+					Map<String, String> mapRemIssueNo = new HashMap<String, String>();
+					mapRemIssueNo.put("set", null);
+					deleteChild.setField("childIssueNo_str_mv", mapRemIssueNo);
+					
 					Map<String, String> mapRemPublishDate = new HashMap<String, String>();
 					mapRemPublishDate.put("set", null);
 					deleteChild.setField("childPublishDate_str_mv", mapRemPublishDate);

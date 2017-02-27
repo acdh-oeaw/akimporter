@@ -188,6 +188,7 @@ public class ChildsToParentsFromChilds {
 				List<String> childVolumeNosSort = new ArrayList<String>();
 				List<String> childEditions = new ArrayList<String>();
 				List<String> childPublishDates = new ArrayList<String>();
+				List<String> childIssueNos = new ArrayList<String>();
 				List<String> childPagesFrom = new ArrayList<String>();
 				List<String> childPagesTo = new ArrayList<String>();
 				List<String> childLevels = new ArrayList<String>();
@@ -222,11 +223,12 @@ public class ChildsToParentsFromChilds {
 								childVolumeNo = (nonDeletedChild.getFieldValue("serialVolumeNo_str") != null) ? nonDeletedChild.getFieldValue("serialVolumeNo_str").toString() : "0";
 								childVolumeNoSort = (nonDeletedChild.getFieldValue("serialVolumeNoSort_str") != null) ? nonDeletedChild.getFieldValue("serialVolumeNoSort_str").toString() : "0";
 							} else if (childType.equals("article")) {
-								childVolumeNo = "0";
-								childVolumeNoSort = "0";
+								childVolumeNo = (nonDeletedChild.getFieldValue("articleParentVolumeNo_str") != null) ? nonDeletedChild.getFieldValue("articleParentVolumeNo_str").toString() : "0";
+								childVolumeNoSort = (nonDeletedChild.getFieldValue("articleParentVolumeNo_str") != null) ? nonDeletedChild.getFieldValue("articleParentVolumeNo_str").toString() : "0";
 							}
 							String childEdition = (nonDeletedChild.getFieldValue("edition") != null) ? nonDeletedChild.getFieldValue("edition").toString() : "0";
 							String childPublishDate = (nonDeletedChild.getFieldValues("publishDate") != null && !nonDeletedChild.getFieldValues("publishDate").isEmpty()) ? nonDeletedChild.getFieldValues("publishDate").iterator().next().toString() : "0";
+							String childIssueNo = (nonDeletedChild.getFieldValue("articleParentIssue_str") != null) ? nonDeletedChild.getFieldValue("articleParentIssue_str").toString() : "0";
 							String childPageFrom = (nonDeletedChild.getFieldValue("pageFrom_str") != null) ? nonDeletedChild.getFieldValue("pageFrom_str").toString() : "0";
 							String childPageTo = (nonDeletedChild.getFieldValue("pageTo_str") != null) ? nonDeletedChild.getFieldValue("pageTo_str").toString() : "0";
 							String childLevel = (nonDeletedChild.getFieldValue("level_str") != null) ? nonDeletedChild.getFieldValue("level_str").toString() : "0";
@@ -241,6 +243,7 @@ public class ChildsToParentsFromChilds {
 							childVolumeNosSort.add(childVolumeNoSort);
 							childEditions.add(childEdition);
 							childPublishDates.add(childPublishDate);
+							childIssueNos.add(childIssueNo);
 							childPagesFrom.add(childPageFrom);
 							childPagesTo.add(childPageTo);
 							childLevels.add(childLevel);
@@ -286,6 +289,10 @@ public class ChildsToParentsFromChilds {
 				Map<String, List<String>> mapChildPublishDate = new HashMap<String, List<String>>();
 				mapChildPublishDate.put("set", childPublishDates);
 				linkedChild.setField("childPublishDate_str_mv", mapChildPublishDate);
+				
+				Map<String, List<String>> mapChildIssueNo = new HashMap<String, List<String>>();
+				mapChildIssueNo.put("set", childIssueNos);
+				linkedChild.setField("childIssueNo_str_mv", mapChildIssueNo);
 				
 				Map<String, List<String>> mapChildPageFrom = new HashMap<String, List<String>>();
 				mapChildPageFrom.put("set", childPagesFrom);
@@ -366,12 +373,14 @@ public class ChildsToParentsFromChilds {
 				"multiVolumeNoSort_str",
 				"serialVolumeNo_str",
 				"serialVolumeNoSort_str",
+				"articleParentVolumeNo_str",
 				"edition",
 				"publishDate",
 				"parentSYS_str_mv",
 				"parentMultiAC_str",
 				"parentSeriesAC_str_mv",
 				"articleParentAC_str",
+				"articleParentIssue_str",
 				"pageFrom_str",
 				"pageTo_str",
 				"level_str",
