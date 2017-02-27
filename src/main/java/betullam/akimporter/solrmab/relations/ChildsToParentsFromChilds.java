@@ -188,6 +188,10 @@ public class ChildsToParentsFromChilds {
 				List<String> childVolumeNosSort = new ArrayList<String>();
 				List<String> childEditions = new ArrayList<String>();
 				List<String> childPublishDates = new ArrayList<String>();
+				List<String> childPagesFrom = new ArrayList<String>();
+				List<String> childPagesTo = new ArrayList<String>();
+				List<String> childLevels = new ArrayList<String>();
+				List<String> childUrls = new ArrayList<String>();
 
 				// Query all childs from a parent except the deleted ones
 				SolrDocumentList nonDeletedChilds = getNonDeletedChildsByParentSYS(parentSYS);
@@ -223,6 +227,10 @@ public class ChildsToParentsFromChilds {
 							}
 							String childEdition = (nonDeletedChild.getFieldValue("edition") != null) ? nonDeletedChild.getFieldValue("edition").toString() : "0";
 							String childPublishDate = (nonDeletedChild.getFieldValues("publishDate") != null && !nonDeletedChild.getFieldValues("publishDate").isEmpty()) ? nonDeletedChild.getFieldValues("publishDate").iterator().next().toString() : "0";
+							String childPageFrom = (nonDeletedChild.getFieldValue("pageFrom_str") != null) ? nonDeletedChild.getFieldValue("pageFrom_str").toString() : "0";
+							String childPageTo = (nonDeletedChild.getFieldValue("pageTo_str") != null) ? nonDeletedChild.getFieldValue("pageTo_str").toString() : "0";
+							String childLevel = (nonDeletedChild.getFieldValue("level_str") != null) ? nonDeletedChild.getFieldValue("level_str").toString() : "0";
+							String childUrl = (nonDeletedChild.getFieldValues("url") != null && !nonDeletedChild.getFieldValues("url").isEmpty()) ? nonDeletedChild.getFieldValues("url").iterator().next().toString() : "0";
 
 							// Add child infos to Lists
 							childTypes.add(childType);
@@ -233,6 +241,10 @@ public class ChildsToParentsFromChilds {
 							childVolumeNosSort.add(childVolumeNoSort);
 							childEditions.add(childEdition);
 							childPublishDates.add(childPublishDate);
+							childPagesFrom.add(childPageFrom);
+							childPagesTo.add(childPageTo);
+							childLevels.add(childLevel);
+							childUrls.add(childUrl);
 						}
 					}
 				}
@@ -274,6 +286,22 @@ public class ChildsToParentsFromChilds {
 				Map<String, List<String>> mapChildPublishDate = new HashMap<String, List<String>>();
 				mapChildPublishDate.put("set", childPublishDates);
 				linkedChild.setField("childPublishDate_str_mv", mapChildPublishDate);
+				
+				Map<String, List<String>> mapChildPageFrom = new HashMap<String, List<String>>();
+				mapChildPageFrom.put("set", childPagesFrom);
+				linkedChild.setField("childPageFrom_str_mv", mapChildPageFrom);
+				
+				Map<String, List<String>> mapChildPageTo = new HashMap<String, List<String>>();
+				mapChildPageTo.put("set", childPagesTo);
+				linkedChild.setField("childPageTo_str_mv", mapChildPageTo);
+								
+				Map<String, List<String>> mapChildLevel = new HashMap<String, List<String>>();
+				mapChildLevel.put("set", childLevels);
+				linkedChild.setField("childLevel_str_mv", mapChildLevel);
+				
+				Map<String, List<String>> mapChildUrl = new HashMap<String, List<String>>();
+				mapChildUrl.put("set", childUrls);
+				linkedChild.setField("childUrl_str_mv", mapChildUrl);
 
 				docsForAtomicUpdates.add(linkedChild);
 
@@ -343,7 +371,11 @@ public class ChildsToParentsFromChilds {
 				"parentSYS_str_mv",
 				"parentMultiAC_str",
 				"parentSeriesAC_str_mv",
-				"articleParentAC_str"
+				"articleParentAC_str",
+				"pageFrom_str",
+				"pageTo_str",
+				"level_str",
+				"url"
 				);
 
 
