@@ -222,6 +222,22 @@ public class UnlinkChildsFromParents {
 					mapRemPublishDate.put("set", null);
 					deleteChild.setField("childPublishDate_str_mv", mapRemPublishDate);
 					
+					Map<String, List<String>> mapRemChildPageFrom = new HashMap<String, List<String>>();
+					mapRemChildPageFrom.put("set", null);
+					deleteChild.setField("childPageFrom_str_mv", mapRemChildPageFrom);
+					
+					Map<String, List<String>> mapRemChildPageTo = new HashMap<String, List<String>>();
+					mapRemChildPageTo.put("set", null);
+					deleteChild.setField("childPageTo_str_mv", mapRemChildPageTo);
+									
+					Map<String, List<String>> mapRemChildLevel = new HashMap<String, List<String>>();
+					mapRemChildLevel.put("set", null);
+					deleteChild.setField("childLevel_str_mv", mapRemChildLevel);
+					
+					Map<String, List<String>> mapRemChildUrl = new HashMap<String, List<String>>();
+					mapRemChildUrl.put("set", null);
+					deleteChild.setField("childUrl_str_mv", mapRemChildUrl);
+	
 					docsForAtomicUpdates.add(deleteChild);
 				}
 				
