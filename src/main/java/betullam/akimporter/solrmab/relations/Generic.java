@@ -85,7 +85,6 @@ public class Generic {
 			long wholePages = (noOfDocs/NO_OF_ROWS);
 			long fractionPages = (noOfDocs%NO_OF_ROWS);
 
-
 			// Variable for lastDocId
 			String lastDocId = null;
 
@@ -176,7 +175,24 @@ public class Generic {
 			newSolrFieldname = "attachmentToDisplay_str_mv";
 			consoleDisplayText = "attachments to";
 		}
-		
+		if (relationType.equals("predecessor")) {
+			relationField = "predecessor_str_mv";
+			placeholderNoSys = "NoPredecessorId";
+			newSolrFieldname = "predecessorDisplay_str_mv";
+			consoleDisplayText = "predecessors";
+		}
+		if (relationType.equals("successor")) {
+			relationField = "predecessor_str_mv";
+			placeholderNoSys = "NoSuccessorId";
+			newSolrFieldname = "successorDisplay_str_mv";
+			consoleDisplayText = "successors";
+		}
+		if (relationType.equals("otherRelation")) {
+			relationField = "otherRelation_txt_mv";
+			placeholderNoSys = "NoOtherRelationId";
+			newSolrFieldname = "otherRelationDisplay_txt_mv";
+			consoleDisplayText = "other relations";
+		}
 
 		for (SolrDocument currentIndexedRecord : currentIndexedRecords) {
 			docId = (currentIndexedRecord.getFieldValue("id") != null) ? currentIndexedRecord.getFieldValue("id").toString() : null;
@@ -191,6 +207,7 @@ public class Generic {
 					
 					String relatedRecordSys = null;
 					if (loopCounter % 4 == 0) {
+						// TODO: Do this in a more elegant way: It should not always have to be the 4th field!
 						// Every 4th value of Solr field should be an ID of a related record. See also mab.properties.
 						// The indexing-rules for the mentioned fields should be like this (pay attention to 3rd square bracket of "connectedSubfields"):
 						// otherEdition_str_mv	: 527$**$a, connectedSubfields[p:NoOtherEditionType][n:NoOtherEditionComment][9:NoOtherEditionId], allowDuplicates, multiValued

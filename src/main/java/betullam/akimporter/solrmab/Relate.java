@@ -102,6 +102,15 @@ public class Relate {
 		gen = new Generic(this.solrServer, "attachementTo", this.timeStamp, this.print);
 		gen.addGenericLink();
 		AkImporterHelper.print(this.print, "\n");
+		gen = new Generic(this.solrServer, "predecessor", this.timeStamp, this.print);
+		gen.addGenericLink();
+		AkImporterHelper.print(this.print, "\n");
+		gen = new Generic(this.solrServer, "successor", this.timeStamp, this.print);
+		gen.addGenericLink();
+		AkImporterHelper.print(this.print, "\n");
+		gen = new Generic(this.solrServer, "otherRelation", this.timeStamp, this.print);
+		gen.addGenericLink();
+		AkImporterHelper.print(this.print, "\n");
 		
 
 
