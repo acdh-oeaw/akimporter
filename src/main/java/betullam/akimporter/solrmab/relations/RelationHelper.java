@@ -101,6 +101,18 @@ public class RelationHelper {
 			filterQuery = "attachmentTo_str_mv:*";
 			returnFieldsList.add("attachmentTo_str_mv");
 		}
+		if (relationType.equals("predecessor")) {
+			filterQuery = "predecessor_str_mv:*";
+			returnFieldsList.add("predecessor_str_mv");
+		}
+		if (relationType.equals("successor")) {
+			filterQuery = "successor_str_mv:*";
+			returnFieldsList.add("successor_str_mv");
+		}
+		if (relationType.equals("otherRelation")) {
+			filterQuery = "otherRelation_txt_mv:*";
+			returnFieldsList.add("otherRelation_txt_mv");
+		}
 			
 			
 		// Filter all records that were indexed with the current import process and that contain generic relations to other records

@@ -66,7 +66,6 @@ public class Relate {
 		//+++++++++++++++++++++++++++++++++++ RELATE VOLUMES TO PARENTS ++++++++++++++++++++++++++++++++++//
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-
 		// 1. Linking parents to their childs:
 		ParentToChilds ptc = new ParentToChilds(this.solrServer, this.timeStamp, this.print);
 		ptc.addParentsToChilds();
@@ -90,7 +89,7 @@ public class Relate {
 		ctpfp.addChildsToParentsFromParents();
 		AkImporterHelper.print(this.print, "\n");
 
-
+		
 		// 5. Generic linking:
 		Generic gen = null;
 		gen = new Generic(this.solrServer, "otherEdition", this.timeStamp, this.print);
@@ -112,7 +111,6 @@ public class Relate {
 		gen.addGenericLink();
 		AkImporterHelper.print(this.print, "\n");
 		
-
 
 		if (optimize) {
 			AkImporterHelper.print(this.print, "Start optimizing Solr index. This could take a while. Please wait ...");

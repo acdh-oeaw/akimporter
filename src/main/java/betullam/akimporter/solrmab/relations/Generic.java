@@ -182,7 +182,7 @@ public class Generic {
 			consoleDisplayText = "predecessors";
 		}
 		if (relationType.equals("successor")) {
-			relationField = "predecessor_str_mv";
+			relationField = "successor_str_mv";
 			placeholderNoSys = "NoSuccessorId";
 			newSolrFieldname = "successorDisplay_str_mv";
 			consoleDisplayText = "successors";
