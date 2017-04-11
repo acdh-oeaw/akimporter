@@ -205,6 +205,7 @@ public class Main {
 			List<String> include = (importerProperties.getProperty("oai." + oaiName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".include").split("\\s*,\\s*")) : null;
 			List<String> exclude = (importerProperties.getProperty("oai." + oaiName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".exclude").split("\\s*,\\s*")) : null;
 			String deleteBeforeImport = importerProperties.getProperty("oai." + oaiName + ".deleteBeforeImport");
+			boolean deleteOldLocalFiles = (importerProperties.getProperty("oai." + oaiName + ".deleteOldLocal") != null) ? Boolean.valueOf(importerProperties.getProperty("oai." + oaiName + ".deleteOldLocal")) : false;
 
 
 			// Get XML import properties. We need to get them here because we need the "cmd" variable for it.
@@ -586,6 +587,7 @@ public class Main {
 							include,
 							exclude,
 							deleteBeforeImport,
+							deleteOldLocalFiles,
 							oaiPropertiesFile,
 							solrServerBiblio,
 							print,
@@ -614,6 +616,7 @@ public class Main {
 							include,
 							exclude,
 							deleteBeforeImport,
+							deleteOldLocalFiles,
 							oaiPropertiesFile,
 							optimize,
 							print);

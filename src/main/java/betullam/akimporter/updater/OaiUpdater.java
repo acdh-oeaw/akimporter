@@ -117,6 +117,7 @@ public class OaiUpdater {
 			List<String> include,
 			List<String> exclude,
 			String deleteBeforeImport,
+			boolean deleteOldLocalFiles,
 			String oaiPropertiesFile,
 			String solrServerBiblio,
 			boolean print,
@@ -135,6 +136,16 @@ public class OaiUpdater {
 		// Set variables
 		String oaiPathOriginal = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
 		String oaiPathMerged = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
+
+		// Delete old downloaded OAI files if "deleteOldLocalFiles" is true
+		if (deleteOldLocalFiles) {
+			try {
+				FileUtils.cleanDirectory(new File(oaiPathOriginal).getParentFile());
+				FileUtils.cleanDirectory(new File(oaiPathMerged).getParentFile());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 
 		// Create directories if they do not exist
 		mkDirIfNoExists(oaiPathOriginal);
@@ -219,7 +230,7 @@ public class OaiUpdater {
 					AkImporterHelper.solrOptimize(sServerBiblio);
 					AkImporterHelper.print(print, "Done");
 				}
-				
+
 				AkImporterHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL");
 			} catch (SolrServerException e) {
 				e.printStackTrace();
@@ -257,6 +268,7 @@ public class OaiUpdater {
 			List<String> include,
 			List<String> exclude,
 			String deleteBeforeImport,
+			boolean deleteOldLocalFiles,
 			String oaiPropertiesFile,
 			boolean optimize,
 			boolean print) throws ValidatorException {
@@ -273,45 +285,32 @@ public class OaiUpdater {
 		File fPathToMergedDir = new File(AkImporterHelper.stripFileSeperatorFromPath(pathToOaiDir) + File.separator + "merged");
 		List<File> fileList = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
 		Collections.sort(fileList); // Sort oldest to newest
+		
+		// Delete old downloaded files if "deleteOldLocalFiles" is true (keep only the newest: this is the directory name with the hightest number)
+		int noOfFiles = fileList.size();
+		if (deleteOldLocalFiles && !fileList.isEmpty() && noOfFiles > 1) {
+			// Remove the last (= newest) file in the list
+			fileList.remove(noOfFiles-1);
 
-		boolean allFilesValid = false;
-
-
-		/*
-		// Validate and clean original files (max. 3 tries)
-		for (File xmlOriginal : fileList) {
-			String pathToXmlFile = xmlOriginal.getAbsolutePath();
-			int count = 0;
-			int maxTries = 3;
-			while(true) {
-				try {				
-					XmlValidator xmlv = new XmlValidator();
-					boolean isXmlValid = xmlv.validateXML(pathToXmlFile);
-					if (isXmlValid) {
-						// Break out of loop if XML is valid
-						break;
-					} else {
-						// Throw exception
-						throw new ValidatorException();
-					}
-				} catch (ValidatorException vx) {
-					// handle exception
-					XmlCleaner xmlc = new XmlCleaner();
-					xmlc.cleanXml(pathToXmlFile, true);
-					count = count + 1;
-					AkImporterHelper.print(print, "\nRetry no. " + count);
-
-					// Try max. 3 times to clean
-					if (count == maxTries) {
-						throw vx;
-					}
+			// Iterate over the list and remove the folders and files
+			for (File fileDelete : fileList) {
+				try {
+					File mergedFileToDelete = new File(AkImporterHelper.stripFileSeperatorFromPath(pathToOaiDir) + File.separator + "merged" + File.separator + fileDelete.getParentFile().getName());
+					File originalFileToDelete = new File(AkImporterHelper.stripFileSeperatorFromPath(pathToOaiDir) + File.separator + "original" + File.separator + fileDelete.getParentFile().getName());
+					FileUtils.deleteDirectory(mergedFileToDelete);
+					FileUtils.deleteDirectory(originalFileToDelete);
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			}
-		}
-		*/
 
+			// Create a new file list for the operations below
+			fileList = (List<File>)FileUtils.listFiles(fPathToMergedDir, new String[] {"xml"}, true); // Get all xml-files recursively
+			Collections.sort(fileList); // Sort oldest to newest
+		}
 
 		if (isValidationOk) {
+			boolean allFilesValid = false;
 			AkImporterHelper.print(print, "\nStart validating all data ... ");
 			XmlValidator bxh = new XmlValidator();
 
