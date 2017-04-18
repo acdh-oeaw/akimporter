@@ -67,6 +67,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
+import main.java.betullam.akimporter.browse.BrowseIndex;
 import main.java.betullam.akimporter.solrmab.PostProcess;
 import main.java.betullam.akimporter.solrmab.PostProcessor;
 import main.java.betullam.akimporter.solrmab.Relate;
@@ -227,6 +228,11 @@ public class Main {
 			String xmlFtpRemotePath = importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath");
 			String xmlFtpLocalPath = importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath");*/
 
+			// Get browse index properties. We need to get them here because we need the "cmd" variable for it.
+			String biName = null;
+			if (cmd.hasOption("browse_index")) {
+				biName = cmd.getOptionValue("browse_index");
+			}
 
 			// Switch between main options
 			switch (selectedMainOption) {
@@ -645,6 +651,18 @@ public class Main {
 
 			case "index_sampledata": {
 				new Import(true, iSolr, iDefaultMabProperties, iCustomMabProperties);
+				break;
+			}
+			
+			case "browse_index": {
+				
+				String biSolr = importerProperties.getProperty("browse.setting.solr");
+				String biPath = importerProperties.getProperty("browse." + biName + ".path");
+				String biElements = importerProperties.getProperty("browse." + biName + ".elements");
+				String biElementsLevel = importerProperties.getProperty("browse." + biName + ".elementsLevel");
+				String biIdXpath = importerProperties.getProperty("browse." + biName + ".id.xpath");
+				
+				new BrowseIndex(biSolr, biPath, biElements, biElementsLevel, biIdXpath, print, optimize);
 				break;
 			}
 
@@ -1515,6 +1533,16 @@ public class Main {
 				.longOpt("index_sampledata")
 				.desc("Index sample data from AK Bibliothek Wien.")
 				.build();
+		
+		// browse_index (for indexing to the browse index application - has nothing to do with AKsearch/VuFind!)
+		Option oBrowseIndex = Option
+				.builder()
+				.required(false)
+				.longOpt("browse_index")
+				.hasArg(true)
+				.numberOfArgs(1)
+				.desc("Indexing fields for the browse index")
+				.build();
 
 		optionGroup.addOption(oAkTest);
 		optionGroup.addOption(oImport);
@@ -1534,6 +1562,7 @@ public class Main {
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
 		optionGroup.addOption(oIndexSampleData);
+		optionGroup.addOption(oBrowseIndex);
 		optionGroup.setRequired(true);
 		options.addOptionGroup(optionGroup);
 		options.addOption(oVerbose);
