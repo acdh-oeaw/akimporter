@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,6 +46,16 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	private int recordCounter = 0;
 	private int NO_OF_DOCS = 500;
 
+	//private Map<String, List<String>> record = new HashMap<String, List<String>>();
+	private Map<String, List<String>> record = new HashMap<String, List<String>>();
+	private String fieldType = null;
+	private String controlfield = null;
+	private String tag = null;
+	private String ind1 = null;
+	private String ind2 = null;
+	private String subfield = null;
+	private List<String> subfieldValues = new ArrayList<String>();
+	private String code = null;
 
 	public BrowseIndexContentHandler(HttpSolrServer solrServer, String recordToIndex, String biIdXpath, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
@@ -130,8 +141,8 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		//addRecordsToSolr(solrServer, xmlSolrRecords);
 		xmlSolrRecords = null;
 	}
-	
-	
+
+
 	/**
 	 * Converts an XML record with the help of xPath to a Map that can be added to Solr.
 	 * @param xmlRecord		String: The XML record as a String. It will be converted to a DOM document that can be queried with xPath.
@@ -139,94 +150,149 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	 * 						The key (String) is the Solr fieldname, the value (List&lt;String&gt;) are the values that should be indexed into this field.
 	 */
 	private Map<String, List<String>> getXmlSolrRecord(String xmlRecord) {
-		Map<String, List<String>> xmlSolrRecord = new TreeMap<String, List<String>>();
+		Map<String, List<String>> solrRecord = null;
 		Document document = getDomDocument(xmlRecord);
 		XmlParser xmlParser = new XmlParser();
-		String recordId = null;
-		
+		List<String> singleRecordId = new ArrayList<String>();
+
 		// Get record ID
 		try {
 			List<String> recordIds = xmlParser.getXpathResult(document, biIdXpath, false);
-			recordId = (recordIds != null) ? recordIds.get(0) : null;
-			List<String> singleRecordId = new ArrayList<String>();
+			String recordId = (recordIds != null) ? recordIds.get(0) : null;
 			singleRecordId.add(recordId);
-			xmlSolrRecord.put("id", singleRecordId);
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 		}
+
+		// Get a Map that represents all fields of the DOM document
+		solrRecord = getRecordFields(document.getDocumentElement());
 		
-		// Add all fields of the DOM document
-		getAllFields(document.getDocumentElement());
+		// Add a field for the solr record id
+		solrRecord.put("id", singleRecordId);
+		//AkImporterHelper.print(print, "\nsolrRecord " + solrRecord.toString());
+
+		return solrRecord;
+	}
+
+
+	private Map<String, List<String>> getRecordFields(Node node) {
+
+		if (node.getNodeType() == Node.ELEMENT_NODE) {
+			fieldType = node.getNodeName();
+			
+			if (fieldType.equals("record")) {
+				record = new HashMap<String, List<String>>();
+			}
+
+			// Get attributes
+			NamedNodeMap nnM = node.getAttributes();
+			if (nnM != null && nnM.getLength() > 0) {
+				
+				for(int a = 0; a < nnM.getLength(); a++) {
+					Node attributeNode = nnM.item(a);
+					if (attributeNode.getNodeType() == Node.ATTRIBUTE_NODE) {
+						String attrName = attributeNode.getNodeName();
+						String attrValue = attributeNode.getNodeValue();
+
+						if (fieldType.equals("datafield")) {
+							if (attrName.equals("tag")) {
+								if (attrValue != null && !attrValue.isEmpty()) {
+									tag = attrValue;
+								} else {
+									tag = "#";
+								}
+							}
+							if (attrName.equals("ind1")) {
+								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("-")) {
+									ind1 = attrValue;
+								} else {
+									ind1 = "#";
+								}
+							}
+							if (attrName.equals("ind2")) {
+								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("1") && !attrValue.equals("-")) {
+									ind2 = attrValue;
+								} else {
+									ind2 = "#";
+								}
+							}
+						}
+
+						if (fieldType.equals("subfield")) {
+							if (attrName.equals("code")) {
+								if (attrValue != null && !attrValue.isEmpty()) {
+									code = attrValue;
+								} else {
+									code = "#";
+								}
+							};
+						}
+
+						if (fieldType.equals("controlfield")) {
+							if (attrName.equals("tag")) {
+								if (attrValue != null && !attrValue.isEmpty()) {
+									tag = attrValue;
+								} else {
+									tag = "#";
+								}
+							}
+						}
+					}
+				}
+
+				if (fieldType.equals("subfield")) {
+					subfield = tag + "$" + ind1 + ind2 + "$" + code;
+					addToListInMap(record, tag, node.getTextContent()); // Add value on datafield-tag level
+					addToListInMap(record, subfield, node.getTextContent()); // Add values on subfield-code level
+				}
+
+				if (fieldType.equals("controlfield")) {
+					controlfield = tag;
+					addToListInMap(record, controlfield, node.getTextContent()); // Add value for controlfield-tag level
+				}
+			}
+		}
+
+		// Repeat for child nodes:
+		NodeList nodeList = node.getChildNodes();
+		for (int i = 0; i < nodeList.getLength(); i++) {
+			Node currentNode = nodeList.item(i);
+			if (currentNode.getNodeType() == Node.ELEMENT_NODE || currentNode.getNodeType() == Node.TEXT_NODE) {
+				getRecordFields(currentNode);
+			}
+		}
 		
-		return xmlSolrRecord;
+		return record;
+	}
+
+	
+	
+	/**
+	 * Add a value to the List of a HashMap&lt;String, List&lt;String&gt;&gt; if the List already exists for a given key.
+	 * If not, a new one is created and added to the HashMap.
+	 * 
+	 * @param mapKey		The map key for which should be check if the List&lt;String&gt; already exists
+	 * @param valueToAdd	The value to add to the List&lt;String&gt;
+	 */
+	private Map<String, List<String>> addToListInMap(Map<String, List<String>> record, String mapKey, String valueToAdd) {
+		List<String> subfieldValues = record.get(mapKey);
+
+		// Create new List<String> if none was found for the given key
+	    if(subfieldValues == null) {
+	    	subfieldValues = new ArrayList<String>();
+	    	subfieldValues.add(valueToAdd);
+	    	record.put(mapKey, subfieldValues);
+	    } else {
+	    	// Avoid duplicates: Add value to List<String> only if it does not already exist 
+	    	if(!subfieldValues.contains(valueToAdd)) {
+	    		subfieldValues.add(valueToAdd);
+	    	}
+	    }
+	    
+	    return record;
 	}
 	
 	
-	private void getAllFields(Node node) {
-		
-		String fieldName = null;
-		
-	    if (node.getNodeType() == Node.ELEMENT_NODE) {
-	    	
-	    	
-	    	String nodeName = node.getNodeName();
-		    AkImporterHelper.print(print, "\n" + nodeName);
-
-	    	NamedNodeMap nnM = node.getAttributes();
-		    if (nnM != null && nnM.getLength() > 0) {
-		    	
-		    	String tag = null;
-		    	String ind1 = null;
-		    	String ind2 = null;
-		    	String code = null;
-		    	
-		    	for(int a = 0; a < nnM.getLength(); a++) {
-			    	Node attributeNode = nnM.item(a);
-			    	if (attributeNode.getNodeType() == Node.ATTRIBUTE_NODE) {
-			    		String attrName = attributeNode.getNodeName();
-			    		String attrValue = attributeNode.getNodeValue();
-			    		if (nodeName.equals("datafield")) {
-				    		tag = (attrName.equals("tag")) ? attrValue : null;
-				    		ind1 = (attrName.equals("ind1")) ? attrValue : null;
-				    		ind2 = (attrName.equals("ind2")) ? attrValue : null;
-					    }
-			    		if (nodeName.equals("subfield")) {
-			    			code = (attrName.equals("code")) ? attrValue : null;
-			    		}
-			    		if (nodeName.equals("controlfield")) {
-			    			tag = (attrName.equals("tag")) ? attrValue : null;
-			    		}
-			    	}
-			    }
-		    	
-		    	if (nodeName.equals("datafield")) {
-			    	fieldName = tag + "$" + ind1 + ind2;
-			    }
-	    		if (nodeName.equals("subfield")) {
-	    			fieldName = tag + "$" + ind1 + ind2 + "$" + code;
-	    		}
-	    		if (nodeName.equals("controlfield")) {
-	    			fieldName = tag;
-	    		}
-		    } 
-	    }
-	    
-	    
-	    if (node.getNodeType() == Node.TEXT_NODE) {
-		    AkImporterHelper.print(print, "\n" + fieldName + ": " + node.getTextContent());
-		    AkImporterHelper.print(print, "\n----------------------------------");
-	    }
-	    
-
-	    // Repeat for child nodes:
-	    NodeList nodeList = node.getChildNodes();
-	    for (int i = 0; i < nodeList.getLength(); i++) {
-	        Node currentNode = nodeList.item(i);
-	        if (currentNode.getNodeType() == Node.ELEMENT_NODE || currentNode.getNodeType() == Node.TEXT_NODE) {
-	        	getAllFields(currentNode);
-	        }
-	    }
-	}
 	
 	/**
 	 * Get a DOM Document from a String representing an XML record.
@@ -237,7 +303,7 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		Document domDocument = null;
 		try {
 			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-			documentBuilderFactory.setNamespaceAware(true); // Set namespace awareness for DOM builder factory. Important if we want to use namspaces in xPath!
+			documentBuilderFactory.setNamespaceAware(false); // Set namespace awareness to FALSE for MARC-XML. Otherwise, we won't get xPath results!
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			InputSource inputSource = new InputSource(new StringReader(xmlRecord));
 			domDocument = documentBuilder.parse(inputSource);
@@ -251,8 +317,8 @@ public class BrowseIndexContentHandler implements ContentHandler {
 
 		return domDocument;
 	}
-	
-	
+
+
 	/**
 	 * Actually adds our data to the Solr server.
 	 * @param solrServer		HttpSolrServer: The Solr server to which the data should be added
