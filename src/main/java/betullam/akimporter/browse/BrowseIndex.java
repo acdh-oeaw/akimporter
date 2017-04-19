@@ -30,17 +30,22 @@ public class BrowseIndex {
 	String biIdXpath = null;
 	boolean print = false;
 	boolean optimize = false;
-	String indexTimestamp = String.valueOf(new Date().getTime());
-	String indexTimeFormatted = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp)));
+	
+	//endTime = System.currentTimeMillis();
+	//AkImporterHelper.print(print, "Done indexing to Solr. Execution time: " + AkImporterHelper.getExecutionTime(startTime, endTime) + "\n\n");
+	long indexStartTimestampLong = new Date().getTime();
+	String indexTimestampString = String.valueOf(this.indexStartTimestampLong);
+	String indexTimeFormatted = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(indexStartTimestampLong));
 
 	public BrowseIndex(String biSolr, String biPath, String biElements, String biElementsLevel, String biIdXpath, boolean print, boolean optimize) {
-
+		/*
 		System.out.println("biSolr: " + biSolr);
 		System.out.println("biPath: " + biPath);
 		System.out.println("biElements: " + biElements);
 		System.out.println("biElementsLevel: " + biElementsLevel);
 		System.out.println("biIdXpath: " + biIdXpath);
-
+		*/
+		
 		this.biSolr = biSolr;
 		this.biPath = biPath;
 		this.biElements = biElements;
@@ -73,7 +78,7 @@ public class BrowseIndex {
 
 		// XML Validation
 		boolean allFilesValid = false;
-		AkImporterHelper.print(this.print, "\nStart validating XML data ... ");
+		AkImporterHelper.print(this.print, "\nStart validating XML data\t-> please wait ...\r");
 		XmlValidator bxh = new XmlValidator();
 		for (File file : fileList) {
 			boolean hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
@@ -88,7 +93,7 @@ public class BrowseIndex {
 
 		// If all files are valid, go on with the import process
 		if (allFilesValid) {
-			AkImporterHelper.print(this.print, "Done\n");
+			AkImporterHelper.print(this.print, "Start validating XML data\t-> Done             ");
 		} else {
 			// If there are errors in at least one file, stop the import process:
 			System.err.println("\nError while validating. Import process was cancelled!\n");
@@ -104,9 +109,9 @@ public class BrowseIndex {
 					sServerBrowseIndex.commit();
 
 					if (optimize) {
-						AkImporterHelper.print(this.print, "\nOptimizing Solr Server ... ");
+						AkImporterHelper.print(this.print, "\nOptimizing Solr Server\t\t-> please wait ...\r");
 						AkImporterHelper.solrOptimize(sServerBrowseIndex);
-						AkImporterHelper.print(this.print, "Done\n");
+						AkImporterHelper.print(this.print, "Optimizing Solr Server\t\t-> Done             ");
 					}
 				} catch (SolrServerException e) {
 					e.printStackTrace();
@@ -116,6 +121,9 @@ public class BrowseIndex {
 			}
 		}
 
+		long indexEndTimestampLong = new Date().getTime();
+		AkImporterHelper.print(print, "\nDone indexing to Solr. Execution time: " + AkImporterHelper.getExecutionTime(indexStartTimestampLong, indexEndTimestampLong) + "\n\n");
+		
 		return isBrowseIndexingSuccessful;
 	}
 
@@ -133,7 +141,7 @@ public class BrowseIndex {
 			ContentHandler contentHandler = null;
 
 			// Create content handler for XML data
-			contentHandler = new BrowseIndexContentHandler(sServerBrowseIndex, this.biElements, this.biIdXpath, this.indexTimestamp, print);
+			contentHandler = new BrowseIndexContentHandler(sServerBrowseIndex, this.biElements, this.biIdXpath, this.indexTimestampString, this.indexTimeFormatted, this.print);
 
 			// Create SAX parser and set content handler:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
@@ -145,12 +153,12 @@ public class BrowseIndex {
 			xmlReader.setContentHandler(contentHandler);
 
 			// Start parsing & indexing:
-			AkImporterHelper.print(this.print, "\nIndexing documents to Solr ... ");
+			AkImporterHelper.print(this.print, "\nIndexing documents to Solr\t-> please wait ...\r");
 			xmlReader.parse(inputSource);
 			isIndexingSuccessful = true;
 			if (isIndexingSuccessful) {
-				AkImporterHelper.print(this.print, "Done");
-				AkImporterHelper.print(this.print, "\nEVERYTHING WAS SUCCESSFUL");
+				AkImporterHelper.print(this.print, "Indexing documents to Solr\t-> Done             ");
+				//AkImporterHelper.print(this.print, "\nINDEXING WAS SUCCESSFUL");
 			} else {
 				AkImporterHelper.print(this.print, "ERROR");
 			}

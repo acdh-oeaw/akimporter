@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,47 +29,49 @@ import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
 import ak.xmlhelper.XmlParser;
-import main.java.betullam.akimporter.main.AkImporterHelper;
 
 public class BrowseIndexContentHandler implements ContentHandler {
 
 	private HttpSolrServer solrServer;
 	private String timeStamp;
-	private boolean print;
+	private String timeStampFormatted;
+	//private boolean print;
 	private String recordToIndex;
 	private String biIdXpath;
 	private String elementContent;
 	private String xmlRecord;
 	private boolean isRecord = false;
-	private List<Map<String, List<String>>> xmlSolrRecords = null;
+	private List<Map<String, List<String>>> solrRecords = null;
 	private int recordCounter = 0;
 	private int NO_OF_DOCS = 500;
 
 	//private Map<String, List<String>> record = new HashMap<String, List<String>>();
-	private Map<String, List<String>> record = new HashMap<String, List<String>>();
+	private TreeMap<String, List<String>> record = new TreeMap<String, List<String>>();
 	private String fieldType = null;
 	private String controlfield = null;
 	private String tag = null;
 	private String ind1 = null;
 	private String ind2 = null;
 	private String subfield = null;
-	private List<String> subfieldValues = new ArrayList<String>();
 	private String code = null;
 
-	public BrowseIndexContentHandler(HttpSolrServer solrServer, String recordToIndex, String biIdXpath, String timeStamp, boolean print) {
+	public BrowseIndexContentHandler(HttpSolrServer solrServer, String recordToIndex, String biIdXpath, String timeStamp, String timeStampFormatted, boolean print) {
 		this.solrServer = solrServer;
 		this.recordToIndex = recordToIndex;
 		this.biIdXpath = biIdXpath;
 		this.timeStamp = timeStamp;
-		this.print = print;
+		this.timeStampFormatted = timeStampFormatted;
+		//this.print = print;
 	}
 
 
 	@Override
 	public void startDocument() throws SAXException {
-		xmlSolrRecords = new ArrayList<Map<String, List<String>>>();
+		// New list for holding NO_OF_DOCS records
+		solrRecords = new ArrayList<Map<String, List<String>>>();
 	}
 
+	
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {	
 		// Clear element content for fresh start
@@ -82,10 +83,10 @@ public class BrowseIndexContentHandler implements ContentHandler {
 			isRecord = true;
 			xmlRecord = "";
 			xmlRecord += "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-
 		}
 
 		if (isRecord) {
+			// Add start tag with attributes, e. g.: <datafield tag="331" ind1="1" ind2=2">
 			startElement += "<" + qName;			
 			for (int i = 0; i < atts.getLength(); i++) {
 				String attQName = atts.getQName(i);
@@ -97,9 +98,11 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		}
 	}
 
+	
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 		if (isRecord) {
+			// Add element content (text) and end tag, e. g.: Title of book</datafield>
 			String endElement = "";
 			endElement += StringEscapeUtils.escapeXml10(elementContent).trim();
 			endElement += "</" + qName + ">";
@@ -110,20 +113,22 @@ public class BrowseIndexContentHandler implements ContentHandler {
 			// End of record
 			recordCounter = recordCounter + 1;
 			isRecord = false;
-
-			Map<String, List<String>> xmlSolrRecord = getXmlSolrRecord(xmlRecord);
-			if (xmlSolrRecord != null) {
-				xmlSolrRecords.add(xmlSolrRecord);
-				xmlSolrRecord = null;
+			
+			// Get the record as Map<String, List<String>> for indexing to Solr
+			Map<String, List<String>> solrRecord = getSolrRecord(xmlRecord);
+			if (solrRecord != null) {
+				// Add the single record to a list of records
+				solrRecords.add(solrRecord);
+				solrRecord = null;
 			}
 
 			// Every n-th record (= NO_OF_DOCS), add the generic XML records to Solr. Then we will empty all objects (set to "null") to save memory
 			// and go on with the next n records. If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. NO_OF_DOCS 
 			// is set to 100 and we have 733 records, but at this point, only 700 are indexed. The 33 remaining records will be indexed in endDocument() method.
 			if (recordCounter % NO_OF_DOCS == 0) {
-				//addRecordsToSolr(solrServer, xmlSolrRecords);
-				xmlSolrRecords = null;
-				xmlSolrRecords = new ArrayList<Map<String, List<String>>>();
+				addRecordsToSolr(solrServer, solrRecords);
+				solrRecords = null;
+				solrRecords = new ArrayList<Map<String, List<String>>>();
 			}
 		}
 
@@ -131,15 +136,18 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		elementContent = "";
 	}
 
+	
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
 		elementContent += new String(ch, start, length).replaceAll("\\s+", " ");
 	}
 
+	
 	@Override
 	public void endDocument() throws SAXException {
-		//addRecordsToSolr(solrServer, xmlSolrRecords);
-		xmlSolrRecords = null;
+		// Add the rest of the records to Solr
+		addRecordsToSolr(solrServer, solrRecords);
+		solrRecords = null;
 	}
 
 
@@ -149,13 +157,13 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	 * @return				Map&lt;String, List&lt;String&gt;&gt;: A Map that is used to add the data from the XML to Solr.
 	 * 						The key (String) is the Solr fieldname, the value (List&lt;String&gt;) are the values that should be indexed into this field.
 	 */
-	private Map<String, List<String>> getXmlSolrRecord(String xmlRecord) {
-		Map<String, List<String>> solrRecord = null;
+	private Map<String, List<String>> getSolrRecord(String xmlRecord) {
+		TreeMap<String, List<String>> solrRecord = null;
 		Document document = getDomDocument(xmlRecord);
 		XmlParser xmlParser = new XmlParser();
 		List<String> singleRecordId = new ArrayList<String>();
 
-		// Get record ID
+		// Get the record ID
 		try {
 			List<String> recordIds = xmlParser.getXpathResult(document, biIdXpath, false);
 			String recordId = (recordIds != null) ? recordIds.get(0) : null;
@@ -167,27 +175,27 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		// Get a Map that represents all fields of the DOM document
 		solrRecord = getRecordFields(document.getDocumentElement());
 		
-		// Add a field for the solr record id
+		// Add a field for the Solr record id
 		solrRecord.put("id", singleRecordId);
-		//AkImporterHelper.print(print, "\nsolrRecord " + solrRecord.toString());
 
 		return solrRecord;
 	}
 
-
-	private Map<String, List<String>> getRecordFields(Node node) {
+	
+	private TreeMap<String, List<String>> getRecordFields(Node node) {
 
 		if (node.getNodeType() == Node.ELEMENT_NODE) {
 			fieldType = node.getNodeName();
 			
 			if (fieldType.equals("record")) {
-				record = new HashMap<String, List<String>>();
+				record = new TreeMap<String, List<String>>();
 			}
 
-			// Get attributes
+			// Get attributes if there are some
 			NamedNodeMap nnM = node.getAttributes();
 			if (nnM != null && nnM.getLength() > 0) {
 				
+				// Loop through the attributes
 				for(int a = 0; a < nnM.getLength(); a++) {
 					Node attributeNode = nnM.item(a);
 					if (attributeNode.getNodeType() == Node.ATTRIBUTE_NODE) {
@@ -196,24 +204,24 @@ public class BrowseIndexContentHandler implements ContentHandler {
 
 						if (fieldType.equals("datafield")) {
 							if (attrName.equals("tag")) {
-								if (attrValue != null && !attrValue.isEmpty()) {
+								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("-") && !attrValue.equals("--") && !attrValue.equals("---")) {
 									tag = attrValue;
 								} else {
-									tag = "#";
+									tag = "_"; // blank
 								}
 							}
 							if (attrName.equals("ind1")) {
 								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("-")) {
 									ind1 = attrValue;
 								} else {
-									ind1 = "#";
+									ind1 = "_"; // blank
 								}
 							}
 							if (attrName.equals("ind2")) {
 								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("1") && !attrValue.equals("-")) {
 									ind2 = attrValue;
 								} else {
-									ind2 = "#";
+									ind2 = "_"; // blank
 								}
 							}
 						}
@@ -223,17 +231,17 @@ public class BrowseIndexContentHandler implements ContentHandler {
 								if (attrValue != null && !attrValue.isEmpty()) {
 									code = attrValue;
 								} else {
-									code = "#";
+									code = "_"; // blank
 								}
 							};
 						}
 
 						if (fieldType.equals("controlfield")) {
 							if (attrName.equals("tag")) {
-								if (attrValue != null && !attrValue.isEmpty()) {
+								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("-") && !attrValue.equals("--") && !attrValue.equals("---")) {
 									tag = attrValue;
 								} else {
-									tag = "#";
+									tag = "_"; // blank
 								}
 							}
 						}
@@ -241,19 +249,19 @@ public class BrowseIndexContentHandler implements ContentHandler {
 				}
 
 				if (fieldType.equals("subfield")) {
-					subfield = tag + "$" + ind1 + ind2 + "$" + code;
-					addToListInMap(record, tag, node.getTextContent()); // Add value on datafield-tag level
-					addToListInMap(record, subfield, node.getTextContent()); // Add values on subfield-code level
+					subfield = tag + ind1 + ind2 + code;
+					addToListInMap(record, "_" + tag + "_txt", node.getTextContent()); // Add value on datafield-tag level
+					addToListInMap(record, "_" + subfield + "_txt", node.getTextContent()); // Add values on subfield-code level
 				}
 
 				if (fieldType.equals("controlfield")) {
 					controlfield = tag;
-					addToListInMap(record, controlfield, node.getTextContent()); // Add value for controlfield-tag level
+					addToListInMap(record, "_" + controlfield + "_txt", node.getTextContent()); // Add value for controlfield-tag level
 				}
 			}
 		}
 
-		// Repeat for child nodes:
+		// Repeat for child nodes
 		NodeList nodeList = node.getChildNodes();
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Node currentNode = nodeList.item(i);
@@ -264,7 +272,6 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		
 		return record;
 	}
-
 	
 	
 	/**
@@ -276,7 +283,6 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	 */
 	private Map<String, List<String>> addToListInMap(Map<String, List<String>> record, String mapKey, String valueToAdd) {
 		List<String> subfieldValues = record.get(mapKey);
-
 		// Create new List<String> if none was found for the given key
 	    if(subfieldValues == null) {
 	    	subfieldValues = new ArrayList<String>();
@@ -288,10 +294,8 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	    		subfieldValues.add(valueToAdd);
 	    	}
 	    }
-	    
 	    return record;
 	}
-	
 	
 	
 	/**
@@ -314,7 +318,6 @@ public class BrowseIndexContentHandler implements ContentHandler {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 		return domDocument;
 	}
 
@@ -324,16 +327,16 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	 * @param solrServer		HttpSolrServer: The Solr server to which the data should be added
 	 * @param xmlSolrRecords	List&lt;Map&lt;String, List&lt;String&gt;&gt;&gt;: A list of Maps, each representing a record that should be added to solr.
 	 */
-	private void addRecordsToSolr(HttpSolrServer solrServer, List<Map<String, List<String>>> xmlSolrRecords) {
+	private void addRecordsToSolr(HttpSolrServer solrServer, List<Map<String, List<String>>> solrRecords) {
 		// Create a collection of all documents
 		Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
 
-		for (Map<String, List<String>> xmlSolrRecord : xmlSolrRecords) {
+		for (Map<String, List<String>> solrRecord : solrRecords) {
 			// Create a Solr input document
 			SolrInputDocument doc = new SolrInputDocument();
 
 			// Add fields to Solr document
-			for (Entry<String, List<String>> dataField : xmlSolrRecord.entrySet()) {
+			for (Entry<String, List<String>> dataField : solrRecord.entrySet()) {
 				String solrFieldName = dataField.getKey();
 				List<String> solrFieldValue = dataField.getValue();
 				if (solrFieldValue != null && !solrFieldValue.isEmpty()) {
@@ -343,6 +346,11 @@ public class BrowseIndexContentHandler implements ContentHandler {
 
 			// Add the Solr document to a Solr document collection if it is not empty
 			if (!doc.isEmpty()) {
+				// First add some time data
+				doc.addField("indexTimestamp_l", timeStamp);
+				doc.addField("indexTimestamp_txt", timeStampFormatted);
+				
+				// Now add the document to the Solr document collection
 				docs.add(doc);
 			}
 		}
