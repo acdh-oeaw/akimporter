@@ -67,7 +67,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
-import main.java.betullam.akimporter.browse.BrowseIndex;
+import main.java.betullam.akimporter.akindex.AkIndex;
+import main.java.betullam.akimporter.akindex.AkIndexAllFields;
 import main.java.betullam.akimporter.solrmab.PostProcess;
 import main.java.betullam.akimporter.solrmab.PostProcessor;
 import main.java.betullam.akimporter.solrmab.Relate;
@@ -228,10 +229,10 @@ public class Main {
 			String xmlFtpRemotePath = importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath");
 			String xmlFtpLocalPath = importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath");*/
 
-			// Get browse index properties. We need to get them here because we need the "cmd" variable for it.
-			String biName = null;
-			if (cmd.hasOption("browse_index")) {
-				biName = cmd.getOptionValue("browse_index");
+			// Get AKindex properties. We need to get them here because we need the "cmd" variable for it.
+			String akiName = null;
+			if (cmd.hasOption("ak_index")) {
+				akiName = cmd.getOptionValue("ak_index");
 			}
 
 			// Switch between main options
@@ -654,18 +655,26 @@ public class Main {
 				break;
 			}
 			
-			case "browse_index": {
+			case "ak_index": {	
+				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
+				boolean akiValidateSkip = (importerProperties.getProperty("akindex.setting.validate.skip") != null && !importerProperties.getProperty("akindex.setting.validate.skip").isEmpty()) ? Boolean.valueOf(importerProperties.getProperty("akindex.setting.validate.skip")) : false;
+				String akiPath = importerProperties.getProperty("akindex." + akiName + ".path.data");
+				String akiElements = importerProperties.getProperty("akindex." + akiName + ".elements");
+				String akiElementsLevel = importerProperties.getProperty("akindex." + akiName + ".elements.level");
+				String akiIdXpath = importerProperties.getProperty("akindex." + akiName + ".xpath.id");
 				
-				String biSolr = importerProperties.getProperty("browse.setting.solr");
-				String biPath = importerProperties.getProperty("browse." + biName + ".path");
-				String biElements = importerProperties.getProperty("browse." + biName + ".elements");
-				String biElementsLevel = importerProperties.getProperty("browse." + biName + ".elementsLevel");
-				String biIdXpath = importerProperties.getProperty("browse." + biName + ".id.xpath");
-				
-				new BrowseIndex(biSolr, biPath, biElements, biElementsLevel, biIdXpath, print, optimize);
+				new AkIndex(akiSolr, akiPath, akiElements, akiElementsLevel, akiIdXpath, akiValidateSkip, print, optimize);
 				break;
 			}
+			
+			case "ak_index_allfields": {
+				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
+				String akiAllFieldsPath = importerProperties.getProperty("akindex.setting.path.allfields");
 
+				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
+				break;
+			}
+			
 			default: {
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
@@ -1534,14 +1543,22 @@ public class Main {
 				.desc("Index sample data from AK Bibliothek Wien.")
 				.build();
 		
-		// browse_index (for indexing to the browse index application - has nothing to do with AKsearch/VuFind!)
-		Option oBrowseIndex = Option
+		// ak_index (for indexing to the AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
+		Option oAkIndex = Option
 				.builder()
 				.required(false)
-				.longOpt("browse_index")
+				.longOpt("ak_index")
 				.hasArg(true)
 				.numberOfArgs(1)
-				.desc("Indexing fields for the browse index")
+				.desc("Indexing fields for AKindex (a.k.a. browse index)")
+				.build();
+		
+		// ak_index_allfields (generating the "all fields" file for AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
+		Option oAkIndexAllFields = Option
+				.builder()
+				.required(false)
+				.longOpt("ak_index_allfields")
+				.desc("Generate the \"all fields\" php file for AKindex (a.k.a. browse index)")
 				.build();
 
 		optionGroup.addOption(oAkTest);
@@ -1562,7 +1579,8 @@ public class Main {
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
 		optionGroup.addOption(oIndexSampleData);
-		optionGroup.addOption(oBrowseIndex);
+		optionGroup.addOption(oAkIndex);
+		optionGroup.addOption(oAkIndexAllFields);
 		optionGroup.setRequired(true);
 		options.addOptionGroup(optionGroup);
 		options.addOption(oVerbose);

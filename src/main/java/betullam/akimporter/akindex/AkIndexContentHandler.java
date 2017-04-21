@@ -1,4 +1,4 @@
-package main.java.betullam.akimporter.browse;
+package main.java.betullam.akimporter.akindex;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -30,12 +30,11 @@ import org.xml.sax.SAXException;
 
 import ak.xmlhelper.XmlParser;
 
-public class BrowseIndexContentHandler implements ContentHandler {
+public class AkIndexContentHandler implements ContentHandler {
 
 	private HttpSolrServer solrServer;
 	private String timeStamp;
 	private String timeStampFormatted;
-	//private boolean print;
 	private String recordToIndex;
 	private String biIdXpath;
 	private String elementContent;
@@ -45,7 +44,6 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	private int recordCounter = 0;
 	private int NO_OF_DOCS = 500;
 
-	//private Map<String, List<String>> record = new HashMap<String, List<String>>();
 	private TreeMap<String, List<String>> record = new TreeMap<String, List<String>>();
 	private String fieldType = null;
 	private String controlfield = null;
@@ -55,13 +53,12 @@ public class BrowseIndexContentHandler implements ContentHandler {
 	private String subfield = null;
 	private String code = null;
 
-	public BrowseIndexContentHandler(HttpSolrServer solrServer, String recordToIndex, String biIdXpath, String timeStamp, String timeStampFormatted, boolean print) {
+	public AkIndexContentHandler(HttpSolrServer solrServer, String recordToIndex, String biIdXpath, String timeStamp, String timeStampFormatted, boolean print) {
 		this.solrServer = solrServer;
 		this.recordToIndex = recordToIndex;
 		this.biIdXpath = biIdXpath;
 		this.timeStamp = timeStamp;
 		this.timeStampFormatted = timeStampFormatted;
-		//this.print = print;
 	}
 
 
@@ -207,7 +204,7 @@ public class BrowseIndexContentHandler implements ContentHandler {
 								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("-") && !attrValue.equals("--") && !attrValue.equals("---")) {
 									tag = attrValue;
 								} else {
-									tag = "_"; // blank
+									tag = "___";
 								}
 							}
 							if (attrName.equals("ind1")) {
@@ -241,7 +238,7 @@ public class BrowseIndexContentHandler implements ContentHandler {
 								if (attrValue != null && !attrValue.isEmpty() && !attrValue.equals("-") && !attrValue.equals("--") && !attrValue.equals("---")) {
 									tag = attrValue;
 								} else {
-									tag = "_"; // blank
+									tag = "___";
 								}
 							}
 						}
@@ -250,13 +247,16 @@ public class BrowseIndexContentHandler implements ContentHandler {
 
 				if (fieldType.equals("subfield")) {
 					subfield = tag + ind1 + ind2 + code;
-					addToListInMap(record, "_" + tag + "_txt", node.getTextContent()); // Add value on datafield-tag level
-					addToListInMap(record, "_" + subfield + "_txt", node.getTextContent()); // Add values on subfield-code level
+					//addToListInMap(record, "_" + tag + "_txt", node.getTextContent()); // Add value on datafield-tag level
+					//addToListInMap(record, "_" + subfield + "_txt", node.getTextContent()); // Add values on subfield-code level
+					addToListInMap(record, "_" + tag + "_ss", node.getTextContent()); // Add value on datafield-tag level
+					addToListInMap(record, "_" + subfield + "_ss", node.getTextContent()); // Add values on subfield-code level
 				}
 
 				if (fieldType.equals("controlfield")) {
 					controlfield = tag;
-					addToListInMap(record, "_" + controlfield + "_txt", node.getTextContent()); // Add value for controlfield-tag level
+					//addToListInMap(record, "_" + controlfield + "_txt", node.getTextContent()); // Add value for controlfield-tag level
+					addToListInMap(record, "_" + controlfield + "_ss", node.getTextContent()); // Add value for controlfield-tag level
 				}
 			}
 		}
@@ -348,7 +348,7 @@ public class BrowseIndexContentHandler implements ContentHandler {
 			if (!doc.isEmpty()) {
 				// First add some time data
 				doc.addField("indexTimestamp_l", timeStamp);
-				doc.addField("indexTimestamp_txt", timeStampFormatted);
+				doc.addField("indexTimestamp_s", timeStampFormatted);
 				
 				// Now add the document to the Solr document collection
 				docs.add(doc);

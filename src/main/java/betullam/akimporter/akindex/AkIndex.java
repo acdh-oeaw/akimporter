@@ -1,4 +1,4 @@
-package main.java.betullam.akimporter.browse;
+package main.java.betullam.akimporter.akindex;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,15 +21,15 @@ import org.xml.sax.helpers.XMLReaderFactory;
 import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.main.AkImporterHelper;
 
-public class BrowseIndex {
+public class AkIndex {
 
-	String biSolr = null;
-	String biPath = null;
-	String biElements = null;
-	String biElementsLevel = null;
-	String biIdXpath = null;
-	boolean print = false;
-	boolean optimize = false;
+	private String akiSolr = null;
+	private String akiPath = null;
+	private String akiElements = null;
+	private String akiIdXpath = null;
+	private boolean akiValidateSkip = false;
+	private boolean print = false;
+	private boolean optimize = false;
 	
 	//endTime = System.currentTimeMillis();
 	//AkImporterHelper.print(print, "Done indexing to Solr. Execution time: " + AkImporterHelper.getExecutionTime(startTime, endTime) + "\n\n");
@@ -37,38 +37,31 @@ public class BrowseIndex {
 	String indexTimestampString = String.valueOf(this.indexStartTimestampLong);
 	String indexTimeFormatted = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(indexStartTimestampLong));
 
-	public BrowseIndex(String biSolr, String biPath, String biElements, String biElementsLevel, String biIdXpath, boolean print, boolean optimize) {
-		/*
-		System.out.println("biSolr: " + biSolr);
-		System.out.println("biPath: " + biPath);
-		System.out.println("biElements: " + biElements);
-		System.out.println("biElementsLevel: " + biElementsLevel);
-		System.out.println("biIdXpath: " + biIdXpath);
-		*/
+	public AkIndex(String akiSolr, String akiPath, String akiElements, String akiElementsLevel, String akiIdXpath, boolean akiValidateSkip, boolean print, boolean optimize) {
 		
-		this.biSolr = biSolr;
-		this.biPath = biPath;
-		this.biElements = biElements;
-		this.biElementsLevel = biElementsLevel;
-		this.biIdXpath = biIdXpath;
+		this.akiSolr = akiSolr;
+		this.akiPath = akiPath;
+		this.akiElements = akiElements;
+		this.akiIdXpath = akiIdXpath;
+		this.akiValidateSkip = akiValidateSkip;
 		this.print = print;
 		this.optimize = optimize;
 
-		this.startBrowseIndexing();
+		this.startAkIndexing();
 	}
 
 
-	private boolean startBrowseIndexing() {
-		boolean isBrowseIndexingSuccessful = false;
+	private boolean startAkIndexing() {
+		boolean isAkIndexingSuccessful = false;
 
 		AkImporterHelper.print(this.print, "\n-----------------------------------------------------------------------------");
-		AkImporterHelper.print(this.print, "\nStarting browse indexing: " + this.indexTimeFormatted);
+		AkImporterHelper.print(this.print, "\nStarting indexing for AKindex: " + this.indexTimeFormatted);
 
 		// Creating Solr server
-		HttpSolrServer sServerBrowseIndex =  new HttpSolrServer(this.biSolr);
+		HttpSolrServer sServerAkIndex =  new HttpSolrServer(this.akiSolr);
 
 		// Getting xml file(s)
-		File xmlFile = new File(this.biPath);
+		File xmlFile = new File(this.akiPath);
 		List<File> fileList = new ArrayList<File>();
 		if (xmlFile.isDirectory()) {
 			fileList = (List<File>)FileUtils.listFiles(xmlFile, new String[] {"xml"}, true); // Get all xml-files recursively
@@ -78,39 +71,45 @@ public class BrowseIndex {
 
 		// XML Validation
 		boolean allFilesValid = false;
-		AkImporterHelper.print(this.print, "\nStart validating XML data\t-> please wait ...\r");
-		XmlValidator bxh = new XmlValidator();
-		for (File file : fileList) {
-			boolean hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
-			if (hasValidationPassed) {
-				allFilesValid = true;
-			} else {
-				allFilesValid = false;
-				System.err.println("\nError in file " + file.getName() + ". Import process was cancelled.\n");
-				return allFilesValid;
+		if (!this.akiValidateSkip) {
+			AkImporterHelper.print(this.print, "\nStart validating XML data\t-> please wait ...\r");
+			XmlValidator bxh = new XmlValidator();
+			for (File file : fileList) {
+				boolean hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
+				if (hasValidationPassed) {
+					allFilesValid = true;
+				} else {
+					allFilesValid = false;
+					System.err.println("\nError in file " + file.getName() + ". Import process was cancelled.\n");
+					return allFilesValid;
+				}
 			}
+		} else {
+			// We skip validation so we have to set allFilesValid to true
+			AkImporterHelper.print(this.print, "\nSkipping validation\t\t-> Done");
+			allFilesValid = true;
 		}
 
 		// If all files are valid, go on with the import process
-		if (allFilesValid) {
+		if (allFilesValid && !this.akiValidateSkip) {
 			AkImporterHelper.print(this.print, "Start validating XML data\t-> Done             ");
-		} else {
+		} else if (!allFilesValid) {
 			// If there are errors in at least one file, stop the import process:
 			System.err.println("\nError while validating. Import process was cancelled!\n");
 			return false;
 		}
 
 		for (File file : fileList) {
-			isBrowseIndexingSuccessful = this.browseIndexing(file.getAbsolutePath(), sServerBrowseIndex);
+			isAkIndexingSuccessful = this.akIndexing(file.getAbsolutePath(), sServerAkIndex);
 
-			if (isBrowseIndexingSuccessful) {
+			if (isAkIndexingSuccessful) {
 				try {
 					// Commit to Solr server:
-					sServerBrowseIndex.commit();
+					sServerAkIndex.commit();
 
 					if (optimize) {
 						AkImporterHelper.print(this.print, "\nOptimizing Solr Server\t\t-> please wait ...\r");
-						AkImporterHelper.solrOptimize(sServerBrowseIndex);
+						AkImporterHelper.solrOptimize(sServerAkIndex);
 						AkImporterHelper.print(this.print, "Optimizing Solr Server\t\t-> Done             ");
 					}
 				} catch (SolrServerException e) {
@@ -124,11 +123,11 @@ public class BrowseIndex {
 		long indexEndTimestampLong = new Date().getTime();
 		AkImporterHelper.print(print, "\nDone indexing to Solr. Execution time: " + AkImporterHelper.getExecutionTime(indexStartTimestampLong, indexEndTimestampLong) + "\n\n");
 		
-		return isBrowseIndexingSuccessful;
+		return isAkIndexingSuccessful;
 	}
 
 
-	private boolean browseIndexing(String fileName, HttpSolrServer sServerBrowseIndex) {
+	private boolean akIndexing(String fileName, HttpSolrServer sServerAkIndex) {
 
 		boolean isIndexingSuccessful = false;
 
@@ -141,7 +140,7 @@ public class BrowseIndex {
 			ContentHandler contentHandler = null;
 
 			// Create content handler for XML data
-			contentHandler = new BrowseIndexContentHandler(sServerBrowseIndex, this.biElements, this.biIdXpath, this.indexTimestampString, this.indexTimeFormatted, this.print);
+			contentHandler = new AkIndexContentHandler(sServerAkIndex, this.akiElements, this.akiIdXpath, this.indexTimestampString, this.indexTimeFormatted, this.print);
 
 			// Create SAX parser and set content handler:
 			XMLReader xmlReader = XMLReaderFactory.createXMLReader();
