@@ -659,11 +659,13 @@ public class Main {
 				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
 				boolean akiValidateSkip = (importerProperties.getProperty("akindex.setting.validate.skip") != null && !importerProperties.getProperty("akindex.setting.validate.skip").isEmpty()) ? Boolean.valueOf(importerProperties.getProperty("akindex.setting.validate.skip")) : false;
 				String akiPath = importerProperties.getProperty("akindex." + akiName + ".path.data");
+				String akiAllFieldsPath = importerProperties.getProperty("akindex.setting.path.allfields");
 				String akiElements = importerProperties.getProperty("akindex." + akiName + ".elements");
 				String akiElementsLevel = importerProperties.getProperty("akindex." + akiName + ".elements.level");
 				String akiIdXpath = importerProperties.getProperty("akindex." + akiName + ".xpath.id");
 				
 				new AkIndex(akiSolr, akiPath, akiElements, akiElementsLevel, akiIdXpath, akiValidateSkip, print, optimize);
+				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
 				break;
 			}
 			

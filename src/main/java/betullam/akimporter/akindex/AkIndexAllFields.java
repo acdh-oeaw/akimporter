@@ -56,7 +56,8 @@ public class AkIndexAllFields {
 	
 	private boolean generateAllFieldsFile() {
 		boolean successfullyGeneratedFile = false;
-
+		
+		AkImporterHelper.print(this.print, "\n-----------------------------------------------------------------------------");
 		AkImporterHelper.print(this.print, "\nGenerating the \"all fields\" file for AKindex: " + this.timeFormatted);
 
 		// Creating Solr server
