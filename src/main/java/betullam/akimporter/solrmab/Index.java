@@ -51,6 +51,7 @@ import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.main.Main;
 import main.java.betullam.akimporter.solrmab.indexing.Controlfield;
 import main.java.betullam.akimporter.solrmab.indexing.Datafield;
+import main.java.betullam.akimporter.solrmab.indexing.Leader;
 import main.java.betullam.akimporter.solrmab.indexing.MarcContentHandler;
 import main.java.betullam.akimporter.solrmab.indexing.PropertiesObject;
 import main.java.betullam.akimporter.solrmab.indexing.SolrField;
@@ -236,6 +237,7 @@ public class Index {
 			// Loop through properties, put them into MatcingObjects and add them to a List<MatchingObject>:
 			for(String key : mabProperties.stringPropertyNames()) {
 
+				Leader leader = null;
 				List<Datafield> datafields = new ArrayList<Datafield>();
 				List<Controlfield> controlfields = new ArrayList<Controlfield>();
 				boolean multiValued = false;
@@ -729,7 +731,7 @@ public class Index {
 					applyToFields = null;
 				}
 
-				// Create Datafield and Controlfied objects for all fields given in mab.properties
+				// Create Leader, Datafield and Controlfied objects for all fields given in mab.properties
 				for(String lstValueClean : lstValuesClean) {
 					if (lstValueClean.length() == 3) { // It's a controlfield (it has only 3 characters, e. g. SYS)
 						Controlfield controlfield = new Controlfield();
@@ -750,6 +752,9 @@ public class Index {
 						datafield.setInd2(ind2);
 						datafield.setSubfields(subfields);
 						datafields.add(datafield);
+					} else if (lstValueClean.equals("leader")) { // This is the leader tag
+						leader = new Leader();
+						leader.setTag("leader");
 					}
 				}
 
@@ -766,6 +771,7 @@ public class Index {
 					PropertiesObject mo = new PropertiesObject(
 							key,
 							mabFieldnames,
+							leader,
 							datafields,
 							controlfields,
 							multiValued,

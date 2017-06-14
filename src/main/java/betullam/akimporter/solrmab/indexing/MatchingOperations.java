@@ -68,6 +68,12 @@ public class MatchingOperations {
 		for (RawRecord rawRecord : rawRecords) {
 
 			List<SolrField> allSolrFieldsOfRecord = new ArrayList<SolrField>();
+			
+			// Handle leader
+			List<SolrField> solrFieldsFromLeader = this.matchField(rawRecord.getLeader(), allPropertiesObjects);
+			if (solrFieldsFromLeader != null) {
+				allSolrFieldsOfRecord.addAll(solrFieldsFromLeader);
+			}
 
 			// Handle controlfields
 			for (Controlfield rawControlfield : rawRecord.getControlfields()) {
@@ -164,6 +170,7 @@ public class MatchingOperations {
 
 		Controlfield controlfield = null;
 		Datafield datafield = null;
+		Leader leader = null;
 		String type = null;
 		if (rawField instanceof Controlfield) {
 			type = "controlfield";
@@ -171,6 +178,9 @@ public class MatchingOperations {
 		} else if (rawField instanceof Datafield) {
 			type = "datafield";
 			datafield = (Datafield) rawField;
+		} else if (rawField instanceof Leader) {
+			type = "leader";
+			leader = (Leader) rawField;
 		}
 
 		// Remove unnecessary PropertiesObjects so that we don't have to iterate over all of them. This saves a lot of time!
@@ -180,7 +190,8 @@ public class MatchingOperations {
 			return null;
 		}
 
-		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {
+
+		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {			
 
 			String solrFieldname = relevantPropertiesObject.getSolrFieldname();
 			ArrayList<String> fieldValues = new ArrayList<String>();
@@ -256,6 +267,7 @@ public class MatchingOperations {
 			}
 
 			if (!skipField) {
+				
 				SolrField solrField = new SolrField();
 				solrField.setFieldname(solrFieldname);
 				solrField.setMultivalued(isMultivalued);
@@ -307,6 +319,15 @@ public class MatchingOperations {
 								}
 							}
 						}
+						if (type.equals("leader")) {
+							String rawFieldname = "leader";
+							String rawFieldvalue = leader.getContent();
+							String translatedValue = getTranslatedValue(solrFieldname, rawFieldname, rawFieldvalue, translateProperties, fromCharacter, toCharacter, defaultValue, isTranslateValue, isTranslateValueContains, isTranslateValueRegex, hasRegex, regexPattern, hasRegexStrict, regexStrictPattern, hasRegexReplace, regexReplacePattern, regexReplaceValue, false);
+							//System.out.println("translatedValue: " + translatedValue);
+							if (translatedValue != null) {
+								fieldValues.add(translatedValue);
+							}
+						}
 					}
 
 					// Handle regEx, but only if we do not have a translate value, connected value or concatenated value.
@@ -326,6 +347,12 @@ public class MatchingOperations {
 								//System.out.println("regexedValue: " + regexedValue);
 								fieldValues.add(regexedValue);
 							}
+						}
+						if (type.equals("leader")) {
+							String rawFieldvalue = leader.getContent();
+							String regexedValue = getRegexValue(regexPattern, rawFieldvalue);
+							//System.out.println("regexedValue: " + regexedValue);
+							fieldValues.add(regexedValue);
 						}
 					}
 
@@ -351,6 +378,14 @@ public class MatchingOperations {
 								}
 							}
 						}
+						if (type.equals("leader")) {
+							String rawFieldvalue = leader.getContent();
+							String regexedStrictValue = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
+							//System.out.println("regexedStrictValue: " + regexedStrictValue);
+							if (regexedStrictValue != null) {
+								fieldValues.add(regexedStrictValue);
+							}
+						}
 					}
 
 					// Handle regExReplace, but only if we do not have a translate value, connected value or concatenated value.
@@ -370,11 +405,17 @@ public class MatchingOperations {
 								//System.out.println("regexedReplaceValue: " + regexedReplaceValue);
 								fieldValues.add(regexedReplaceValue);
 							}
-						}						
+						}
+						if (type.equals("leader")) {
+							String rawFieldvalue = leader.getContent();
+							String regexedReplaceValue = rawFieldvalue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
+							//System.out.println("regexedReplaceValue: " + regexedReplaceValue);
+							fieldValues.add(regexedReplaceValue);
+						}
 					}
 
 					// Handle the combination between connectedSubfields and concatenatedSubfields, but only if we do not have a translate value. Translations are treated differently for connectedSubfields and concatenatedSubfields.
-					// This can only apply to datafields, not to controlfields (they do not have any subfields).
+					// This can only apply to datafields, not to controlfields or the leader (they do not have any subfields).
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields && hasConcatenatedSubfields)) {
 						if (type.equals("datafield")) {
 														
@@ -524,6 +565,9 @@ public class MatchingOperations {
 							fieldValues.add(subfield.getContent());
 						}
 					}
+					if (type.equals("leader")) {
+						fieldValues.add(leader.getContent());
+					}
 				}
 
 				if (solrField != null && !fieldValues.isEmpty()) {
@@ -538,11 +582,11 @@ public class MatchingOperations {
 
 
 	/**
-	 * Get the relevant PropertiesObject objects for the given raw field (Controlfield or Datafield). All PropertiesObject objects that do
-	 * not match to a raw field (Controlfield or Datafield) will would produce an overhead and would waste a lot of ressources and time.
+	 * Get the relevant PropertiesObject objects for the given raw field (Leader, Controlfield or Datafield). All PropertiesObject objects that do
+	 * not match to a raw field (Leader, Controlfield or Datafield) will would produce an overhead and would waste a lot of ressources and time.
 	 * 
-	 * @param type						String: Only "controlfield" or "datafield" are possible
-	 * @param rawField					Controlfield or Datafield: A Controlfield object or a Datafield object
+	 * @param type						String: Only "leader", "controlfield" and "datafield" are possible
+	 * @param rawField					Leader, Controlfield or Datafield: A Leader object, a Controlfield object or a Datafield object
 	 * @param allPropertiesObjects		List<PropertiesObject>: A list of all PropertiesObject objects
 	 * @return							List<PropertiesObject>: A list of all relevant PropertiesObject objects
 	 */
@@ -565,6 +609,16 @@ public class MatchingOperations {
 			Datafield rawDatafield = ((Datafield) rawField);
 			for (PropertiesObject propertiesObject : allPropertiesObjects) {
 				if (rawDatafield.isContainedInPropertiesObject(propertiesObject)) {
+					relevantPropertiesObjects.add(propertiesObject);
+				}
+			}
+		}
+		
+		// Always add the leader as it contains useful information about the record
+		if (type.equals("leader")) {
+			Leader rawLeader = ((Leader) rawField);
+			for (PropertiesObject propertiesObject : allPropertiesObjects) {
+				if (rawLeader.isContainedInPropertiesObject(propertiesObject)) {
 					relevantPropertiesObjects.add(propertiesObject);
 				}
 			}

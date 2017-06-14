@@ -32,6 +32,7 @@ public class RawRecord {
 	private String recordID;
 	private String recordSYS;
 	private String indexTimestamp;
+	private Leader leader;
 	private List<Controlfield> controlfields;
 	private List<Datafield> datafields;
 	private String fullRecord;
@@ -55,7 +56,7 @@ public class RawRecord {
 	public void setRecordSYS(String recordSYS) {
 		this.recordSYS = recordSYS;
 	}
-
+	
 	public String getIndexTimestamp() {
 		return indexTimestamp;
 	}
@@ -64,6 +65,14 @@ public class RawRecord {
 		this.indexTimestamp = indexTimestamp;
 	}
 	
+	public Leader getLeader() {
+		return leader;
+	}
+
+	public void setLeader(Leader leader) {
+		this.leader = leader;
+	}
+
 	public List<Controlfield> getControlfields() {
 		return controlfields;
 	}
@@ -91,7 +100,8 @@ public class RawRecord {
 	@Override
 	public String toString() {
 		return "RawRecord [recordID=" + recordID + ", recordSYS=" + recordSYS + ", indexTimestamp=" + indexTimestamp
-				+ ", controlfields=" + controlfields + ", datafields=" + datafields + ", fullRecord=" + fullRecord
-				+ "]";
+				+ ", leader=" + leader + ", controlfields=" + controlfields + ", datafields=" + datafields
+				+ ", fullRecord=" + fullRecord + "]";
 	}
+
 }

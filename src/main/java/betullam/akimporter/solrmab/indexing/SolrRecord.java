@@ -83,10 +83,12 @@ public class SolrRecord {
 	public void setFullRecord(String fullRecord) {
 		this.fullRecord = fullRecord;
 	}
+	
 
 	@Override
 	public String toString() {
 		return "SolrRecord [recordID=" + recordID + ", recordSYS=" + recordSYS + ", indexTimestamp=" + indexTimestamp
 				+ ", solrFields=" + solrFields + ", fullRecord=" + fullRecord + "]";
 	}
+
 }

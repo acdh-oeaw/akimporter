@@ -48,6 +48,7 @@ public class MarcContentHandler implements ContentHandler {
 
 	private RawRecord rawRecord;
 	private ArrayList<RawRecord> rawRecords;
+	private Leader leader;
 	private Controlfield controlfield;
 	private ArrayList<Controlfield> controlfields;
 	private Datafield datafield;
@@ -146,9 +147,11 @@ public class MarcContentHandler implements ContentHandler {
 			}
 		}
 
-		// Parser encounters the start of the "leader"-tag (only necessary if we need to get the full record as XML)
-		if (getFullRecordAsXML) {
-			if(localName.equals("leader")) {
+		// Parser encounters the start of the "leader"-tag
+		if(localName.equals("leader")) {
+			leader = new Leader();
+			leader.setTag("leader");
+			if (getFullRecordAsXML) {
 				fullrecordXmlString += "<leader>";
 			}
 		}
@@ -215,11 +218,11 @@ public class MarcContentHandler implements ContentHandler {
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 		String content = nodeContent.toString();
 
-		// Parser encounters the end of the "leader"-tag (only necessary if we need to get the full record as XML)
-		if (getFullRecordAsXML) {
-			if(localName.equals("leader")) {
-				String leaderText = nodeContent.toString();
-				fullrecordXmlString += StringEscapeUtils.escapeXml10(leaderText)+"</leader>";
+		// Parser encounters the end of the "leader"-tag
+		if(localName.equals("leader")) {
+			leader.setContent(content);
+			if (getFullRecordAsXML) {
+				fullrecordXmlString += StringEscapeUtils.escapeXml10(content)+"</leader>";
 			}
 		}
 
@@ -269,6 +272,7 @@ public class MarcContentHandler implements ContentHandler {
 			rawRecord.setRecordID(recordID);
 			rawRecord.setRecordSYS(recordSYS);
 			rawRecord.setIndexTimestamp(timeStamp);
+			rawRecord.setLeader(leader);
 			rawRecord.setControlfields(controlfields);
 			rawRecord.setDatafields(datafields);
 			
@@ -388,7 +392,7 @@ public class MarcContentHandler implements ContentHandler {
 				// Add the timestamp of indexing (it is the timstamp of the beginning of the indexing process):
 				// TODO: Change hardecoded fieldname "indexTimestamp_str" to fieldname specified in .properties file.
 				doc.addField("indexTimestamp_str", solrRecord.getIndexTimestamp());
-
+				
 				// Add the allfields field to the document if it is used
 				if (hasAllFieldsField) {
 					doc.addField(allfieldsField, allfieldsSet);

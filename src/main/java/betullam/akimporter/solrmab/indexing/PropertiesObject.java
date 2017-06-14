@@ -32,6 +32,7 @@ public class PropertiesObject {
 
 	private String solrFieldname;
 	private Map<String, List<String>> propertiesFields;
+	private Leader leader;
 	private List<Datafield> datafields;
 	private List<Controlfield> controlfields;
 	private boolean multiValued;
@@ -73,6 +74,7 @@ public class PropertiesObject {
 	public PropertiesObject(
 			String solrFieldname,
 			Map<String, List<String>> propertiesFields,
+			Leader leader,
 			List<Datafield> datafields,
 			List<Controlfield> controlfields,
 			boolean multiValued,
@@ -111,6 +113,7 @@ public class PropertiesObject {
 
 		this.setSolrFieldname(solrFieldname);
 		this.setPropertiesFields(propertiesFields);
+		this.setLeader(leader);
 		this.setDatafields(datafields);
 		this.setControlfields(controlfields);
 		this.setMultiValued(multiValued);
@@ -162,6 +165,14 @@ public class PropertiesObject {
 
 	public void setPropertiesFields(Map<String, List<String>> mabFieldnames) {
 		this.propertiesFields = mabFieldnames;
+	}
+
+	public Leader getLeader() {
+		return leader;
+	}
+
+	public void setLeader(Leader leader) {
+		this.leader = leader;
 	}
 
 	public List<Datafield> getDatafields() {
@@ -475,7 +486,7 @@ public class PropertiesObject {
 	@Override
 	public String toString() {
 		return "PropertiesObject [solrFieldname=" + solrFieldname + ", propertiesFields=" + propertiesFields
-				+ ", datafields=" + datafields + ", controlfields=" + controlfields + ", multiValued=" + multiValued
+				+ ", leader=" + leader + ", datafields=" + datafields + ", controlfields=" + controlfields + ", multiValued=" + multiValued
 				+ ", customText=" + customText + ", getAllFields=" + getAllFields + ", allFieldsExceptions="
 				+ allFieldsExceptions + ", getFullRecordAsXML=" + getFullRecordAsXML + ", translateValue="
 				+ translateValue + ", translateValueContains=" + translateValueContains + ", translateValueRegex="
