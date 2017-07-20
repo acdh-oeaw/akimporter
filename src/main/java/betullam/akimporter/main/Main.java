@@ -686,10 +686,7 @@ public class Main {
 			
 			case "save_loans": {
 				//saveLoansArg
-				
-				
 				new SaveLoans(saveLoansArg);
-				
 				break;
 			}
 			
