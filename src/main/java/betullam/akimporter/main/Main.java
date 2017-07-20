@@ -69,6 +69,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
 import main.java.betullam.akimporter.akindex.AkIndex;
 import main.java.betullam.akimporter.akindex.AkIndexAllFields;
+import main.java.betullam.akimporter.saveloans.SaveLoans;
 import main.java.betullam.akimporter.solrmab.PostProcess;
 import main.java.betullam.akimporter.solrmab.PostProcessor;
 import main.java.betullam.akimporter.solrmab.Relate;
@@ -233,6 +234,12 @@ public class Main {
 			String akiName = null;
 			if (cmd.hasOption("ak_index")) {
 				akiName = cmd.getOptionValue("ak_index");
+			}
+			
+			// Get "Save Loans" properteis. We need to get them here because we need the "cmd" variable for it.
+			String saveLoansArg = null;
+			if (cmd.hasOption("save_loans")) {
+				saveLoansArg = cmd.getOptionValue("save_loans");
 			}
 
 			// Switch between main options
@@ -674,6 +681,15 @@ public class Main {
 				String akiAllFieldsPath = importerProperties.getProperty("akindex.setting.path.allfields");
 
 				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
+				break;
+			}
+			
+			case "save_loans": {
+				//saveLoansArg
+				
+				
+				new SaveLoans(saveLoansArg);
+				
 				break;
 			}
 			
@@ -1562,6 +1578,16 @@ public class Main {
 				.longOpt("ak_index_allfields")
 				.desc("Generate the \"all fields\" php file for AKindex (a.k.a. browse index)")
 				.build();
+		
+		// ak_index (for indexing to the AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
+		Option oSaveLoans = Option
+				.builder()
+				.required(false)
+				.longOpt("save_loans")
+				.hasArg(true)
+				.numberOfArgs(1)
+				.desc("Save loans from ILS to VuFind database")
+				.build();
 
 		optionGroup.addOption(oAkTest);
 		optionGroup.addOption(oImport);
@@ -1583,6 +1609,7 @@ public class Main {
 		optionGroup.addOption(oIndexSampleData);
 		optionGroup.addOption(oAkIndex);
 		optionGroup.addOption(oAkIndexAllFields);
+		optionGroup.addOption(oSaveLoans);
 		optionGroup.setRequired(true);
 		options.addOptionGroup(optionGroup);
 		options.addOption(oVerbose);
