@@ -1524,9 +1524,10 @@ public class Main {
 				.builder("O")
 				.required(false)
 				.longOpt("oai_import")
+				.argName("section name")
 				.hasArg(true)
 				.numberOfArgs(1)
-				.desc("Indexing or updating data from an OAI-PMH interface.")
+				.desc("Indexing or updating data from an OAI-PMH interface. For section name, see AkImporter.properties, e. g.: oai.SECTION_NAME.url")
 				.build();
 
 		// O (OAI-PMH Import/Update)
@@ -1535,8 +1536,9 @@ public class Main {
 				.required(false)
 				.longOpt("oai_reimport")
 				.hasArg(true)
+				.argName("section name")
 				.numberOfArgs(1)
-				.desc("Index already downloaded OAI data again.")
+				.desc("Index already downloaded OAI data again. For section name, see AkImporter.properties, e. g.: oai.SECTION_NAME.url")
 				.build();
 
 		// X (XML Import)
@@ -1545,8 +1547,9 @@ public class Main {
 				.required(false)
 				.longOpt("xml_import")
 				.hasArg(true)
+				.argName("section name")
 				.numberOfArgs(1)
-				.desc("Indexing or updating data from an OAI-PMH interface.")
+				.desc("Indexing or updating data from an OAI-PMH interface. For section name, see AkImporter.properties, e. g.: xml.SECTION_NAME.path")
 				.build();
 
 		// index_sampledata (index sample data)
@@ -1563,8 +1566,9 @@ public class Main {
 				.required(false)
 				.longOpt("ak_index")
 				.hasArg(true)
+				.argName("section name")
 				.numberOfArgs(1)
-				.desc("Indexing fields for AKindex (a.k.a. browse index)")
+				.desc("Indexing fields for AKindex (a.k.a. browse index). For section name, see AkImporter.properties, e. g.: akindex.SECTION_NAME.elements")
 				.build();
 		
 		// ak_index_allfields (generating the "all fields" file for AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
@@ -1581,8 +1585,9 @@ public class Main {
 				.required(false)
 				.longOpt("save_loans")
 				.hasArg(true)
+				.argName("/path/to/vufind")
 				.numberOfArgs(1)
-				.desc("Save loans from ILS to VuFind database")
+				.desc("Save loans from ILS to VuFind database. Path to VuFind could be /usr/local/vufind")
 				.build();
 
 		optionGroup.addOption(oAkTest);
