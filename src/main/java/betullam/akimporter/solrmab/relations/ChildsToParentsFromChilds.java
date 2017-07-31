@@ -204,7 +204,7 @@ public class ChildsToParentsFromChilds {
 					String childType = relationHelper.getChildRecordType(nonDeletedChild);
 
 					// Get parentSYSs from child record
-					String[] arrParentSYSsOfChild = (nonDeletedChild.getFieldValues("parentSYS_str_mv") != null) ? nonDeletedChild.getFieldValues("parentSYS_str_mv").toArray(new String[0]) : null;
+					String[] arrParentSYSsOfChild = (childType != null && nonDeletedChild.getFieldValues("parentSYS_str_mv") != null) ? nonDeletedChild.getFieldValues("parentSYS_str_mv").toArray(new String[0]) : null;
 
 					if (arrParentSYSsOfChild != null && arrParentSYSsOfChild.length > 0) {
 						
