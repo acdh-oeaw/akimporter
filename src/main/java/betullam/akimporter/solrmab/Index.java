@@ -137,6 +137,10 @@ public class Index {
 			// Specify XML-file to parse. These are our bibliographic data from Aleph Publisher:
 			InputSource inputSource = null;
 			if (indexSampleData) {
+				// IMPORTANT: To use "/main/resources/..." we have to make sure that this folder is exported to the right path within the .jar
+				// file. You can find this out when opening the .jar file with an Archive reader. To change pathes when exporting to .jar, go
+				// (in Eclipse) to "Project Properties -> Java Build Path -> Source-Tab -> Select "Included" and "Edit ..." -> Add files or folders"
+				// When using folders, don't forget to use wildcards.
 				xmlSampleDataStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/sampledata_aksearch.xml"));	
 				inputSource = new InputSource(xmlSampleDataStream);
 			} else {
@@ -849,6 +853,10 @@ public class Index {
 		try {
 			// Get .properties file and load contents:
 			if (useDefaultMabProperties) {
+				// IMPORTANT: To use "/main/resources/..." we have to make sure that this folder is exported to the right path within the .jar
+				// file. You can find this out when opening the .jar file with an Archive reader. To change pathes when exporting to .jar, go
+				// (in Eclipse) to "Project Properties -> Java Build Path -> Source-Tab -> Select "Included" and "Edit ..." -> Add files or folders"
+				// When using folders, don't forget to use wildcards.
 				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
 			} else {
 				translationStream = new BufferedInputStream(new FileInputStream(translationFile));

@@ -260,6 +260,10 @@ public class Import {
 				}
 				if (useDefaultMabPropertiesFile.equals("D")) {
 					useDefaultMabProperties = true;
+					// IMPORTANT: To use "/main/resources/..." we have to make sure that this folder is exported to the right path within the .jar
+					// file. You can find this out when opening the .jar file with an Archive reader. To change pathes when exporting to .jar, go
+					// (in Eclipse) to "Project Properties -> Java Build Path -> Source-Tab -> Select "Included" and "Edit ..." -> Add files or folders"
+					// When using folders, don't forget to use wildcards.
 					pathToMabPropertiesFile = "/main/resources/mab.properties";
 					directoryOfTranslationFiles = "/main/resources";
 					propertiesFileInfo = "Use default mab.properties file";

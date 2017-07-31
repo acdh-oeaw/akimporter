@@ -120,16 +120,23 @@ public class AkImporterHelper {
 		try {
 			// Get .properties file and load contents:
 			if (useDefaultProperties) {
+				// IMPORTANT: To use "/main/resources/..." we have to make sure that this folder is exported to the right path within the .jar
+				// file. You can find this out when opening the .jar file with an Archive reader. To change pathes when exporting to .jar, go
+				// (in Eclipse) to "Project Properties -> Java Build Path -> Source-Tab -> Select "Included" and "Edit ..." -> Add files or folders"
+				// When using folders, don't forget to use wildcards.
 				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
+				
 			} else {
 				translationStream = new BufferedInputStream(new FileInputStream(translationFile));
 			}
+
 			properties.load(translationStream);
 			translationStream.close();
 		} catch (FileNotFoundException e) {
 			System.err.println("Error: File not found! Please check if the file \"" + translationFile + "\" is in the same directory as mab.properties.\n");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error with file: " + filename);
 			e.printStackTrace();
 		}
 

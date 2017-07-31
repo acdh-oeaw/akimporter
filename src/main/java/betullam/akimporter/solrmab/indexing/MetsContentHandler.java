@@ -137,8 +137,6 @@ public class MetsContentHandler implements ContentHandler {
 		//this.print = print;
 		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
 		this.translateProperties = AkImporterHelper.getTranslateProperties("roles.properties", null, true);
-		
-		
 
 	}
 	
