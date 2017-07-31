@@ -667,8 +667,8 @@ public class RelationHelper {
 		} else if (record.getFieldValue("articleParentAC_str") != null) {
 			childRecordType = "article";
 		} else {
-			System.err.println("\nRecord: " + record.getFieldValue("id"));
-			System.err.println("Returnd fields in solr query must include the fields \"parentMultiAC_str\",  \"parentSeriesAC_str_mv\" and \"articleParentAC_str\".");
+			System.err.println("\nReturned fields in solr query must include the fields \"parentMultiAC_str\",  \"parentSeriesAC_str_mv\" and \"articleParentAC_str\".");
+			System.err.println("Problematic record: " + record.toString());
 			return null;
 		}
 
