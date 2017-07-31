@@ -25,6 +25,7 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -55,6 +56,7 @@ public class MetsContentHandler implements ContentHandler {
 
 	private HttpSolrServer solrServer;
 	List<String> structElements;
+	HashMap<String, List<Integer>> structElementsAndLevels;
 	private String timeStamp;
 	//private boolean print = true;
 	RelationHelper relationHelper = null;
@@ -130,13 +132,44 @@ public class MetsContentHandler implements ContentHandler {
 	public MetsContentHandler(HttpSolrServer solrServer, List<String> structElements, String timeStamp, boolean print) {
 		this.solrServer = solrServer;
 		this.structElements = structElements;
+		this.structElementsAndLevels = getStructElementsAndLevels(structElements);
 		this.timeStamp = timeStamp;
 		//this.print = print;
 		this.relationHelper = new RelationHelper(solrServer, null, timeStamp);
 		this.translateProperties = AkImporterHelper.getTranslateProperties("roles.properties", null, true);
+		
+		
+
 	}
+	
+	
+	private HashMap<String, List<Integer>> getStructElementsAndLevels(List<String> structElements) {
+		HashMap<String, List<Integer>> structElementsAndLevels = new HashMap<String, List<Integer>>();
+		
+		for(String structElement : structElements) {
+			// Get values before square bracket (the clean struct elements)
+			String cleanStructElement = structElement.replaceAll("\\[.*?\\]", "");
+			
+			// Get level values from square bracket, e. g. Article[3,4]
+			Pattern pattern = Pattern.compile("\\[.*?\\]");
+			Matcher matcher = pattern.matcher(structElement);
+			List<String> levelsString = (matcher.find()) ? Arrays.asList(matcher.group().replace("[", "").replace("]", "").trim().split("\\s*:\\s*")) : null;
+			List<Integer> levelsInt = new ArrayList<Integer>();
+			if (levelsString.get(0).equalsIgnoreCase("all")) {
+				levelsInt.add(0, 0);
+			} else {
+				for (String levelString : levelsString) {
+					levelsInt.add(Integer.valueOf(levelString));
+				}
+			}
+			
+			structElementsAndLevels.put(cleanStructElement, levelsInt);
+		}
 
-
+		return structElementsAndLevels;
+	}
+	
+	
 	@Override
 	public void startDocument() throws SAXException {
 		metsSolrRecords = new ArrayList<MetsSolrRecord>();
@@ -759,10 +792,24 @@ public class MetsContentHandler implements ContentHandler {
 
 			for (MetsSolrRecord metsSolrRecord : metsSolrRecords) {
 
-				if (structElements.contains(metsSolrRecord.getType())) {
+				boolean isStructElementToIndex = structElementsAndLevels.containsKey(metsSolrRecord.getType());
+				boolean isLevelToIndex = false;
+				if (isStructElementToIndex) {
+					List<Integer> levelsInt = structElementsAndLevels.get(metsSolrRecord.getType());
+					if (levelsInt.size() == 1 && levelsInt.get(0) == 0) {
+						isLevelToIndex = true;
+					} else if (levelsInt.contains(metsSolrRecord.getLevel())) {
+						isLevelToIndex = true;
+					}
+				}
+								
+				//if (structElements.contains(metsSolrRecord.getType())) {
+				if (isStructElementToIndex && isLevelToIndex) {
+
 					// All
 					String urlText = "Volltext";
 					String urlPrefix = "https://emedien.arbeiterkammer.at/viewer/resolver?urn=";
+					String logId = metsSolrRecord.getLogId();
 					
 					// Parent of parent data
 					boolean isParentOfParent = metsSolrRecord.isParentOfParent();
@@ -1009,8 +1056,8 @@ public class MetsContentHandler implements ContentHandler {
 							doc.addField("parentStructType_str", parentType);
 							doc.addField("parentLevel_str", parentLevel);
 							
-							doc.addField("id", childUrn);
-							doc.addField("sysNo_txt", childUrn);
+							doc.addField("id", childUrn + "." + logId);
+							doc.addField("sysNo_txt", childUrn + "." + logId);
 							for (String solrFieldName : indexFields.get("titleFields")) {
 								if (solrFieldName.equalsIgnoreCase("title_sort")) {
 									if (childTitle != null) {
@@ -1054,7 +1101,7 @@ public class MetsContentHandler implements ContentHandler {
 				}
 
 			}
-
+			
 			if (!docs.isEmpty()) {
 				// Now add the collection of documents to Solr:
 				solrServer.add(docs);
@@ -1125,7 +1172,7 @@ public class MetsContentHandler implements ContentHandler {
 			List<String> childAbstracts = null;
 			List<Participant> childParticipants = null;
 			String childSortNo = null;
-
+			
 			for (Entry<String,StructMapLogical> structMapLogicalMap : structMapsLogical.entrySet()) {
 
 				MetsSolrRecord metsSolrRecord = new MetsSolrRecord();
@@ -1158,7 +1205,7 @@ public class MetsContentHandler implements ContentHandler {
 					// records to it:
 					if (parentAcNoRaw != null) {
 						// Remove suffix of AC Nos, e. g. remove "_2016_1" from "AC08846807_2016_1"
-						Pattern pattern = Pattern.compile("^[A-Za-z0-9]+");
+						Pattern pattern = Pattern.compile("(AC|XAW)[A-Za-z0-9]+");
 						Matcher matcher = pattern.matcher(parentAcNoRaw);
 						parentAcNo = (matcher.find()) ? matcher.group().trim() : null;
 					}
@@ -1223,7 +1270,10 @@ public class MetsContentHandler implements ContentHandler {
 				// Set some logical data:
 				metsSolrRecord.setLevel(structMapLogical.getLevel());
 				metsSolrRecord.setType(structMapLogical.getType());
-
+				
+				// Add the logId:
+				metsSolrRecord.setLogId(logId);
+				
 				// Get data from StructLinks
 				List<String> physIds = new ArrayList<String>();
 				for (StructLink structLink : structLinks) {
@@ -1287,7 +1337,6 @@ public class MetsContentHandler implements ContentHandler {
 			}
 		}
 
-		//System.out.println(metsSolrRecords);
 		return metsSolrRecords;
 	}
 
