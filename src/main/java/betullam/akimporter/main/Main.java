@@ -685,7 +685,7 @@ public class Main {
 			}
 			
 			case "save_loans": {
-				new SaveLoans(saveLoansArg);
+				new SaveLoans(saveLoansArg, print);
 				break;
 			}
 			

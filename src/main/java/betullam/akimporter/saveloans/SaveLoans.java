@@ -11,6 +11,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -44,12 +45,14 @@ public class SaveLoans {
 	String pathToVuFind = null;
 	INIConfiguration iniConfig;
 	INIConfiguration iniConfigAlma;
+	boolean print = false;
 
 
-	public SaveLoans (String pathToVuFind) {
+	public SaveLoans (String pathToVuFind, boolean print) {
 
 		// Path to VuFind for getting the config files
 		this.pathToVuFind = pathToVuFind;
+		this.print = print;
 
 		// Get config files
 		this.iniConfig = this.getIniConfig(getPathToVuFindConfigFile("config.ini"));
@@ -90,6 +93,8 @@ public class SaveLoans {
 		// Get loans from user
 		for (User userForSave : usersForSave) {
 			ArrayList<Loan> userLoans = this.getUserLoans(userForSave);
+			
+			AkImporterHelper.print(this.print, "\nGetting loans via API from user " + userForSave.getCatUsername());
 
 			// Add loans from user to the list of all loans from all users
 			if (userLoans != null) {
@@ -113,20 +118,51 @@ public class SaveLoans {
 	private void saveLoansToDb(Connection connection, ArrayList<Loan> loans) {
 
 		for(Loan loan : loans) {
-			Statement stmt;
+			//Statement stmt;
+			PreparedStatement pstmt;
 			try {
-				stmt = connection.createStatement();
-
+				
 				// Query for inserting or updating (if exists) the loans table
 				String query = "INSERT INTO loans"
 						+ " (ils_loan_id, user_id, ils_user_id, item_id, title, author, publication_year, loan_date, due_date, library, location_code, call_no, barcode)"	
-						+ " VALUES('" + loan.getIlsLoanId() + "', '" + loan.getUserId() + "', '" + loan.getIlsUserId() + "', '" + loan.getItemId() + "', '" + loan.getTitle() + "', '" + loan.getAuthor() + "', '" + loan.getPublicationYear() + "', '" + loan.getLoanDate() + "', '" + loan.getDueDate() + "', '" + loan.getLibrary() + "', '" + loan.getLocationCode() + "', '" + loan.getCallNo() + "', '" + loan.getBarcode() + "')"
+						+ " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 						+ " ON DUPLICATE KEY UPDATE" 
-						+ " ils_loan_id='" + loan.getIlsLoanId() + "', user_id='" + loan.getUserId() + "', ils_user_id='" + loan.getIlsUserId() + "', item_id='" + loan.getItemId() + "', title='" + loan.getTitle() + "', author='" + loan.getAuthor() + "', publication_year='" + loan.getPublicationYear() + "', loan_date='" + loan.getLoanDate() + "', due_date='" + loan.getDueDate() + "', library='" + loan.getLibrary() + "', location_code='" + loan.getLocationCode() + "', call_no='" + loan.getCallNo() + "', barcode='" + loan.getBarcode() + "'";
+						+ " ils_loan_id=?, user_id=?, ils_user_id=?, item_id=?, title=?, author=?, publication_year=?, loan_date=?, due_date=?, library=?, location_code=?, call_no=?, barcode=?";
 
-				// Insert or update loans
-				stmt.executeUpdate(query);
+				pstmt = connection.prepareStatement(query);
+				
+				// Prepared statement
+				pstmt.setString(1, loan.getIlsLoanId());
+				pstmt.setInt(2, loan.getUserId());
+				pstmt.setString(3, loan.getIlsUserId());
+				pstmt.setString(4, loan.getItemId());
+				pstmt.setString(5, loan.getTitle());
+				pstmt.setString(6, loan.getAuthor());
+				pstmt.setString(7, loan.getPublicationYear());
+				pstmt.setString(8, loan.getLoanDate());
+				pstmt.setString(9, loan.getDueDate());
+				pstmt.setString(10, loan.getLibrary());
+				pstmt.setString(11, loan.getLocationCode());
+				pstmt.setString(12, loan.getCallNo());
+				pstmt.setString(13, loan.getBarcode());
+				pstmt.setString(14, loan.getIlsLoanId());
+				pstmt.setInt(15, loan.getUserId());
+				pstmt.setString(16, loan.getIlsUserId());
+				pstmt.setString(17, loan.getItemId());
+				pstmt.setString(18, loan.getTitle());
+				pstmt.setString(19, loan.getAuthor());
+				pstmt.setString(20, loan.getPublicationYear());
+				pstmt.setString(21, loan.getLoanDate());
+				pstmt.setString(22, loan.getDueDate());
+				pstmt.setString(23, loan.getLibrary());
+				pstmt.setString(24, loan.getLocationCode());
+				pstmt.setString(25, loan.getCallNo());
+				pstmt.setString(26, loan.getBarcode());
 
+				pstmt.execute();
+				
+				AkImporterHelper.print(this.print, "\nSaved loan to database. Item ID: " + loan.getItemId() + ", Title: " + loan.getTitle());
+				
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
