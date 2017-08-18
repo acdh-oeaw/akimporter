@@ -44,6 +44,7 @@ public class MetsSolrRecord {
 	private String orderLabelFrom = null;
 	private String orderLabelTo = null;
 	private String logId = null;
+	private int orderLogId = 0;
 	
 
 	public boolean isParentOfParent() {
@@ -254,6 +255,12 @@ public class MetsSolrRecord {
 	public void setLogId(String logId) {
 		this.logId = logId;
 	}
+	public int getOrderLogId() {
+		return orderLogId;
+	}
+	public void setOrderLogId(int orderLogId) {
+		this.orderLogId = orderLogId;
+	}
 	
 	
 	@Override
@@ -268,6 +275,6 @@ public class MetsSolrRecord {
 				+ ", subTitle=" + subTitle + ", acNo=" + acNo + ", akIdentifier=" + akIdentifier + ", languageTerm="
 				+ languageTerm + ", abstractTexts=" + abstractTexts + ", participants=" + participants + ", type="
 				+ type + ", level=" + level + ", urn=" + urn + ", order=" + order + ", orderLabelFrom=" + orderLabelFrom
-				+ ", orderLabelTo=" + orderLabelTo + ", logId=" + logId + "]";
+				+ ", orderLabelTo=" + orderLabelTo + ", logId=" + logId + ", orderLogId=" + orderLogId + "]";
 	}
 }

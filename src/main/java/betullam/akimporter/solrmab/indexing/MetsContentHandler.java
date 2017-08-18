@@ -840,6 +840,7 @@ public class MetsContentHandler implements ContentHandler {
 					String childPageFrom = metsSolrRecord.getOrderLabelFrom();
 					String childPageTo = metsSolrRecord.getOrderLabelTo();
 					int childSortNo = metsSolrRecord.getOrder();
+					int childSortNoLogId = metsSolrRecord.getOrderLogId();
 					List<String> childAbstractTexts = metsSolrRecord.getAbstractTexts();
 					String childStructType = metsSolrRecord.getType();
 					int childLevel = metsSolrRecord.getLevel();
@@ -1089,6 +1090,7 @@ public class MetsContentHandler implements ContentHandler {
 							doc.addField("pageFrom_str", childPageFrom);
 							doc.addField("pageTo_str", childPageTo);
 							doc.addField("sortNo_str", childSortNo);
+							doc.addField("sortNoLogId_int_sort", childSortNoLogId);
 							doc.addField("structType_str", childStructType);
 							doc.addField("level_str", childLevel);
 						}
@@ -1268,6 +1270,10 @@ public class MetsContentHandler implements ContentHandler {
 				// Set some logical data:
 				metsSolrRecord.setLevel(structMapLogical.getLevel());
 				metsSolrRecord.setType(structMapLogical.getType());
+				
+				// Get sort order no. from logId
+				String orderLogId = (logId != null) ? logId.replaceAll("\\D+","") : null; // Replace all non-digits with nothing
+				metsSolrRecord.setOrderLogId((orderLogId != null) ? Integer.parseInt(orderLogId) : 0);
 				
 				// Add the logId:
 				metsSolrRecord.setLogId(logId);
