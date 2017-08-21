@@ -1090,7 +1090,7 @@ public class MetsContentHandler implements ContentHandler {
 							doc.addField("pageFrom_str", childPageFrom);
 							doc.addField("pageTo_str", childPageTo);
 							doc.addField("sortNo_str", childSortNo);
-							doc.addField("sortNoLogId_int_sort", childSortNoLogId);
+							doc.addField("sortNoLogId_str", childSortNoLogId);
 							doc.addField("structType_str", childStructType);
 							doc.addField("level_str", childLevel);
 						}

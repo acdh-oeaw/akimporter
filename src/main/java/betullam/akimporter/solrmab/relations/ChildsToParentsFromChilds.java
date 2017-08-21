@@ -192,6 +192,7 @@ public class ChildsToParentsFromChilds {
 				List<String> childPagesFrom = new ArrayList<String>();
 				List<String> childPagesTo = new ArrayList<String>();
 				List<String> childLevels = new ArrayList<String>();
+				List<String> childSortLogIds = new ArrayList<String>();
 				List<String> childUrls = new ArrayList<String>();
 
 				// Query all childs from a parent except the deleted ones
@@ -232,6 +233,7 @@ public class ChildsToParentsFromChilds {
 							String childPageFrom = (nonDeletedChild.getFieldValue("pageFrom_str") != null) ? nonDeletedChild.getFieldValue("pageFrom_str").toString() : "0";
 							String childPageTo = (nonDeletedChild.getFieldValue("pageTo_str") != null) ? nonDeletedChild.getFieldValue("pageTo_str").toString() : "0";
 							String childLevel = (nonDeletedChild.getFieldValue("level_str") != null) ? nonDeletedChild.getFieldValue("level_str").toString() : "0";
+							String childSortLogId = (nonDeletedChild.getFieldValue("sortNoLogId_str") != null) ? nonDeletedChild.getFieldValue("sortNoLogId_str").toString() : "0";
 							String childUrl = (nonDeletedChild.getFieldValues("url") != null && !nonDeletedChild.getFieldValues("url").isEmpty()) ? nonDeletedChild.getFieldValues("url").iterator().next().toString() : "0";
 
 							// Add child infos to Lists
@@ -247,6 +249,7 @@ public class ChildsToParentsFromChilds {
 							childPagesFrom.add(childPageFrom);
 							childPagesTo.add(childPageTo);
 							childLevels.add(childLevel);
+							childSortLogIds.add(childSortLogId);
 							childUrls.add(childUrl);
 						}
 					}
@@ -305,6 +308,10 @@ public class ChildsToParentsFromChilds {
 				Map<String, List<String>> mapChildLevel = new HashMap<String, List<String>>();
 				mapChildLevel.put("set", childLevels);
 				linkedChild.setField("childLevel_str_mv", mapChildLevel);
+				
+				Map<String, List<String>> mapChildLogId = new HashMap<String, List<String>>();
+				mapChildLogId.put("set", childSortLogIds);
+				linkedChild.setField("childLogId_str_mv", mapChildLogId);
 				
 				Map<String, List<String>> mapChildUrl = new HashMap<String, List<String>>();
 				mapChildUrl.put("set", childUrls);
@@ -384,6 +391,7 @@ public class ChildsToParentsFromChilds {
 				"pageFrom_str",
 				"pageTo_str",
 				"level_str",
+				"sortNoLogId_str",
 				"url"
 				);
 

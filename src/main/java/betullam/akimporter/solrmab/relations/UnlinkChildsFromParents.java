@@ -238,6 +238,10 @@ public class UnlinkChildsFromParents {
 					mapRemChildLevel.put("set", null);
 					deleteChild.setField("childLevel_str_mv", mapRemChildLevel);
 					
+					Map<String, List<String>> mapRemChildLogId = new HashMap<String, List<String>>();
+					mapRemChildLogId.put("set", null);
+					deleteChild.setField("childLogId_str_mv", mapRemChildLogId);
+					
 					Map<String, List<String>> mapRemChildUrl = new HashMap<String, List<String>>();
 					mapRemChildUrl.put("set", null);
 					deleteChild.setField("childUrl_str_mv", mapRemChildUrl);
