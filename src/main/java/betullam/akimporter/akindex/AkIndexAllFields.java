@@ -103,6 +103,8 @@ public class AkIndexAllFields {
 		        			fieldType = "controlfield";
 		        		} else if (fieldNameClean.length() == 6) {
 		        			fieldType = "datafield";
+		        			// Add $ signs:
+		        			//fieldNameClean = new StringBuilder(fieldNameClean).insert(3, "\\$").insert(7, "\\$").toString();
 		        		}
 
 		        		if (fieldType != null) {			        		
