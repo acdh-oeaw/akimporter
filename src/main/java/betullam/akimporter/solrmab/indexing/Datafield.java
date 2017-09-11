@@ -218,7 +218,37 @@ public class Datafield {
 		
 		return newDatafield;
 	}
+	
+	
+	/**
+	 * Bring the subfields of a datafield in an order according to an ArrayList<String>
+	 * that contains the subfield codes in the right order.
+	 * @param datafield				Datafield: The datafield of which the subfields should be ordered
+	 * @param sortOrderStrings		ArrayList<String>: A list of subfield codes in the right order
+	 * @return						Datafield: The datafield with subfields in the right order
+	 */
+	public static Datafield sort(Datafield datafield, ArrayList<String> sortOrderStrings) {
+		ArrayList<Subfield> sortedSubfields = new ArrayList<Subfield>();
+		
+		// Put the subfields in the right order into a new ArrayList<Subfield> 
+		for(String sortOrderString : sortOrderStrings) {
+			for(Subfield sf : datafield.getSubfields()) {
+				if (sf.getCode().equals(sortOrderString)) {
+					sortedSubfields.add(sf);
+				}
+			}
+		}
+		
+		// Remove the ordered subfields from the datafield because they could be in the wrong order
+		datafield.getSubfields().removeAll(sortedSubfields);
+		
+		// Add subfields again at index position 0 and in the right order
+		datafield.getSubfields().addAll(0, sortedSubfields);
+		
+		return datafield;
+	}
 
+	
 	@Override
 	public String toString() {
 		return "Datafield [tag=" + tag + ", ind1=" + ind1 + ", ind2=" + ind2 + ", subfields=" + subfields

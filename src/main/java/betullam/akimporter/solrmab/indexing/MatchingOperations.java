@@ -68,7 +68,7 @@ public class MatchingOperations {
 		for (RawRecord rawRecord : rawRecords) {
 
 			List<SolrField> allSolrFieldsOfRecord = new ArrayList<SolrField>();
-			
+
 			// Handle leader
 			List<SolrField> solrFieldsFromLeader = this.matchField(rawRecord.getLeader(), allPropertiesObjects);
 			if (solrFieldsFromLeader != null) {
@@ -153,7 +153,6 @@ public class MatchingOperations {
 	}
 
 
-
 	/**
 	 * Matching a raw field from the MarcXML file to a Solr field according to the rules in mab.properties (this file could be called
 	 * differently but it must be a .properties file).
@@ -190,7 +189,6 @@ public class MatchingOperations {
 			return null;
 		}
 
-
 		for (PropertiesObject relevantPropertiesObject : relevantPropertiesObjects) {			
 
 			String solrFieldname = relevantPropertiesObject.getSolrFieldname();
@@ -214,9 +212,6 @@ public class MatchingOperations {
 			boolean allowDuplicates = relevantPropertiesObject.isAllowDuplicates();
 			boolean hasApplyToFields = (relevantPropertiesObject.getApplyToFields() != null && !relevantPropertiesObject.getApplyToFields().isEmpty()) ? true : false;
 
-			
-			
-			
 			// Check if the raw subfield, for which we want to treat it's content (apply rules on it), is listed in the properties object
 			// (which represents a line in mab.properties).
 			// Example:
@@ -238,7 +233,9 @@ public class MatchingOperations {
 			// relevant properties object.
 			Datafield copiedDatafield = null;
 			if (datafield != null) {
+
 				copiedDatafield = Datafield.copy(datafield);
+
 				ArrayList<Subfield> subfieldsToMove = new ArrayList<Subfield>();
 				for (Subfield copiedSubfield : copiedDatafield.getSubfields()) {
 					if (!relevantPropertiesObject.containsSubfieldOfDatafield(copiedDatafield, copiedSubfield)) {
@@ -249,6 +246,26 @@ public class MatchingOperations {
 				}
 				if (subfieldsToMove != null && !subfieldsToMove.isEmpty()) {
 					copiedDatafield.moveToPassiveSubfields(subfieldsToMove);
+				}
+
+				// TODO: Test if ordering is OK with connected and concatenated subfields!
+				// Sort the remaining subfields that are used for direct indexing to the
+				// right order (as it is in the properties object). This is necessary so that
+				// the subfield values are indext in the order of the .properties file
+				// First get an ArrayList<String> of the subfield codes in the right order
+				ArrayList<String> subfieldsSortOrder = new ArrayList<String>();
+				for(Datafield poDatafieldSort : relevantPropertiesObject.getDatafields()) {
+					String poTag = poDatafieldSort.getTag();
+					if (copiedDatafield.getTag().equals(poTag)) {
+						for(Subfield subfieldSort : poDatafieldSort.getSubfields()) {
+							subfieldsSortOrder.add(subfieldSort.getCode());
+						}
+					}
+				}
+				
+				// Now sort the datafield accordingly
+				if (subfieldsSortOrder != null && !subfieldsSortOrder.isEmpty()) {
+					Datafield.sort(copiedDatafield, subfieldsSortOrder);
 				}
 			}
 
@@ -267,7 +284,7 @@ public class MatchingOperations {
 			}
 
 			if (!skipField) {
-				
+
 				SolrField solrField = new SolrField();
 				solrField.setFieldname(solrFieldname);
 				solrField.setMultivalued(isMultivalued);
@@ -418,7 +435,7 @@ public class MatchingOperations {
 					// This can only apply to datafields, not to controlfields or the leader (they do not have any subfields).
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields && hasConcatenatedSubfields)) {
 						if (type.equals("datafield")) {
-														
+
 							// Get concatenated and connected subfields and the separator for concatenated subfiels
 							ArrayList<String> connectedSubfields = getConnectedSubfields(copiedDatafield, relevantPropertiesObject);
 							String concatenatedSubfieldsSeparator = relevantPropertiesObject.getConcatenatedSubfieldsSeparator();
@@ -435,9 +452,9 @@ public class MatchingOperations {
 								} else {
 									valueToAdd = rawFieldvalue; // If there are not values for concatenation, add the original subfield content.
 								}
-								
+
 								connectedSubfields.add(0, valueToAdd); // Add the concatenated value to the first position of the ArrayList							
-								
+
 								// Add the connected values (that contains the concatenated value) to Solr
 								for (String connectedSubfieldValue : connectedSubfields) {
 									if (hasRegex && regexPattern != null) { // Apply regEx
@@ -454,7 +471,7 @@ public class MatchingOperations {
 							}
 						}
 					}
-					
+
 					// Handle connectedSubfields (not combined with concatenatedSubfields), but only if we do not have a translate value. Translations are treated differently for connectedSubfields.
 					// This can only apply to datafields, not to controlfields (they do not have any subfields).
 					if ((!isTranslateValue && !isTranslateValueContains && !isTranslateValueRegex) && (hasConnectedSubfields && !hasConcatenatedSubfields)) {
@@ -503,7 +520,7 @@ public class MatchingOperations {
 										// Copy again the datafield to which to rule should be applied as we may need the other datafield
 										// with the subfields we will move for other operations.
 										Datafield applyToDatafield = Datafield.copy(copiedDatafield);
-										
+
 
 										// Get all "subfieldcode" from the bracket of concatenatedSubfields[subfieldcode:subfieldcode:subfieldcode:separator]
 										List<String> subfieldsInBracketImmutable = Arrays.asList(relevantPropertiesObject.getConcatenatedSubfields().get(1).split("\\s*:\\s*"));
@@ -539,19 +556,19 @@ public class MatchingOperations {
 								} else {
 									valueToAdd = rawFieldvalue; // If the rule should not be applied to this subfield, add the original subfield content.
 								}
-								
+
 								if (hasRegex && regexPattern != null) { // Apply regEx
 									valueToAdd = getRegexValue(regexPattern, rawFieldvalue);
 								}
-								
+
 								if (hasRegexStrict && regexStrictPattern != null) { // Apply regExStrict
 									valueToAdd = getRegexStrictValue(regexStrictPattern, rawFieldvalue);
 								}
-								
+
 								if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) { // Apply regExReplace
 									valueToAdd = valueToAdd.replaceAll(regexReplacePattern, regexReplaceValue).trim();						
 								}
-								
+
 								fieldValues.add(valueToAdd);
 							}
 						}
@@ -613,7 +630,7 @@ public class MatchingOperations {
 				}
 			}
 		}
-		
+
 		// Always add the leader as it contains useful information about the record
 		if (type.equals("leader")) {
 			Leader rawLeader = ((Leader) rawField);
@@ -695,7 +712,6 @@ public class MatchingOperations {
 		if (hasRegexReplace && regexReplacePattern != null && !regexReplacePattern.isEmpty()) {
 			rawFieldvalue = rawFieldvalue.replaceAll(regexReplacePattern, regexReplaceValue).trim();
 		}
-
 
 		// Get characters from the positions the user defined in mab.properties file:
 		// E. g. get "Full" from "Fulltext" if character positions [1-4] was defined.
@@ -904,7 +920,6 @@ public class MatchingOperations {
 	}
 
 
-
 	/**
 	 * Check if a field should be skipped because one or more given subfields do exist or not exist.
 	 * 
@@ -960,7 +975,7 @@ public class MatchingOperations {
 		return skipField;
 	}
 
-	
+
 	/**
 	 * Get a list of Datafield object from a List of fieldnames.
 	 * 
