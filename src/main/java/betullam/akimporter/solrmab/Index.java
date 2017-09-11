@@ -320,7 +320,7 @@ public class Index {
 				HashMap<String, String> translateConnectedSubfieldsProperties = new HashMap<String, String>();
 				HashMap<String, String> translateConcatenatedSubfieldsProperties = new HashMap<String, String>();
 				String filename = null;
-				HashMap<String, List<String>> mabFieldnames = new HashMap<String, List<String>>();
+				LinkedHashMap<String, List<String>> mabFieldnames = new LinkedHashMap<String, List<String>>();
 				List<String> fieldsToRemove = new ArrayList<String>();
 
 				// Create CHANGABLE list:
