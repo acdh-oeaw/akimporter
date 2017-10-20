@@ -206,7 +206,7 @@ public class AkImporterHelper {
 	 * 
 	 * @param path	String: Path to the directory that should be created.
 	 */
-	public static void mkDirIfNoExists(String path) {
+	public static void mkDirIfNotExists(String path) {
 		File dir = new File(path);
 		if (!dir.exists()) {
 			dir.mkdirs();
