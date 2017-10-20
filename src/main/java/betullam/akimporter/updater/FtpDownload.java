@@ -36,6 +36,7 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
+import main.java.betullam.akimporter.main.AkImporterHelper;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.SFTPClient;
@@ -56,8 +57,7 @@ public class FtpDownload {
 	public boolean downloadFiles(String remotePath, String localPathTarGz, String host, int port, String user, String password, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
-
-		if( showMessages ) { System.out.print( "\nDownloading data from " + host + " to "+localPathTarGz+" ... "); }
+		AkImporterHelper.print(showMessages, "\nDownloading data from " + host + " to "+localPathTarGz+" ... ");
 		
 		try {
 
@@ -79,15 +79,16 @@ public class FtpDownload {
 
 					if (success) {
 						ftpOk = true;
-						if( showMessages ) { System.out.print("Done\n"); }
 					} else {
 						ftpOk = false;
-						if( showMessages ) { System.out.println("ERROR downloading file \"" + fileName + "\" from FTP-Server!"); }
+						AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
+
 					}
 					outputStream.close();
 				}
 			}
 			
+			AkImporterHelper.print(showMessages, "Done\n");
 			ftpClient.logout();
 			ftpClient.disconnect();
 		} catch (IOException e) {

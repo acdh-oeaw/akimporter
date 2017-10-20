@@ -236,10 +236,14 @@ public class Main {
 			String enrichFtpUser = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpUser") : null;
 			String enrichFtpPass = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpPass") : null;
 			String enrichRemotePath = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".remotePath") : null;
+			boolean enrichIsSftp = (importerProperties.getProperty("enrich." + enrichName + ".isSftp") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".isSftp")) : false;
 			String enrichHostKey = importerProperties.getProperty("enrich." + enrichName + ".hostKey");
 			String enrichLocalPath = importerProperties.getProperty("enrich." + enrichName + ".localPath");
 			boolean enrichUnpack = (importerProperties.getProperty("enrich." + enrichName + ".unpack") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".unpack")) : false;
 			boolean enrichMerge = (importerProperties.getProperty("enrich." + enrichName + ".merge") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".merge")) : false;
+			String enrichMergeTag = importerProperties.getProperty("enrich." + enrichName + ".mergeTag");
+			String enrichMergeLevel = importerProperties.getProperty("enrich." + enrichName + ".mergeLevel");
+			String enrichMergeParentTag = importerProperties.getProperty("enrich." + enrichName + ".mergeParentTag");			
 			String enrichProperties = importerProperties.getProperty("enrich." + enrichName + ".properties");
 			String enrichSolr = importerProperties.getProperty("enrich." + enrichName + ".solr");
 
@@ -666,8 +670,8 @@ public class Main {
 			
 			case "enrich": {
 				System.out.println("Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
-				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichProperties, enrichSolr, print, optimize);
-				System.out.println("Done enrichment.");
+				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichIsSftp, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, print, optimize);
+				System.out.println("\nDone enrichment.");
 				break;
 			}
 

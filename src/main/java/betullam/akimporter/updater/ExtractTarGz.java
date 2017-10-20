@@ -41,11 +41,11 @@ public class ExtractTarGz {
 	/**
 	 * Extracting a tar.gz file
 	 * 
-	 * @param pathToTarGz		Full path to a tar.gz file that should be extracted.
+	 * @param pathToTarGzs		Full path to a directory containing at least one tar.gz file that should be extracted.
 	 * @param timeStamp			Timestamp when the update process was started (used for renaming files).
 	 * @param pathToExtracted	Path to a directory where the extracted content should be stored.
 	 */
-	public void extractTarGz(String pathToTarGz, String timeStamp, String pathToExtracted) {
+	public void extractTarGz(String pathToTarGzs, String timeStamp, String pathToExtracted) {
 		FileInputStream gzFis = null;
 		BufferedInputStream gzBin = null;
 		BufferedInputStream tarBin = null;
@@ -57,7 +57,7 @@ public class ExtractTarGz {
 		FileOutputStream xmlFos = null;
 		TarArchiveEntry tarEntry = null;
 		
-		File pathTarGz = new File(pathToTarGz);
+		File pathTarGz = new File(pathToTarGzs);
 		final byte[] buffer = new byte[1024];
 		try {
 			for (File fileTarGz : pathTarGz.listFiles()) {
