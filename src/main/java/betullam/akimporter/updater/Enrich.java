@@ -10,7 +10,8 @@ public class Enrich {
 	private String enrichFtpPort;
 	private String enrichFtpUser; 
 	private String enrichFtpPass; 
-	private String enrichRemotePath; 
+	private String enrichRemotePath;
+	private String enrichHostKey;
 	private String enrichLocalPath; 
 	private boolean enrichUnpack; 
 	private boolean enrichMerge; 
@@ -20,7 +21,7 @@ public class Enrich {
 	private boolean optimize;
 	
 	public Enrich(String enrichName, boolean enrichDownload, String enrichFtpHost, String enrichFtpPort,
-			String enrichFtpUser, String enrichFtpPass, String enrichRemotePath, String enrichLocalPath,
+			String enrichFtpUser, String enrichFtpPass, String enrichRemotePath, String enrichHostKey, String enrichLocalPath,
 			boolean enrichUnpack, boolean enrichMerge, String enrichProperties, String enrichSolr, boolean print,
 			boolean optimize) {
 		this.enrichName = enrichName;
@@ -30,6 +31,7 @@ public class Enrich {
 		this.enrichFtpUser = enrichFtpUser;
 		this.enrichFtpPass = enrichFtpPass;
 		this.enrichRemotePath = enrichRemotePath;
+		this.enrichHostKey = enrichHostKey;
 		this.enrichLocalPath = enrichLocalPath;
 		this.enrichUnpack = enrichUnpack;
 		this.enrichMerge = enrichMerge;
@@ -46,7 +48,7 @@ public class Enrich {
 		if (this.enrichDownload) {
 			String enrichLocalPathTarGz = this.enrichLocalPath + File.separator + "downloaded";
 			int enrichFtpPortInt = Integer.valueOf(this.enrichFtpPort);
-			new FtpDownload().downloadFiles(this.enrichRemotePath, enrichLocalPathTarGz, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, this.print);
+			new FtpDownload().downloadFilesSftp(this.enrichRemotePath, enrichLocalPathTarGz, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, this.enrichHostKey, this.print);
 		}
 	}
 

@@ -236,6 +236,7 @@ public class Main {
 			String enrichFtpUser = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpUser") : null;
 			String enrichFtpPass = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpPass") : null;
 			String enrichRemotePath = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".remotePath") : null;
+			String enrichHostKey = importerProperties.getProperty("enrich." + enrichName + ".hostKey");
 			String enrichLocalPath = importerProperties.getProperty("enrich." + enrichName + ".localPath");
 			boolean enrichUnpack = (importerProperties.getProperty("enrich." + enrichName + ".unpack") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".unpack")) : false;
 			boolean enrichMerge = (importerProperties.getProperty("enrich." + enrichName + ".merge") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".merge")) : false;
@@ -665,7 +666,7 @@ public class Main {
 			
 			case "enrich": {
 				System.out.println("Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
-				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichLocalPath, enrichUnpack, enrichMerge, enrichProperties, enrichSolr, print, optimize);
+				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichProperties, enrichSolr, print, optimize);
 				System.out.println("Done enrichment.");
 				break;
 			}

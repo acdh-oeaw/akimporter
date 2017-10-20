@@ -73,6 +73,10 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.hierynomus</groupId>
+			<artifactId>sshj</artifactId>
+		</dependency>
   </dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -136,6 +140,11 @@
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
 				<version>5.1.42</version>
+			</dependency>
+			<dependency>
+				<groupId>com.hierynomus</groupId>
+				<artifactId>sshj</artifactId>
+				<version>0.23.0</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

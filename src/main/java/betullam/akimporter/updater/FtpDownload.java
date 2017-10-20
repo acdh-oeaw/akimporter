@@ -30,10 +30,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
+
+import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.sftp.RemoteResourceInfo;
+import net.schmizz.sshj.sftp.SFTPClient;
 
 public class FtpDownload {
 
@@ -90,6 +95,41 @@ public class FtpDownload {
 			e.printStackTrace();
 		}
 		return ftpOk;
+	}
+	
+	public boolean downloadFilesSftp(String remotePath, String localPathTarGz, String host, int port, String user, String password, String hostKey, boolean showMessages) {
+		boolean sftpOk = false;
+		SSHClient ssh = new SSHClient();
+		ssh.addHostKeyVerifier(hostKey);
+		
+		try {
+			ssh.loadKnownHosts();
+			ssh.connect(host, port);
+		    ssh.authPassword(user, password);
+		    SFTPClient sftp = ssh.newSFTPClient();
+		    try {
+		    	List<RemoteResourceInfo> fileInfos = sftp.ls(remotePath);
+		    	for (RemoteResourceInfo fileInfo : fileInfos) {
+		    		if (fileInfo.isRegularFile()) {
+		    			System.out.println("File: " + fileInfo.getPath());
+		    			//sftp.get(fileInfo.getPath(), localPathTarGz);
+		    		}
+		    	}
+		        
+		    } finally {
+		        sftp.close();
+		        sftpOk = true;
+		    }
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+		    try {
+				ssh.disconnect();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return sftpOk;
 	}
 
 }
