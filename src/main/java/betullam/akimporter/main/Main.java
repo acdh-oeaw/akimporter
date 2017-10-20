@@ -74,6 +74,7 @@ import main.java.betullam.akimporter.solrmab.PostProcess;
 import main.java.betullam.akimporter.solrmab.PostProcessor;
 import main.java.betullam.akimporter.solrmab.Relate;
 import main.java.betullam.akimporter.solrmab.XmlIndex;
+import main.java.betullam.akimporter.updater.Enrich;
 import main.java.betullam.akimporter.updater.OaiUpdater;
 import main.java.betullam.akimporter.updater.Updater;
 
@@ -223,12 +224,23 @@ public class Main {
 			List<String> xmlInclude = (importerProperties.getProperty("xml." + xmlName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("xml." + xmlName + ".include").split("\\s*,\\s*")) : null;
 			List<String> xmlExclude = (importerProperties.getProperty("xml." + xmlName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("xml." + xmlName + ".exclude").split("\\s*,\\s*")) : null;
 			String xmlDeleteBeforeImport = importerProperties.getProperty("xml." + xmlName + ".deleteBeforeImport");
-			/*String xmlFtpHost = importerProperties.getProperty("xml." + xmlName + ".ftpHost");
-			String xmlFtpPort = importerProperties.getProperty("xml." + xmlName + ".ftpPort");
-			String xmlFtpUser = importerProperties.getProperty("xml." + xmlName + ".ftpUser");
-			String xmlFtpPass = importerProperties.getProperty("xml." + xmlName + ".ftpPass");
-			String xmlFtpRemotePath = importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath");
-			String xmlFtpLocalPath = importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath");*/
+
+			// Get enrich properties. We need to get them here because we need the "cmd" variable for it.
+			String enrichName = null;
+			if (cmd.hasOption("enrich")) {
+				enrichName = cmd.getOptionValue("enrich");
+			}
+			boolean enrichDownload = (importerProperties.getProperty("enrich." + enrichName + ".download") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".download")) : false;
+			String enrichFtpHost = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpHost") : null;
+			String enrichFtpPort = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpPort") : null;
+			String enrichFtpUser = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpUser") : null;
+			String enrichFtpPass = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpPass") : null;
+			String enrichRemotePath = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".remotePath") : null;
+			String enrichLocalPath = importerProperties.getProperty("enrich." + enrichName + ".localPath");
+			boolean enrichUnpack = (importerProperties.getProperty("enrich." + enrichName + ".unpack") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".unpack")) : false;
+			boolean enrichMerge = (importerProperties.getProperty("enrich." + enrichName + ".merge") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".merge")) : false;
+			String enrichProperties = importerProperties.getProperty("enrich." + enrichName + ".properties");
+			String enrichSolr = importerProperties.getProperty("enrich." + enrichName + ".solr");
 
 			// Get AKindex properties. We need to get them here because we need the "cmd" variable for it.
 			String akiName = null;
@@ -648,6 +660,13 @@ public class Main {
 				new XmlIndex(xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, print, optimize);
 				System.out.println("Done importing XML for " + xmlName + ".");
 				postProcess();
+				break;
+			}
+			
+			case "enrich": {
+				System.out.println("Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
+				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichLocalPath, enrichUnpack, enrichMerge, enrichProperties, enrichSolr, print, optimize);
+				System.out.println("Done enrichment.");
 				break;
 			}
 
@@ -1560,6 +1579,17 @@ public class Main {
 				.desc("Index sample data from AK Bibliothek Wien.")
 				.build();
 		
+		// enrich (enrich Solr data)
+		Option oEnrich = Option
+				.builder()
+				.required(false)
+				.longOpt("enrich")
+				.hasArg(true)
+				.argName("section name")
+				.numberOfArgs(1)
+				.desc("Enrich data in the index with other data. For section name, see AkImporter.properties, e. g.: enrich.SECTION_NAME.properties")
+				.build();
+
 		// ak_index (for indexing to the AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
 		Option oAkIndex = Option
 				.builder()
@@ -1608,6 +1638,7 @@ public class Main {
 		optionGroup.addOption(oErnten);
 		optionGroup.addOption(oHelp);
 		optionGroup.addOption(oIndexSampleData);
+		optionGroup.addOption(oEnrich);
 		optionGroup.addOption(oAkIndex);
 		optionGroup.addOption(oAkIndexAllFields);
 		optionGroup.addOption(oSaveLoans);
