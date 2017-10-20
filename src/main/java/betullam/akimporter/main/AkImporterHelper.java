@@ -169,6 +169,11 @@ public class AkImporterHelper {
 	}
 	
 	
+	/**
+	 * Deletes a record by Solr query.
+	 * @param solrServer	HttpSolrServer: A HttpSolrServer object
+	 * @param solrQuery		String: A Solr query string
+	 */
 	public static void deleteRecordsByQuery(HttpSolrServer solrServer, String solrQuery) {
 		try {
 			//solrQuery = StringEscapeUtils.escapeJava(solrQuery);
@@ -182,7 +187,6 @@ public class AkImporterHelper {
 	}
 
 	
-	
 	/**
 	 * Remove last file separator character of a String representing a path to a directory
 	 *  
@@ -195,6 +199,20 @@ public class AkImporterHelper {
 		}
 		return path;
 	}
+	
+	
+	/**
+	 * Creates a directory if it does not exist.
+	 * 
+	 * @param path	String: Path to the directory that should be created.
+	 */
+	public static void mkDirIfNoExists(String path) {
+		File dir = new File(path);
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+	}
+	
 	
 	/**
 	 * Starts an optimize action for a Solr core.
