@@ -171,7 +171,7 @@ public class Datafield {
 	
 
 	/**
-	 * Get subfields of a Datafield by subfield codes.
+	 * Get subfields of a Datafield by subfield codes. This does not work on passive subfields!
 	 * 
 	 * @param subfieldCodes		List<String>: The subfield codes of the subfields that should be returned.
 	 * @return					ArrayList<Subfield>: A list of subfields with the given subfield codes.
