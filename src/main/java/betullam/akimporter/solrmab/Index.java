@@ -75,8 +75,21 @@ public class Index {
 	private boolean isIndexingSuccessful = false;
 	public static List<SolrField> customTextFields = new ArrayList<SolrField>();
 	private boolean indexSampleData = false;
+	private boolean enrich = false;
 
-	// Default Constructor
+	
+	/**
+	 * Default constructor.
+	 * 
+	 * @param mabXmlFile
+	 * @param solrServer
+	 * @param useDefaultMabProperties
+	 * @param mabPropertiesFile
+	 * @param pathToTranslationFiles
+	 * @param timeStamp
+	 * @param optimizeSolr
+	 * @param print
+	 */
 	public Index(String mabXmlFile, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
 		this.mabXMLfile = mabXmlFile;
 		this.solrServer = solrServer;
@@ -86,11 +99,24 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
+		this.enrich = false;
 
 		this.startIndexing();
 	};
 	
-	// Constructor for indexing sample data:
+
+	/**
+	 * Constructor for indexing sample data.
+	 * 
+	 * @param indexSampleData
+	 * @param solrServer
+	 * @param useDefaultMabProperties
+	 * @param mabPropertiesFile
+	 * @param pathToTranslationFiles
+	 * @param timeStamp
+	 * @param optimizeSolr
+	 * @param print
+	 */
 	public Index(boolean indexSampleData, HttpSolrServer solrServer, boolean useDefaultMabProperties, String mabPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
 		this.indexSampleData = indexSampleData;
 		this.solrServer = solrServer;
@@ -100,10 +126,37 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
+		this.enrich = false;
+
+		this.startIndexing();
+	};
+	
+	
+	/**
+	 * Constructor for enrichment.
+	 * 
+	 * @param enrichFile
+	 * @param enrichSolrServer
+	 * @param enrichPropertiesFile
+	 * @param pathToTranslationFiles
+	 * @param timeStamp
+	 * @param optimizeSolr
+	 * @param print
+	 */
+	public Index(String enrichFile, HttpSolrServer enrichSolrServer, String enrichPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
+		this.mabXMLfile = enrichFile;
+		this.solrServer = enrichSolrServer;
+		this.mabPropertiesFile = enrichPropertiesFile;
+		this.pathToTranslationFiles = pathToTranslationFiles;
+		this.timeStamp = timeStamp;
+		this.optimizeSolr = optimizeSolr;
+		this.print = print;
+		this.enrich = true;
 
 		this.startIndexing();
 	};
 
+	
 	/**
 	 * Starting the index process.
 	 */
@@ -206,6 +259,7 @@ public class Index {
 		}
 	}
 
+	
 	/**
 	 * Checks if the index process was successful.
 	 * @return	true if the index process was successful.
@@ -272,10 +326,13 @@ public class Index {
 				boolean allowDuplicates = false;
 				boolean hasSubfieldExists = false;
 				LinkedHashMap<Integer, String> subfieldExists = new LinkedHashMap<Integer, String>();
+				
+				boolean hasSubfieldValueExists = false;
+				LinkedHashMap<Integer, String> subfieldValueExists = new LinkedHashMap<Integer, String>();
+				
 				boolean hasSubfieldNotExists = false;
 				LinkedHashMap<Integer, String> subfieldNotExists = new LinkedHashMap<Integer, String>();
 				LinkedHashMap<String, List<String>> applyToFields = new LinkedHashMap<String, List<String>>();
-
 
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
 				// INFO:
@@ -469,7 +526,6 @@ public class Index {
 					}
 				}
 
-
 				if (lstValuesClean.contains("concatenatedSubfields")) {
 					String concatenatedSubfieldsString = null;
 					int index = lstValuesClean.indexOf("concatenatedSubfields");
@@ -507,7 +563,6 @@ public class Index {
 						}
 					}
 				}
-
 
 				if (lstValuesClean.contains("translateConcatenatedSubfields")) {
 					int index = lstValuesClean.indexOf("translateConcatenatedSubfields");
@@ -552,6 +607,25 @@ public class Index {
 						}
 					}	
 				}
+				
+				if (lstValuesClean.contains("subfieldValueExists")) {
+					String subfieldValueExistsString = null;
+					int index = lstValuesClean.indexOf("subfieldValueExists");
+					subfieldValueExistsString = lstValues.get(index).trim(); // Get whole string incl. square brackets, e. g. subfieldValueExists[A=f:A=g:OR]
+					lstValues.remove(index); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(index); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations.
+					hasSubfieldValueExists = true;
+					if (subfieldValueExistsString != null) {
+						// Extract the text in the square brackets:
+						Pattern patternSubfieldValueExists = java.util.regex.Pattern.compile("\\[.*?\\]$"); // Get everything between the first and last squary brackets
+						Matcher matcherSubfieldValueExists = patternSubfieldValueExists.matcher(subfieldValueExistsString);
+						String subfieldValueExistsAllBrackets = (matcherSubfieldValueExists.find()) ? matcherSubfieldValueExists.group().trim() : null;
+						subfieldValueExistsAllBrackets = subfieldValueExistsAllBrackets.replace("subfieldValueExists", "");
+
+						// Get everything between the 2 outermost squarebrackets:
+						subfieldValueExists = getBracketValues(subfieldValueExistsAllBrackets);
+					}	
+				}
 
 				if (lstValuesClean.contains("subfieldNotExists")) {
 					String subfieldNotExistsString = null;
@@ -580,7 +654,6 @@ public class Index {
 					}	
 				}
 				
-
 				if (lstValuesClean.contains("regEx")) {
 					String regexValueString = null;
 					hasRegex = true;
@@ -637,13 +710,11 @@ public class Index {
 					regexReplaceValues = getBracketValues(regexReplaceValue);
 				}
 
-
 				if (lstValuesClean.contains("allowDuplicates")) {
 					allowDuplicates = true;
 					lstValues.remove(lstValuesClean.indexOf("allowDuplicates")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("allowDuplicates")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
 				}
-
 
 				// Get all multiValued fields and remove them after we finished:
 				if (multiValued) {
@@ -762,7 +833,6 @@ public class Index {
 					}
 				}
 
-
 				// Get all default fields (the other fields were removed):
 				for(String lstValue : lstValues) {
 					mabFieldnames.put(lstValue, null);
@@ -807,6 +877,8 @@ public class Index {
 							allowDuplicates,
 							hasSubfieldExists,
 							subfieldExists,
+							hasSubfieldValueExists,
+							subfieldValueExists,
 							hasSubfieldNotExists,
 							subfieldNotExists,
 							applyToFields
