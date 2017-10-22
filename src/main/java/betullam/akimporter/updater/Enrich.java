@@ -3,8 +3,11 @@ package main.java.betullam.akimporter.updater;
 import java.io.File;
 import java.util.Date;
 
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+
 import ak.xmlhelper.XmlMerger;
 import main.java.betullam.akimporter.main.AkImporterHelper;
+import main.java.betullam.akimporter.solrmab.Index;
 
 public class Enrich {
 
@@ -64,6 +67,7 @@ public class Enrich {
 		String localPathOriginal = localPath;
 		String localPathExtracted = localPath;
 		String localPathMerged = localPath;
+		String pathToEnrichFile = localPath;
 		
 		// Download data from given FTP server
 		if (this.enrichDownload) {
@@ -92,14 +96,16 @@ public class Enrich {
 			localPathMerged = localPath + File.separator + "merged" + File.separator + timeStamp;
 			AkImporterHelper.mkDirIfNotExists(localPathMerged);
 			AkImporterHelper.print(print, "\nMerging extracted files to " + localPathMerged + File.separator + timeStamp + ".xml ... ");
-			String pathToDestinationFile = localPathMerged + File.separator + timeStamp + ".xml";
+			pathToEnrichFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
 			int enrichMergeTagInt = Integer.valueOf(this.enrichMergeLevel);
-			xmlm.mergeElements(localPathExtracted, pathToDestinationFile, this.enrichMergeParentTag, this.enrichMergeTag, enrichMergeTagInt);
+			xmlm.mergeElements(localPathExtracted, pathToEnrichFile, this.enrichMergeParentTag, this.enrichMergeTag, enrichMergeTagInt);
 		}
 		
 		// Start enrichment
-		// TODO: Implement enrichment code - Atomic Solr Updates based on a .properties file.
+		String directoryOfTranslationFiles = new File(this.enrichProperties).getParent();
+		HttpSolrServer enrichSolrServer = (this.enrichSolr != null && !this.enrichSolr.isEmpty()) ? new HttpSolrServer(this.enrichSolr) : null;
+		new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, this.print);
 	}
 
 }
