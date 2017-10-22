@@ -64,6 +64,8 @@ public class PropertiesObject {
 	private boolean allowDuplicates;
 	private boolean hasSubfieldExists;
 	private LinkedHashMap<Integer, String> subfieldExists;
+	private boolean hasSubfieldValueExists;
+	private LinkedHashMap<Integer, String> subfieldValueExists;
 	private boolean hasSubfieldNotExists;
 	private LinkedHashMap<Integer, String> subfieldNotExists;
 	LinkedHashMap<String, List<String>> applyToFields;
@@ -106,6 +108,8 @@ public class PropertiesObject {
 			boolean allowDuplicates,
 			boolean hasSubfieldExists,
 			LinkedHashMap<Integer, String> subfieldExists,
+			boolean hasSubfieldValueExists,
+			LinkedHashMap<Integer, String> subfieldValueExists,
 			boolean hasSubfieldNotExists,
 			LinkedHashMap<Integer, String> subfieldNotExists,
 			LinkedHashMap<String, List<String>> applyToFields
@@ -145,7 +149,9 @@ public class PropertiesObject {
 		this.setAllowDuplicates(allowDuplicates);
 		this.setHasSubfieldExists(hasSubfieldExists);
 		this.setSubfieldExists(subfieldExists);
-		this.setHasSubfieldNotExists(hasSubfieldNotExists);
+		this.setHasSubfieldValueExists(hasSubfieldValueExists);
+		this.setSubfieldValueExists(subfieldValueExists);
+		this.setHasSubfieldNotExists(hasSubfieldNotExists);	
 		this.setSubfieldNotExists(subfieldNotExists);
 		this.setApplyToFields(applyToFields);
 	}
@@ -423,6 +429,22 @@ public class PropertiesObject {
 		this.subfieldExists = subfieldExists;
 	}
 
+	public boolean hasSubfieldValueExists() {
+		return hasSubfieldValueExists;
+	}
+
+	public void setHasSubfieldValueExists(boolean hasSubfieldValueExists) {
+		this.hasSubfieldValueExists = hasSubfieldValueExists;
+	}
+
+	public LinkedHashMap<Integer, String> getSubfieldValueExists() {
+		return subfieldValueExists;
+	}
+
+	public void setSubfieldValueExists(LinkedHashMap<Integer, String> subfieldValueExists) {
+		this.subfieldValueExists = subfieldValueExists;
+	}
+
 	public boolean hasSubfieldNotExists() {
 		return hasSubfieldNotExists;
 	}
@@ -503,6 +525,7 @@ public class PropertiesObject {
 				+ ", regexStrictValue=" + regexStrictValue + ", hasRegExReplace=" + hasRegExReplace
 				+ ", regexReplaceValues=" + regexReplaceValues + ", allowDuplicates=" + allowDuplicates
 				+ ", hasSubfieldExists=" + hasSubfieldExists + ", subfieldExists=" + subfieldExists
+				+ ", hasSubfieldValueExists=" + hasSubfieldValueExists + ", subfieldValueExists=" + subfieldValueExists
 				+ ", hasSubfieldNotExists=" + hasSubfieldNotExists + ", subfieldNotExists=" + subfieldNotExists
 				+ ", applyToFields=" + applyToFields + "]";
 	}

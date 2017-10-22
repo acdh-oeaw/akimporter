@@ -144,7 +144,6 @@ public class MatchingOperations {
 				solrfields.add(solrfield);
 			}
 
-
 			SolrRecord solrRecord = new SolrRecord(rawRecord.getRecordID(), rawRecord.getRecordSYS(), rawRecord.getIndexTimestamp(), solrfields, rawRecord.getFullRecord());
 			matchingResult.add(solrRecord);
 		}
@@ -206,6 +205,7 @@ public class MatchingOperations {
 			boolean hasConnectedSubfields = relevantPropertiesObject.hasConnectedSubfields();
 			boolean hasConcatenatedSubfields = relevantPropertiesObject.hasConcatenatedSubfields();
 			boolean hasSubfieldExists = relevantPropertiesObject.hasSubfieldExists();
+			boolean hasSubfieldValueExists = relevantPropertiesObject.hasSubfieldValueExists();
 			boolean hasSubfieldNotExists = relevantPropertiesObject.hasSubfieldNotExists();
 			boolean skipField = false;
 			boolean isMultivalued = relevantPropertiesObject.isMultiValued();
@@ -262,7 +262,7 @@ public class MatchingOperations {
 						}
 					}
 				}
-				
+
 				// Now sort the datafield accordingly
 				if (subfieldsSortOrder != null && !subfieldsSortOrder.isEmpty()) {
 					Datafield.sort(copiedDatafield, subfieldsSortOrder);
@@ -272,14 +272,21 @@ public class MatchingOperations {
 			// Handle hasSubfieldExists. This can only apply to datafields, not to controlfields (they do not have any subfields)
 			if (hasSubfieldExists) {
 				if (type.equals("datafield")) {
-					skipField = skipField(copiedDatafield, relevantPropertiesObject, true, false);
+					skipField = skipFieldBySubfield(copiedDatafield, relevantPropertiesObject, true, false);
+				}
+			}
+
+			// Handle hasSubfieldValueExists. This can only apply to datafields, not to controlfields (they do not have any subfields)
+			if (hasSubfieldValueExists) {
+				if (type.equals("datafield")) {
+					skipField = skipFieldBySubfieldValue(copiedDatafield, relevantPropertiesObject);
 				}
 			}
 
 			// Handle hasSubfieldNotExists. This can only apply to datafields, not to controlfields (they do not have any subfields)
 			if (hasSubfieldNotExists) {
 				if (type.equals("datafield")) {
-					skipField = skipField(copiedDatafield, relevantPropertiesObject, false, true);
+					skipField = skipFieldBySubfield(copiedDatafield, relevantPropertiesObject, false, true);
 				}
 			}
 
@@ -929,7 +936,7 @@ public class MatchingOperations {
 	 * @param isNotExists					boolean: True if we need to check for the non-existance of a subfield, false otherwise (see also isExists)
 	 * @return								boolean: True if the field should be skipped (will not be added to the index), false otherwise (will be added to the index)
 	 */
-	private boolean skipField(Datafield datafield, PropertiesObject relevantPropertiesObject, boolean isExists, boolean isNotExists) {
+	private boolean skipFieldBySubfield(Datafield datafield, PropertiesObject relevantPropertiesObject, boolean isExists, boolean isNotExists) {
 		boolean skipField = false;
 		LinkedHashMap<Integer, String> subfieldsToCheck = null;
 
@@ -971,6 +978,55 @@ public class MatchingOperations {
 				skipField = true;
 			}
 		}
+
+		return skipField;
+	}
+
+
+	/**
+	 * Check if a field should be skipped because one or more given subfields with a given content do exist or not.
+	 * 
+	 * @param datafield					Datafield: The datafield to check against.
+	 * @param relevantPropertiesObject	PropertiesObject: The properties to use for the check.
+	 * @return							boolean: True if the value should not be indexed, false otherwise.
+	 */
+	private boolean skipFieldBySubfieldValue(Datafield datafield, PropertiesObject relevantPropertiesObject) {
+		boolean skipField = true;
+		LinkedHashMap<Integer, String> subfieldValuesToCheck = relevantPropertiesObject.getSubfieldValueExists();
+
+		// Get all relevant data (subfields to check, operator) from the properties object
+		String operator = "AND"; // Default operator
+		String strSubfieldValuesToCheck = subfieldValuesToCheck.get(1); // There is only one entry because we do not have multiple square brackets with subfieldValueExists
+
+		// Create a clean List from the given properties we can work with
+		List<String> immutableList = Arrays.asList(strSubfieldValuesToCheck.split("\\s*:\\s*"));
+		List<String> cleanSubfieldsValuesList = new ArrayList<String>();
+		cleanSubfieldsValuesList.addAll(immutableList); // Create CHANGEABLE/MUTABLE List
+		int lastListElement = (cleanSubfieldsValuesList.size()-1); // Get index of last List element
+		if (cleanSubfieldsValuesList.get(lastListElement).equals("AND") || cleanSubfieldsValuesList.get(lastListElement).equals("OR")) {
+			operator = cleanSubfieldsValuesList.get(lastListElement); // Get the operator (should be last list element)
+			cleanSubfieldsValuesList.remove(lastListElement); // Remove the operator so that only the subfield codes will remain
+		}
+
+		// Create a List of Subfield objects from the properties to check against
+		List<Subfield> subfieldsToCheck = new ArrayList<Subfield>();
+		for (String strSubfieldValue : cleanSubfieldsValuesList) {
+			String[] arrSubfieldValue = strSubfieldValue.split("\\s*=\\s*");
+			String subfieldCode = arrSubfieldValue[0];
+			String subfieldContent = arrSubfieldValue[1];
+			subfieldsToCheck.add(new Subfield(subfieldCode, subfieldContent));
+		}
+		
+		// Check if passive subfields and values exists in the list of subfields and values from the user
+		if (operator.equals("AND")) {
+			if (datafield.getPassiveSubfields().containsAll(subfieldsToCheck)) {
+				skipField = false;
+			}
+		} else if (operator.equals("OR")) {
+			if(!Collections.disjoint(datafield.getPassiveSubfields(), subfieldsToCheck)) {
+				skipField = false;
+			}
+		}		
 
 		return skipField;
 	}
