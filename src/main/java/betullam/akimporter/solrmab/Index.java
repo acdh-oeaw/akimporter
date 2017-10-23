@@ -146,13 +146,14 @@ public class Index {
 	public Index(String enrichFile, HttpSolrServer enrichSolrServer, String enrichPropertiesFile, String pathToTranslationFiles, String timeStamp, boolean optimizeSolr, boolean print) {
 		this.mabXMLfile = enrichFile;
 		this.solrServer = enrichSolrServer;
+		this.useDefaultMabProperties = false;
 		this.mabPropertiesFile = enrichPropertiesFile;
 		this.pathToTranslationFiles = pathToTranslationFiles;
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
 		this.enrich = true;
-
+		
 		this.startIndexing();
 	};
 
@@ -202,7 +203,7 @@ public class Index {
 			}
 			
 			// Set ContentHandler:
-			MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.timeStamp, this.print);
+			MarcContentHandler marcContentHandler = new MarcContentHandler(listOfMatchingObjs, this.solrServer, this.enrich, this.timeStamp, this.print);
 			xmlReader.setContentHandler(marcContentHandler);
 
 			// Start parsing & indexing:
@@ -326,13 +327,14 @@ public class Index {
 				boolean allowDuplicates = false;
 				boolean hasSubfieldExists = false;
 				LinkedHashMap<Integer, String> subfieldExists = new LinkedHashMap<Integer, String>();
-				
 				boolean hasSubfieldValueExists = false;
 				LinkedHashMap<Integer, String> subfieldValueExists = new LinkedHashMap<Integer, String>();
-				
 				boolean hasSubfieldNotExists = false;
 				LinkedHashMap<Integer, String> subfieldNotExists = new LinkedHashMap<Integer, String>();
 				LinkedHashMap<String, List<String>> applyToFields = new LinkedHashMap<String, List<String>>();
+				boolean enrichSet = false;
+				boolean enrichAdd = false;
+
 
 				// Removing everything between square brackets to get a clean string with mab property rules for proper working further down.
 				// INFO:
@@ -426,6 +428,20 @@ public class Index {
 					getFullRecordAsXML = true;
 					lstValues.remove(lstValuesClean.indexOf("getFullRecordAsXML")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
 					lstValuesClean.remove(lstValuesClean.indexOf("getFullRecordAsXML")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
+				}
+				
+				if (lstValuesClean.contains("enrichSet")) {
+					enrichSet = (this.enrich) ? true : false;
+					enrichAdd = false;
+					lstValues.remove(lstValuesClean.indexOf("enrichSet")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(lstValuesClean.indexOf("enrichSet")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
+				}
+				
+				if (lstValuesClean.contains("enrichAdd")) {
+					enrichAdd = (this.enrich) ? true : false;
+					enrichSet = false;
+					lstValues.remove(lstValuesClean.indexOf("enrichAdd")); // Use index of clean list (without square brackets). Problem is: We can't use regex in "indexOf".
+					lstValuesClean.remove(lstValuesClean.indexOf("enrichAdd")); // Remove value also from clean list so that we always have the same no. of list elements (and thus the same value for "indexOf") for later operations. 
 				}
 
 				if (lstValuesClean.contains("translateValue") || lstValuesClean.contains("translateValueContains") || lstValuesClean.contains("translateValueRegex")) {
@@ -738,7 +754,7 @@ public class Index {
 					for(String lstValue : lstValues) {
 						ArrayList<String> solrFieldvalue = new ArrayList<String>();
 						solrFieldvalue.add(lstValue);
-						customTextFields.add(new SolrField(key, solrFieldvalue, multiValued, allowDuplicates));
+						customTextFields.add(new SolrField(key, solrFieldvalue, multiValued, allowDuplicates, false, false));
 						fieldsToRemove.add(lstValue);
 					}
 					lstValues.removeAll(fieldsToRemove);
@@ -853,6 +869,8 @@ public class Index {
 							getAllFields,
 							allFieldsExceptions,
 							getFullRecordAsXML,
+							enrichSet,
+							enrichAdd,
 							translateValue,
 							translateValueContains,
 							translateValueRegex,

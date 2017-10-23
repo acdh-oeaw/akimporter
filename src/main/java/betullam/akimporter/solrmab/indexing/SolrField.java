@@ -32,15 +32,19 @@ public class SolrField {
 	private ArrayList<String> fieldvalues;
 	private boolean isMultivalued;
 	private boolean allowDuplicates;
+	private boolean enrichSet;
+	private boolean enrichAdd;
 
 	
 	public SolrField() {}
 
-	public SolrField(String fieldname, ArrayList<String> fieldvalues, boolean isMultivalued, boolean allowDuplicates) {
+	public SolrField(String fieldname, ArrayList<String> fieldvalues, boolean isMultivalued, boolean allowDuplicates, boolean enrichSet, boolean enrichAdd) {
 		this.setFieldname(fieldname);
 		this.setFieldvalues(fieldvalues);
 		this.setMultivalued(isMultivalued);
 		this.setAllowDuplicates(allowDuplicates);
+		this.setEnrichSet(enrichSet);
+		this.setEnrichAdd(enrichAdd);
 	}
 
 	
@@ -76,9 +80,28 @@ public class SolrField {
 		this.allowDuplicates = allowDuplicates;
 	}
 
+	public boolean isEnrichSet() {
+		return enrichSet;
+	}
+
+	public void setEnrichSet(boolean enrichSet) {
+		this.enrichSet = enrichSet;
+	}
+
+	public boolean isEnrichAdd() {
+		return enrichAdd;
+	}
+
+	public void setEnrichAdd(boolean enrichAdd) {
+		this.enrichAdd = enrichAdd;
+	}
+
+	
 	@Override
 	public String toString() {
 		return "SolrField [fieldname=" + fieldname + ", fieldvalues=" + fieldvalues + ", isMultivalued=" + isMultivalued
-				+ ", allowDuplicates=" + allowDuplicates + "]";
+				+ ", allowDuplicates=" + allowDuplicates + ", enrichSet=" + enrichSet + ", enrichAdd=" + enrichAdd
+				+ "]";
 	}
+	
 }

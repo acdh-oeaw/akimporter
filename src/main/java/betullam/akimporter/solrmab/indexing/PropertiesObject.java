@@ -40,6 +40,8 @@ public class PropertiesObject {
 	private boolean getAllFields;
 	private List<String> allFieldsExceptions;
 	private boolean getFullRecordAsXML;
+	private boolean enrichSet;
+	private boolean enrichAdd;
 	private boolean translateValue;
 	private boolean translateValueContains;
 	private boolean translateValueRegex;
@@ -84,6 +86,8 @@ public class PropertiesObject {
 			boolean getAllFields,
 			List<String> allFieldsExceptions,
 			boolean getFullRecordAsXML,
+			boolean enrichSet,
+			boolean enrichAdd,
 			boolean translateValue,
 			boolean translateValueContains,
 			boolean translateValueRegex,
@@ -125,6 +129,8 @@ public class PropertiesObject {
 		this.setGetAllFields(getAllFields);
 		this.setAllFieldsExceptions(allFieldsExceptions);
 		this.setGetFullRecordAsXML(getFullRecordAsXML);
+		this.setEnrichSet(enrichSet);
+		this.setEnrichAdd(enrichAdd);
 		this.setTranslateValue(translateValue);
 		this.setTranslateValueContains(translateValueContains);
 		this.setTranslateValueRegex(translateValueRegex);
@@ -235,6 +241,22 @@ public class PropertiesObject {
 
 	public void setGetFullRecordAsXML(boolean getFullRecordAsXML) {
 		this.getFullRecordAsXML = getFullRecordAsXML;
+	}
+	
+	public boolean isEnrichSet() {
+		return enrichSet;
+	}
+
+	public void setEnrichSet(boolean enrichSet) {
+		this.enrichSet = enrichSet;
+	}
+
+	public boolean isEnrichAdd() {
+		return enrichAdd;
+	}
+
+	public void setEnrichAdd(boolean enrichAdd) {
+		this.enrichAdd = enrichAdd;
 	}
 
 	public boolean isTranslateValue() {
@@ -510,8 +532,8 @@ public class PropertiesObject {
 		return "PropertiesObject [solrFieldname=" + solrFieldname + ", propertiesFields=" + propertiesFields
 				+ ", leader=" + leader + ", datafields=" + datafields + ", controlfields=" + controlfields + ", multiValued=" + multiValued
 				+ ", customText=" + customText + ", getAllFields=" + getAllFields + ", allFieldsExceptions="
-				+ allFieldsExceptions + ", getFullRecordAsXML=" + getFullRecordAsXML + ", translateValue="
-				+ translateValue + ", translateValueContains=" + translateValueContains + ", translateValueRegex="
+				+ allFieldsExceptions + ", getFullRecordAsXML=" + getFullRecordAsXML + ", enrichSet=" + enrichSet + ", enrichAdd=" + enrichAdd
+				+ ", translateValue=" + translateValue + ", translateValueContains=" + translateValueContains + ", translateValueRegex="
 				+ translateValueRegex + ", translateProperties=" + translateProperties + ", hasDefaultValue="
 				+ hasDefaultValue + ", defaultValue=" + defaultValue + ", hasConnectedSubfields="
 				+ hasConnectedSubfields + ", connectedSubfields=" + connectedSubfields

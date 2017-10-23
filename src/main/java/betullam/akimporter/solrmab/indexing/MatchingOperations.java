@@ -211,7 +211,9 @@ public class MatchingOperations {
 			boolean isMultivalued = relevantPropertiesObject.isMultiValued();
 			boolean allowDuplicates = relevantPropertiesObject.isAllowDuplicates();
 			boolean hasApplyToFields = (relevantPropertiesObject.getApplyToFields() != null && !relevantPropertiesObject.getApplyToFields().isEmpty()) ? true : false;
-
+			boolean enrichSet = relevantPropertiesObject.isEnrichSet();
+			boolean enrichAdd = relevantPropertiesObject.isEnrichAdd();
+			
 			// Check if the raw subfield, for which we want to treat it's content (apply rules on it), is listed in the properties object
 			// (which represents a line in mab.properties).
 			// Example:
@@ -296,6 +298,8 @@ public class MatchingOperations {
 				solrField.setFieldname(solrFieldname);
 				solrField.setMultivalued(isMultivalued);
 				solrField.setAllowDuplicates(allowDuplicates);
+				solrField.setEnrichSet(enrichSet);
+				solrField.setEnrichAdd(enrichAdd);
 
 				// Check if an option should be applied to the current field. If yes, go on an apply the option(s). If no, just use the content from the raw field as it is.
 				boolean hasPropertiesOption = false;

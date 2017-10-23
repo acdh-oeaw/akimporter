@@ -30,18 +30,23 @@ package main.java.betullam.akimporter.solrmab.indexing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
+
+import main.java.betullam.akimporter.main.AkImporterHelper;
 
 
 public class MarcContentHandler implements ContentHandler {
@@ -73,10 +78,13 @@ public class MarcContentHandler implements ContentHandler {
 	private String allfieldsField = null;
 	private List<String> allFieldsExceptions = new ArrayList<String>();
 
-	// Variable for fullrecord
+	// Variables for fullrecord
 	private boolean getFullRecordAsXML = false;
 	private String fullrecordField = null;
 	private String fullrecordXmlString = null;
+	
+	// Variables for enrichment
+	private boolean enrich = false;
 
 
 	/**
@@ -88,9 +96,10 @@ public class MarcContentHandler implements ContentHandler {
 	 * @param timeStamp				String that specifies the starting time of the importing process
 	 * @param print					boolean. True if status messages should be printed to the console.
 	 */
-	public MarcContentHandler(List<PropertiesObject> propertiesObjects, SolrServer solrServer, String timeStamp, boolean print) {
+	public MarcContentHandler(List<PropertiesObject> propertiesObjects, SolrServer solrServer, boolean enrich, String timeStamp, boolean print) {
 		this.propertiesObjects = propertiesObjects;
 		this.sServer = solrServer;
+		this.enrich = enrich;
 		this.timeStamp = timeStamp;
 		this.print = print;
 
@@ -297,9 +306,13 @@ public class MarcContentHandler implements ContentHandler {
 				matchingOperations.setPropertiesObjects(propertiesObjects);
 				List<SolrRecord> solrRecords = matchingOperations.getSolrRecords();
 
-				// Add to Solr-Index:
-				this.solrAddRecordSet(sServer, solrRecords);
-
+				// Add to Solr index or enrich existing index:
+				if (!this.enrich) {
+					this.solrAddRecordSet(sServer, solrRecords);
+				} else {
+					this.solrEnrichExistingRecords(sServer, solrRecords);
+				}
+				
 				// Set all relevant Objects to "null" to save memory
 				matchingOperations = null;
 				rawRecords.clear();
@@ -326,7 +339,14 @@ public class MarcContentHandler implements ContentHandler {
 		List<SolrRecord> solrRecords = matchingOperations.getSolrRecords();
 
 		// Add to Solr-Index:
-		this.solrAddRecordSet(sServer, solrRecords);
+		//this.solrAddRecordSet(sServer, solrRecords);
+		
+		// Add to Solr index or enrich existing index:
+		if (!this.enrich) {
+			this.solrAddRecordSet(sServer, solrRecords);
+		} else {
+			this.solrEnrichExistingRecords(sServer, solrRecords);
+		}
 
 		// Set all relevant Objects to "null" to save memory
 		matchingOperations = null;
@@ -348,7 +368,66 @@ public class MarcContentHandler implements ContentHandler {
 		nodeContent += new String(ch, start, length);
 	}
 
+	
+	public void solrEnrichExistingRecords(SolrServer sServer, List<SolrRecord> solrRecordSet) {
+		try {
+			Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
+			
+			for (SolrRecord solrRecord : solrRecordSet) {
+				//System.out.println(solrRecord);
+				String docId = solrRecord.getRecordID();
+				
+				// Prepare record for atomic updates:
+				SolrInputDocument enrichSolrDoc = null;
+				enrichSolrDoc = new SolrInputDocument();
+				enrichSolrDoc.setField("id", docId);
+				
+				for (SolrField solrField : solrRecord.getSolrFields()) {
+					
+					String atomicUpdateMode = null;
+					if (solrField.isEnrichSet()) {
+						atomicUpdateMode = "set";
+					} else if (solrField.isEnrichAdd()) {
+						atomicUpdateMode = "add";
+					}
+					
+					String fieldName = solrField.getFieldname();
+					
+					Object fieldValue = null;
+					if (solrField.isMultivalued()) {
+						fieldValue = solrField.getFieldvalues();
+					} else {
+						fieldValue = solrField.getFieldvalues().get(0);
+					}
 
+					// Add values to record with atomic update:
+					Map<String, Object> mapRecordField = new HashMap<String, Object>();
+					mapRecordField.put(atomicUpdateMode, fieldValue);
+					if (solrField.isEnrichSet()) {
+						enrichSolrDoc.setField(fieldName, mapRecordField);
+					} else if (solrField.isEnrichAdd()) {
+						enrichSolrDoc.addField(fieldName, mapRecordField);
+					}
+				}
+				docsForAtomicUpdates.add(enrichSolrDoc);
+			}
+			
+			if (!docsForAtomicUpdates.isEmpty()) {
+
+				// Now add the collection of documents to Solr:
+				sServer.add(docsForAtomicUpdates);
+
+				// Set "docs" to "null" (save memory):
+				docsForAtomicUpdates = null;
+			}
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	
 	/**
 	 * This method contains the code that actually adds a set of SolrRecord objects
 	 * (see SolrRecord class) to the specified Solr server.
