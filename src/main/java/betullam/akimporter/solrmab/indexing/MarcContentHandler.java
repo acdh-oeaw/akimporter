@@ -118,6 +118,12 @@ public class MarcContentHandler implements ContentHandler {
 				fullrecordField = mo.getSolrFieldname(); // Get Solr field to which the full record (as XML) should be indexed
 			}
 		}
+		
+		// Process more documents at once for enrichment - it's a little bit faster
+		// TODO: Set the no. of docs to precess in AkImporter.properties
+		if (this.enrich) {
+			NO_OF_DOCS = 1500;
+		}
 	}
 
 
