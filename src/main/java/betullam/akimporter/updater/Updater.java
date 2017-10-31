@@ -57,7 +57,7 @@ public class Updater {
 	 * @param print					true if status messages should be printed to console.
 	 * @return						true if update process was successful.
 	 */ 
-	public boolean update(String remotePath, String localPath, String host, int port, String user, String password, String solrServerAddrBiblio, String solrServerAddrAuth, boolean defaultMabProperties, String pathToCustomMabProps, String entities, boolean authFlagOnly, boolean authMerge, boolean optimize, boolean print) {
+	public boolean update(String remotePath, String remotePathMoveTo, String localPath, String host, int port, String user, String password, String solrServerAddrBiblio, String solrServerAddrAuth, boolean defaultMabProperties, String pathToCustomMabProps, String entities, boolean authFlagOnly, boolean authMerge, boolean optimize, boolean print) {
 
 		// Setting variables:
 		boolean isUpdateSuccessful = false;
@@ -77,7 +77,7 @@ public class Updater {
 		AkImporterHelper.print(print, "\nUpdate starting: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(timeStamp))));
 
 		FtpDownload ftpDownload = new FtpDownload();
-		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, localPathOriginal, host, port, user, password, print);
+		boolean isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, remotePathMoveTo, localPathOriginal, host, port, user, password, timeStamp, print);
 
 		if (isDownloadSuccessful) {
 

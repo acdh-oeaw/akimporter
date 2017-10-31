@@ -46,6 +46,7 @@ public class FtpDownload {
 	/**
 	 * Downloads a files from an FTP-Server.
 	 * @param remotePath		Path to a directory in which the file for downloading are stored.
+	 * @param remotePathMoveTo	Path to which the downloaded files should be moved after downloading.
 	 * @param localPathTarGz	Local path where the downloaded files should be stored.
 	 * @param host				FTP host name.
 	 * @param port				FTP port.
@@ -54,23 +55,25 @@ public class FtpDownload {
 	 * @param showMessages		True if status messages should be printed to console.
 	 * @return					True if download process was successful.
 	 */
-	public boolean downloadFiles(String remotePath, String localPathTarGz, String host, int port, String user, String password, boolean showMessages) {
+	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String timeStamp, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
 		AkImporterHelper.print(showMessages, "\nDownloading data from " + host + " to "+localPathTarGz+" ... ");
 		
 		try {
 
-			ftpClient.connect( host, port );
+			ftpClient.connect(host, port);
 			ftpClient.enterLocalPassiveMode();
 			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-			ftpOk &= ftpClient.login( user, password );
+			ftpOk &= ftpClient.login(user, password);
 
 			FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
-
+			int fileCounter = 0;
+			
 			for (FTPFile ftpFile : ftpFiles) {
 				boolean success = false;
 				if (ftpFile.isFile()) {
+					fileCounter++;
 					String fileName = ftpFile.getName();
 					File localFile = new File(localPathTarGz + File.separator + fileName);
 					OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
@@ -82,15 +85,57 @@ public class FtpDownload {
 					} else {
 						ftpOk = false;
 						AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
-
 					}
 					outputStream.close();
 				}
 			}
-			
+
+			if (fileCounter > 0 && remotePathMoveTo != null && !remotePathMoveTo.equals("")) {
+				// Check if "move to" directory exists. If not, create it (including subdirectories).
+				boolean moveToDirectoryExists = false;
+				remotePathMoveTo = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + File.separator + timeStamp;
+				String[] subDirectories = remotePathMoveTo.split("/");
+
+				for (String subDirectory : subDirectories) {
+					boolean hasSubDirectory = ftpClient.changeWorkingDirectory(subDirectory);
+					if (!hasSubDirectory) {
+						boolean madeDirectory = ftpClient.makeDirectory(subDirectory);
+						if (madeDirectory) {
+							ftpClient.changeWorkingDirectory(subDirectory);
+							moveToDirectoryExists = true;
+							//System.out.println("Created subdirectory " + subDirectory);
+						} else {
+							System.err.println("Error creating directory " + subDirectory + " on FTP server " + host + ".");
+							moveToDirectoryExists = false;
+							break;
+						}
+					} else {
+						moveToDirectoryExists = true;
+					}
+				}
+
+				if (moveToDirectoryExists) {
+					ftpClient.changeWorkingDirectory("/");
+					for (FTPFile ftpFile : ftpFiles) {
+						if (ftpFile.isFile()) {
+							String from = AkImporterHelper.stripFileSeperatorFromPath(remotePath) + File.separator + ftpFile.getName();
+							String to = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + File.separator + ftpFile.getName();
+
+							boolean moveSuccess = ftpClient.rename(from, to);
+							if (!moveSuccess) {
+								System.err.println("Error moving from " + from + " to " + to);
+							}
+						}
+					}
+				}				
+			} else if (fileCounter == 0) {
+				ftpOk = true; // Everything is OK ... there was just nothing to download.
+			}
+
 			AkImporterHelper.print(showMessages, "Done\n");
 			ftpClient.logout();
 			ftpClient.disconnect();
+
 		} catch (IOException e) {
 			ftpOk = false;
 			e.printStackTrace();
@@ -98,7 +143,8 @@ public class FtpDownload {
 		return ftpOk;
 	}
 	
-	public boolean downloadFilesSftp(String remotePath, String localPathTarGz, String host, int port, String user, String password, String hostKey, boolean showMessages) {
+	
+	public boolean downloadFilesSftp(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String hostKey, String timeStamp, boolean showMessages) {
 		boolean sftpOk = false;
 		SSHClient ssh = new SSHClient();
 		ssh.addHostKeyVerifier(hostKey);

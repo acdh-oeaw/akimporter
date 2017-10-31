@@ -26,6 +26,7 @@
 package main.java.betullam.akimporter.solrmab;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -152,7 +153,7 @@ public class Index {
 		this.timeStamp = timeStamp;
 		this.optimizeSolr = optimizeSolr;
 		this.print = print;
-		this.enrich = true;
+		this.enrich = true;		
 		
 		this.startIndexing();
 	};
@@ -162,6 +163,12 @@ public class Index {
 	 * Starting the index process.
 	 */
 	private void startIndexing() {
+		
+		// Check if the file to index exists. If not, stop the process.
+		File xmlFile = new File(this.mabXMLfile);
+		if (!xmlFile.exists()) {
+			return;
+		}
 
 		BufferedInputStream mabPropertiesInputStream = null;
 		BufferedInputStream xmlSampleDataStream = null;

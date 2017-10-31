@@ -18,6 +18,7 @@ public class Enrich {
 	private String enrichFtpUser; 
 	private String enrichFtpPass; 
 	private String enrichRemotePath;
+	private String enrichRemotePathMoveTo;
 	private boolean enrichIsSftp;
 	private String enrichHostKey;
 	private String enrichLocalPath; 
@@ -33,9 +34,9 @@ public class Enrich {
 
 	
 	public Enrich(String enrichName, boolean enrichDownload, String enrichFtpHost, String enrichFtpPort,
-			String enrichFtpUser, String enrichFtpPass, String enrichRemotePath, boolean enrichIsSftp,
-			String enrichHostKey, String enrichLocalPath, boolean enrichUnpack, boolean enrichMerge,
-			String enrichMergeTag, String enrichMergeLevel, String enrichMergeParentTag,
+			String enrichFtpUser, String enrichFtpPass, String enrichRemotePath, String enrichRemotePathMoveTo,
+			boolean enrichIsSftp, String enrichHostKey, String enrichLocalPath, boolean enrichUnpack,
+			boolean enrichMerge, String enrichMergeTag, String enrichMergeLevel, String enrichMergeParentTag,
 			String enrichProperties, String enrichSolr, boolean print, boolean optimize) {
 		this.enrichName = enrichName;
 		this.enrichDownload = enrichDownload;
@@ -44,6 +45,7 @@ public class Enrich {
 		this.enrichFtpUser = enrichFtpUser;
 		this.enrichFtpPass = enrichFtpPass;
 		this.enrichRemotePath = enrichRemotePath;
+		this.enrichRemotePathMoveTo = enrichRemotePathMoveTo;
 		this.enrichIsSftp = enrichIsSftp;
 		this.enrichHostKey = enrichHostKey;
 		this.enrichLocalPath = enrichLocalPath;
@@ -75,9 +77,9 @@ public class Enrich {
 			AkImporterHelper.mkDirIfNotExists(localPathOriginal);
 			int enrichFtpPortInt = Integer.valueOf(this.enrichFtpPort);
 			if (this.enrichIsSftp) {
-				new FtpDownload().downloadFilesSftp(this.enrichRemotePath, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, this.enrichHostKey, this.print);
+				new FtpDownload().downloadFilesSftp(this.enrichRemotePath, this.enrichRemotePathMoveTo, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, this.enrichHostKey, timeStamp, this.print);
 			} else {
-				new FtpDownload().downloadFiles(this.enrichRemotePath, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, this.print);
+				new FtpDownload().downloadFiles(this.enrichRemotePath, this.enrichRemotePathMoveTo, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, timeStamp, this.print);
 			}
 		}
 

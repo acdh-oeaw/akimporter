@@ -118,6 +118,8 @@ public class Main {
 	static String uFtpUser = importerProperties.getProperty("update.ftpUser");
 	static String uFtpPass = importerProperties.getProperty("update.ftpPass");
 	static String uRemotePath = importerProperties.getProperty("update.remotePath");
+	static String uRemotePathMoveToStr = importerProperties.getProperty("update.remotePath");
+	static String uRemotePathMoveTo = (uRemotePathMoveToStr != null && !uRemotePathMoveToStr.trim().isEmpty()) ? importerProperties.getProperty("update.remotePathMoveTo") : null;
 	static String uLocalPath = importerProperties.getProperty("update.localPath");
 	static String uSolr = importerProperties.getProperty("update.solr");
 	static boolean uDefaultMabProperties = (importerProperties.getProperty("update.defaultMabProperties") != null && importerProperties.getProperty("update.defaultMabProperties").equals("D")) ? true : false;
@@ -236,6 +238,7 @@ public class Main {
 			String enrichFtpUser = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpUser") : null;
 			String enrichFtpPass = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpPass") : null;
 			String enrichRemotePath = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".remotePath") : null;
+			String enrichRemotePathMoveTo = (enrichDownload && importerProperties.getProperty("enrich." + enrichName + ".remotePathMoveTo") != null && !importerProperties.getProperty("enrich." + enrichName + ".remotePathMoveTo").trim().equals("")) ? importerProperties.getProperty("enrich." + enrichName + ".remotePathMoveTo") : null;
 			boolean enrichIsSftp = (importerProperties.getProperty("enrich." + enrichName + ".isSftp") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".isSftp")) : false;
 			String enrichHostKey = importerProperties.getProperty("enrich." + enrichName + ".hostKey");
 			String enrichLocalPath = importerProperties.getProperty("enrich." + enrichName + ".localPath");
@@ -451,6 +454,7 @@ public class Main {
 						Updater updater = new Updater();																			
 						isUpdateSuccessful = updater.update (
 								uRemotePath,
+								uRemotePathMoveTo,
 								uLocalPath,
 								uFtpHost,
 								uFtpPort,
@@ -670,7 +674,7 @@ public class Main {
 			
 			case "enrich": {
 				System.out.println("Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
-				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichIsSftp, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, print, optimize);
+				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichRemotePathMoveTo, enrichIsSftp, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, print, optimize);
 				System.out.println("\nDone enrichment.");
 				break;
 			}
