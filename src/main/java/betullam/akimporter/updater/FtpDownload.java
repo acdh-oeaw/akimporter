@@ -153,18 +153,39 @@ public class FtpDownload {
 			ssh.loadKnownHosts();
 			ssh.connect(host, port);
 		    ssh.authPassword(user, password);
-		    SFTPClient sftp = ssh.newSFTPClient();
+		    SFTPClient sftpClient = ssh.newSFTPClient();
 		    try {
-		    	List<RemoteResourceInfo> fileInfos = sftp.ls(remotePath);
+		    	List<RemoteResourceInfo> fileInfos = sftpClient.ls(remotePath);
+		    	int fileCounter = 0;
+		    	
 		    	for (RemoteResourceInfo fileInfo : fileInfos) {
 		    		if (fileInfo.isRegularFile()) {
 		    			System.out.println("File: " + fileInfo.getPath());
 		    			//sftp.get(fileInfo.getPath(), localPathTarGz);
+		    			
+		    			fileCounter++;
+						String fileName = fileInfo.getName();
+						File localFile = new File(localPathTarGz + File.separator + fileName);
+						OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
+						//sftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
+						//success = sftpClient.retrieveFile(remotePath + File.separator + fileName, outputStream);
+						sftpClient.get(remotePath + File.separator + fileName, localPathTarGz + File.separator + fileName);
+						
+						/*
+						if (success) {
+							ftpOk = true;
+						} else {
+							ftpOk = false;
+							AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
+						}*/
+						outputStream.close();
+						
+						
 		    		}
 		    	}
 		        
 		    } finally {
-		        sftp.close();
+		        sftpClient.close();
 		        sftpOk = true;
 		    }
 		} catch (IOException e) {
