@@ -118,8 +118,8 @@ public class Main {
 	static String uFtpUser = importerProperties.getProperty("update.ftpUser");
 	static String uFtpPass = importerProperties.getProperty("update.ftpPass");
 	static String uRemotePath = importerProperties.getProperty("update.remotePath");
-	static String uRemotePathMoveToStr = importerProperties.getProperty("update.remotePath");
-	static String uRemotePathMoveTo = (uRemotePathMoveToStr != null && !uRemotePathMoveToStr.trim().isEmpty()) ? importerProperties.getProperty("update.remotePathMoveTo") : null;
+	static String uRemotePathMoveToStr = importerProperties.getProperty("update.remotePathMoveTo");
+	static String uRemotePathMoveTo = (uRemotePathMoveToStr != null && !uRemotePathMoveToStr.trim().isEmpty()) ? uRemotePathMoveToStr : null;
 	static String uLocalPath = importerProperties.getProperty("update.localPath");
 	static String uSolr = importerProperties.getProperty("update.solr");
 	static boolean uDefaultMabProperties = (importerProperties.getProperty("update.defaultMabProperties") != null && importerProperties.getProperty("update.defaultMabProperties").equals("D")) ? true : false;
