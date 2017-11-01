@@ -40,8 +40,6 @@ import main.java.betullam.akimporter.main.AkImporterHelper;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.SFTPClient;
-import net.schmizz.sshj.sftp.SFTPEngine;
-import net.schmizz.sshj.sftp.StatefulSFTPClient;
 
 public class FtpDownload {
 
