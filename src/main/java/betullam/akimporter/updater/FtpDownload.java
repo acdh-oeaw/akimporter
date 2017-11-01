@@ -40,6 +40,8 @@ import main.java.betullam.akimporter.main.AkImporterHelper;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.SFTPClient;
+import net.schmizz.sshj.sftp.SFTPEngine;
+import net.schmizz.sshj.sftp.StatefulSFTPClient;
 
 public class FtpDownload {
 
@@ -90,7 +92,7 @@ public class FtpDownload {
 				}
 			}
 
-			if (fileCounter > 0 && remotePathMoveTo != null && !remotePathMoveTo.equals("")) {
+			if (fileCounter > 0 && remotePathMoveTo != null && !remotePathMoveTo.trim().equals("")) {
 				// Check if "move to" directory exists. If not, create it (including subdirectories).
 				boolean moveToDirectoryExists = false;
 				remotePathMoveTo = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + File.separator + timeStamp;
@@ -145,58 +147,68 @@ public class FtpDownload {
 	
 	
 	public boolean downloadFilesSftp(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String hostKey, String timeStamp, boolean showMessages) {
+
 		boolean sftpOk = false;
 		SSHClient ssh = new SSHClient();
 		ssh.addHostKeyVerifier(hostKey);
-		
+
 		try {
 			ssh.loadKnownHosts();
 			ssh.connect(host, port);
-		    ssh.authPassword(user, password);
-		    SFTPClient sftpClient = ssh.newSFTPClient();
-		    try {
-		    	List<RemoteResourceInfo> fileInfos = sftpClient.ls(remotePath);
-		    	int fileCounter = 0;
-		    	
-		    	for (RemoteResourceInfo fileInfo : fileInfos) {
-		    		if (fileInfo.isRegularFile()) {
-		    			System.out.println("File: " + fileInfo.getPath());
-		    			//sftp.get(fileInfo.getPath(), localPathTarGz);
-		    			
-		    			fileCounter++;
+			ssh.authPassword(user, password);
+			SFTPClient sftpClient = ssh.newSFTPClient();
+			//StatefulSFTPClient sftpClient = new StatefulSFTPClient(new SFTPEngine(ssh));
+
+			try {
+				List<RemoteResourceInfo> fileInfos = sftpClient.ls(remotePath);
+				int fileCounter = 0;
+
+				for (RemoteResourceInfo fileInfo : fileInfos) {
+					if (fileInfo.isRegularFile()) {
+						fileCounter++;
 						String fileName = fileInfo.getName();
-						File localFile = new File(localPathTarGz + File.separator + fileName);
-						OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
-						//sftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
-						//success = sftpClient.retrieveFile(remotePath + File.separator + fileName, outputStream);
+
+						// Download files
 						sftpClient.get(remotePath + File.separator + fileName, localPathTarGz + File.separator + fileName);
-						
-						/*
-						if (success) {
-							ftpOk = true;
-						} else {
-							ftpOk = false;
-							AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
-						}*/
-						outputStream.close();
-						
-						
-		    		}
-		    	}
-		        
-		    } finally {
-		        sftpClient.close();
-		        sftpOk = true;
-		    }
+					}
+				}
+
+				if (fileCounter > 0 && remotePathMoveTo != null && !remotePathMoveTo.trim().equals("")) {
+					// Check if "move to" directory exists. If not, create it (including subdirectories).
+					remotePathMoveTo = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + File.separator + timeStamp;
+
+					// Make "move to" directories
+					sftpClient.mkdirs(remotePathMoveTo);
+
+					// Move files
+					if (sftpClient.statExistence(remotePathMoveTo) != null) {
+						for (RemoteResourceInfo fileInfo : fileInfos) {
+							if (fileInfo.isRegularFile()) {
+								String from = AkImporterHelper.stripFileSeperatorFromPath(remotePath) + File.separator + fileInfo.getName();
+								String to = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + File.separator + fileInfo.getName();
+								sftpClient.rename(from, to);
+							}
+						}
+					}				
+				}
+
+				sftpOk = true;
+			} catch (Exception e) {
+				sftpOk = false;
+			} finally {
+				sftpClient.close();
+			}
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-		    try {
+			try {
 				ssh.disconnect();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+
 		return sftpOk;
 	}
 
