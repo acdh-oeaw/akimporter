@@ -12,7 +12,7 @@ import main.java.betullam.akimporter.solrmab.Index;
 
 public class Enrich {
 
-	//private String enrichName;
+	private String enrichName;
 	private boolean enrichDownload;
 	private String enrichFtpHost;
 	private String enrichFtpPort;
@@ -39,7 +39,7 @@ public class Enrich {
 			boolean enrichIsSftp, String enrichHostKey, String enrichLocalPath, boolean enrichUnpack,
 			boolean enrichMerge, String enrichMergeTag, String enrichMergeLevel, String enrichMergeParentTag,
 			String enrichProperties, String enrichSolr, boolean print, boolean optimize) {
-		//this.enrichName = enrichName;
+		this.enrichName = enrichName;
 		this.enrichDownload = enrichDownload;
 		this.enrichFtpHost = enrichFtpHost;
 		this.enrichFtpPort = enrichFtpPort;
@@ -121,7 +121,7 @@ public class Enrich {
 			// Unpack files but only if we have files we can unpack
 			if (filesInUnpackSourceDir != null && filesInUnpackSourceDir.length > 0) {
 				AkImporterHelper.mkDirIfNotExists(localPathExtracted);
-				AkImporterHelper.print(print, "Extracting files to " + localPathExtracted + " ... ");
+				AkImporterHelper.print(print, "\nExtracting files to " + localPathExtracted + " ... ");
 				ExtractTarGz etg = new ExtractTarGz();
 				etg.extractTarGz(localPathOriginal, timeStamp, localPathExtracted);
 				AkImporterHelper.print(print, "Done");
@@ -148,6 +148,7 @@ public class Enrich {
 				XmlMerger xmlm = new XmlMerger();
 				int enrichMergeTagInt = Integer.valueOf(this.enrichMergeLevel);
 				xmlm.mergeElements(localPathExtracted, pathToEnrichFile, this.enrichMergeParentTag, this.enrichMergeTag, enrichMergeTagInt);
+				AkImporterHelper.print(print, "Done");
 			}
 		}
 		
@@ -155,9 +156,11 @@ public class Enrich {
 		File enrichFile = new File(pathToEnrichFile);
 		boolean enrichFileIsXml = (enrichFile.exists() && enrichFile.isFile() && enrichFile.getName().toLowerCase().endsWith(".xml"));
 		if (enrichFileIsXml) {
+			AkImporterHelper.print(print, "\nEnriching data from \"" + this.enrichName + "\" in file " + pathToEnrichFile + " to Solr server " + this.enrichSolr + " ... ");
 			String directoryOfTranslationFiles = new File(this.enrichProperties).getParent();
 			HttpSolrServer enrichSolrServer = (this.enrichSolr != null && !this.enrichSolr.isEmpty()) ? new HttpSolrServer(this.enrichSolr) : null;
-			new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, this.print);
+			new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, false);
+			AkImporterHelper.print(print, "Done");
 		}
 	}
 
