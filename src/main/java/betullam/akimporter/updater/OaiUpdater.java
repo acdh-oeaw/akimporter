@@ -132,24 +132,32 @@ public class OaiUpdater {
 
 		// Creating Solr server
 		HttpSolrServer sServerBiblio =  new HttpSolrServer(solrServerBiblio);
-
-		// Set variables
-		String oaiPathOriginal = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
-		String oaiPathMerged = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
+		
+		// Original and merged folders
+		String pathOriginal = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original";
+		String pathMerged = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged";
+		
+		// Create original and merged folders if they don't exist
+		AkImporterHelper.mkDirIfNotExists(pathOriginal);
+		AkImporterHelper.mkDirIfNotExists(pathMerged);
+		
+		// Set variables for timestamp folders
+		String oaiPathOriginalTimestamp = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
+		String oaiPathMergedTimestamp = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
 
 		// Delete old downloaded OAI files if "deleteOldLocalFiles" is true
 		if (deleteOldLocalFiles) {
 			try {
-				FileUtils.cleanDirectory(new File(oaiPathOriginal).getParentFile());
-				FileUtils.cleanDirectory(new File(oaiPathMerged).getParentFile());
+				FileUtils.cleanDirectory(new File(oaiPathOriginalTimestamp).getParentFile());
+				FileUtils.cleanDirectory(new File(oaiPathMergedTimestamp).getParentFile());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 
-		// Create directories if they do not exist
-		mkDirIfNoExists(oaiPathOriginal);
-		mkDirIfNoExists(oaiPathMerged);
+		// Create timestamp directories if they do not exist
+		AkImporterHelper.mkDirIfNotExists(oaiPathOriginalTimestamp);
+		AkImporterHelper.mkDirIfNotExists(oaiPathMergedTimestamp);
 
 		// Get "from" date/time from .properties file
 		if (oaiDatefile != null) {
@@ -162,11 +170,11 @@ public class OaiUpdater {
 
 		for (String set : sets) {
 			// Download XML data of one set from an OAI interface
-			oaiDownload(oaiUrl, format, set, oaiPathOriginal, oaiDatefile, this.indexTimestamp, print);
+			oaiDownload(oaiUrl, format, set, oaiPathOriginalTimestamp, oaiDatefile, this.indexTimestamp, print);
 		}
 
 		// Validate and clean downloaded files (max. 3 tries)
-		for (File xmlOriginal : new File(oaiPathOriginal).listFiles()) {
+		for (File xmlOriginal : new File(oaiPathOriginalTimestamp).listFiles()) {
 			String pathToXmlFile = xmlOriginal.getAbsolutePath();
 			int count = 0;
 			int maxTries = 3;
@@ -196,8 +204,8 @@ public class OaiUpdater {
 
 		// Start merging all downloaded updates into one file
 		AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
-		String mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
-		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, elementsToMerge, elementsToMergeLevel);
+		String mergedFileName = oaiPathMergedTimestamp + File.separator + this.indexTimestamp + ".xml";
+		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginalTimestamp, mergedFileName, elementsToMerge, elementsToMergeLevel);
 		if (isMergeSuccessful) {
 			AkImporterHelper.print(print, "Done");
 		} else {
@@ -471,13 +479,21 @@ public class OaiUpdater {
 		AkImporterHelper.print(print, "\n-------------------------------------------");
 		AkImporterHelper.print(print, "\nOAI harvest started: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 
-		// Set variables
-		String oaiPathOriginal = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
-		String oaiPathMerged = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
+		// Original and merged folders
+		String pathOriginal = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original";
+		String pathMerged = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged";
 
-		// Create directories if they do not exist
-		mkDirIfNoExists(oaiPathOriginal);
-		mkDirIfNoExists(oaiPathMerged);
+		// Create original and merged folders if they don't exist
+		AkImporterHelper.mkDirIfNotExists(pathOriginal);
+		AkImporterHelper.mkDirIfNotExists(pathMerged);
+	
+		// Timestamp folders
+		String oaiPathOriginalTimestamp = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
+		String oaiPathMergedTimestamp = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
+
+		// Create timestamp folders if they do not exist
+		AkImporterHelper.mkDirIfNotExists(oaiPathOriginalTimestamp);
+		AkImporterHelper.mkDirIfNotExists(oaiPathMergedTimestamp);
 
 		// Get "from" date/time from .properties file
 		Properties oaiDateTimeOriginal = getOaiDateTime(oaiDatefile);
@@ -489,13 +505,13 @@ public class OaiUpdater {
 			this.writeOaiDateFile(oaiDatefile, fromOriginal);
 
 			// Download XML data of one set from an OAI interface
-			oaiDownload(oaiUrl, format, set, oaiPathOriginal, oaiDatefile, this.indexTimestamp, print);
+			oaiDownload(oaiUrl, format, set, oaiPathOriginalTimestamp, oaiDatefile, this.indexTimestamp, print);
 		}
 
 		// Start merging all downloaded updates into one file
 		AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
-		String mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
-		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, "slim:record", 1);
+		String mergedFileName = oaiPathMergedTimestamp + File.separator + this.indexTimestamp + ".xml";
+		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginalTimestamp, mergedFileName, "slim:record", 1);
 		if (isMergeSuccessful) {
 			AkImporterHelper.print(print, "Done");
 		} else {
@@ -655,136 +671,6 @@ public class OaiUpdater {
 			e.printStackTrace();
 		}
 	}
-
-
-	/**
-	 * ORIGINAL
-	 * Downloads, saves and merges data from an OAI interface.
-	 * 
-	 * @param oaiUrl				String representing an URL to an OAI interface
-	 * @param format				Format (metadataPrefix) of the data the OAI interface should issue (e. g. oai_dc, MARC21-xml, ...)
-	 * @param set					String representing the set of the OAI interface you want to harvest
-	 * @param destinationPath		String representing a path to a local directory where the downloaded data should be stored (e. g. /home/username/oai_data)
-	 * @param elementsToMerge		String representing the XML element that should be merged into a new file after downloading the OAI data (e. g. record).
-	 * @param elementsToMergeLevel	int: Level of the XML element that should be merge if there are more of one of the same name. As default and for the top level element, use 1.
-	 * @param oaiDatefile			String representing a path to a .properties file with at least a "from" date/time in format YYYY-MM-DDTHH:MM:SSZ. It could also contain an "until" date/time. Example: /path/to/oai_date-time_file.properties
-	 * @param downloadTimestamp		long: Timestamp of start of current downloading task
-	 * @param counter				int: Counter for naming files of downloaded OAI result pages (created by resumptionToken)
-	 * @param print					boolean indicating whether to print status messages or not
-	 * @return						String representing the path to a file with the downloaded data
-	 */
-	/* 
-	private String oaiDownload(String oaiUrl, String format, String set, String destinationPath, String elementsToMerge, int elementsToMergeLevel, String oaiDatefile, long downloadTimestamp, int counter, boolean print) {
-
-		String mergedFileName = null;
-		String downloadDateTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date(downloadTimestamp)); // Use download time of the first run as "until" time
-
-		// Get "from" and "until" date/time from .properties file
-		Properties oaiDateTime = getOaiDateTime(oaiDatefile);
-		String from = oaiDateTime.getProperty("from"); // Should be something like 2016-01-13T14:00:00Z
-		String until = oaiDateTime.getProperty("until", downloadDateTime);
-
-		// Get "from" timestamp using the date in the .properties file:
-		long fromTimeStamp = 0;
-		try {
-			DateFormat fromDateTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-			Date date = fromDateTimeFormat.parse(from);
-			fromTimeStamp = date.getTime();
-		} catch (ParseException e) {
-			System.err.print("\nERROR: Parse error! Check if from date in .properties file is in format yyyy-MM-ddTHH:mm:ssZ.");
-			e.printStackTrace();
-		} catch (Exception e) {
-			System.err.print("\nERROR");
-			e.printStackTrace();
-		}
-
-		// Get difference between "from" and "until"
-		long timeSpan = downloadTimestamp - fromTimeStamp;
-
-		try {
-			int httpResponseCode = getHttpResponseCode(new URL(oaiUrl+"?verb=ListRecords&metadataPrefix="+format+"&set="+set+"&from="+from+"&until="+until));
-
-			if (httpResponseCode == 200) {
-
-				AkImporterHelper.print(print, "\nHarvesting date range: " + from + " - " + until);
-
-				// Set variables
-				String oaiPathOriginal = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "original" + File.separator + this.indexTimestamp;
-				String oaiPathMerged = AkImporterHelper.stripFileSeperatorFromPath(destinationPath) + File.separator + "merged" + File.separator + this.indexTimestamp;
-
-				// Create directories if they do not exist
-				mkDirIfNoExists(oaiPathOriginal);
-				mkDirIfNoExists(oaiPathMerged);
-
-				// Download updates from OAI interface and save them to a file. If there is a resumptionToken ("pages"),
-				// then download all resumptions and save each to a sepearate file:
-				AkImporterHelper.print(print, "\nDownloading XML data ... ");
-				String resumptionToken = null;
-				do {
-					counter++;
-
-					Document doc = getOaiUpdated(oaiUrl, format, set, from, until, resumptionToken);
-					if (doc != null) {
-						resumptionToken = getResumptionToken(doc);
-						String fileName = this.indexTimestamp + "_" + String.format("%08d", counter) + ".xml";
-						writeXmlToFile(doc, oaiPathOriginal, fileName);
-					} else {
-						String urlCalled = "";
-						if (resumptionToken == null) {
-							urlCalled = oaiUrl+"?verb=ListRecords&metadataPrefix="+format+"&set="+set+"&from="+from+"&until="+until;
-						} else {
-							urlCalled = oaiUrl+"?verb=ListRecords&resumptionToken="+resumptionToken;
-						}
-						System.err.print("\nReturned XML document from OAI interface is null! URL called to get this document was: " + urlCalled);
-						resumptionToken = null;
-					}
-				} while (resumptionToken != null);
-				AkImporterHelper.print(print, "Done");
-
-				// Write current date/time to date/time-file for next update:
-				this.writeOaiDateFile(oaiDatefile, until);
-
-				// Start downloading XML data again until we reach today:
-				if (this.indexTimestamp > downloadTimestamp) {
-					oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, this.indexTimestamp, counter, print);
-				} else {
-					// Reached today - stop downloading and start merging
-					AkImporterHelper.print(print, "\nAll OAI updates are downloaded.");
-
-					// Start merging all downloaded updates into one file:
-					AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
-					mergedFileName = oaiPathMerged + File.separator + this.indexTimestamp + ".xml";
-					boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginal, mergedFileName, elementsToMerge, elementsToMergeLevel);
-					if (isMergeSuccessful) {
-						AkImporterHelper.print(print, "Done");
-					} else {
-						System.err.print("\nERROR: Merging downloaded files from OAI was not successful!");
-						mergedFileName = null;
-					}
-				}
-
-			} else if (httpResponseCode == 413) {			
-				// Calculate new timestamp
-				long newTimeStamp = (long)(downloadTimestamp - (timeSpan*0.15));
-				//System.err.print("\nToo many documents requested from OAI interface (> 100000) . Trying again with shorter time span ...");
-				oaiDownload(oaiUrl, format, set, destinationPath, elementsToMerge, elementsToMergeLevel, oaiDatefile, newTimeStamp, counter, print);
-				mergedFileName = null;
-			} else {
-				System.err.print("\nERROR: Getting HTTP response code " + httpResponseCode + " from OAI interface at " + oaiUrl);
-				mergedFileName = null;
-			}
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-			mergedFileName = null;
-		} catch (Exception e) {
-			e.printStackTrace();
-			mergedFileName = null;
-		}
-
-		return mergedFileName;
-
-	}
-	 */
 
 
 	/**
@@ -981,17 +867,8 @@ public class OaiUpdater {
 
 
 	/**
-	 * Creates a directory if it does not exist.
-	 * 
-	 * @param path	String:	Path to the directory that should be created.
+	 * Custom exception class
 	 */
-	private static void mkDirIfNoExists(String path) {
-		File dir = new File(path);
-		if (!dir.exists()) {
-			dir.mkdirs();
-		}
-	}
-
 	public class ValidatorException extends Exception {
 		private static final long serialVersionUID = 7719466919745492845L;
 	}
