@@ -121,9 +121,10 @@ public class AkImporterHelper {
 			// Get .properties file and load contents:
 			if (useDefaultProperties) {
 				// IMPORTANT: To use "/main/resources/..." we have to make sure that this folder is exported to the right path within the .jar
-				// file. You can find this out when opening the .jar file with an Archive reader. To change pathes when exporting to .jar, go
-				// (in Eclipse) to "Project Properties -> Java Build Path -> Source-Tab -> Select "Included" and "Edit ..." -> Add files or folders"
-				// When using folders, don't forget to use wildcards.
+				// file. You can find this out when opening the .jar file with an Archive reader. To change pathes when exporting to .jar in Eclipse,
+				// right click on the project folder and select "Properties" -> "Java Build Path" -> "Source"-Tab -> Select "Included" and then "Edit ...".
+				// For "Inclusion patterns", click "Add multiple" and select the "resources" folder under the "main" folder. Now add it and export the
+				// .jar again. Maybe you have to use wildcards when using whole folders.
 				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
 				
 			} else {
