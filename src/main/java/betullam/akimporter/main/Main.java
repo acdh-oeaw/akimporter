@@ -347,15 +347,14 @@ public class Main {
 			}
 
 			case "r": {
-				boolean doNotCheckFtp = false;
-				if(checkImportProperties() && checkUpdateProperties(doNotCheckFtp)) {
+				if(checkImportProperties() && checkUpdateProperties(false)) {
 					if (test) {
 						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
-						System.out.println("\n-----------------------------------\n");
-						System.out.println("Start re-importing initial dataset ...");
+						AkImporterHelper.print(print, "\n-----------------------------------\n");
+						AkImporterHelper.print(print, "Start re-importing initial dataset ...");
 
 						// Start import process of initial dataset:
 						new Import(
@@ -369,11 +368,11 @@ public class Main {
 								optimize,
 								print
 								);
-						System.out.println("\n-----------------------------------\n");
+						AkImporterHelper.print(print, "\n-----------------------------------\n");
 
 
 						// Start import process of ongoing updates (from "merged data" directory):
-						System.out.println("Start re-importing ongoing data updates ...");
+						AkImporterHelper.print(print, "Start re-importing ongoing data updates ...");
 						ReImport reImport = new ReImport(print, optimize);
 						reImport.reImportOngoing(
 								uLocalPath,
@@ -384,8 +383,8 @@ public class Main {
 								);
 						boolean isReImportingSuccessful = reImport.isReImportingSuccessful();
 						if (isReImportingSuccessful) {
-							System.out.println("\n-----------------------------------\n");
-							System.out.println("Re-Importing of all data was successful.");
+							AkImporterHelper.print(print, "\n-----------------------------------\n");
+							AkImporterHelper.print(print, "Re-Importing of all data was successful.");
 							postProcess();
 						} else {
 							System.err.println("Error while re-importing of ongoing data updates.");
@@ -397,14 +396,13 @@ public class Main {
 			}
 
 			case "R": {
-				boolean doNotCheckFtp = false;
-				if(checkImportProperties() && checkUpdateProperties(doNotCheckFtp)) {
+				if(checkImportProperties() && checkUpdateProperties(false)) {
 					if (test) {
 						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
 						break;
 					} else {
-						System.out.println("Start re-importing ongoing data updates ...");
+						AkImporterHelper.print(print, "Start re-importing ongoing data updates ...");
 						// Start import process of ongoing updates (from "merged data" directory):				
 						ReImport reImport = new ReImport(print, optimize);
 						reImport.reImportOngoing(
@@ -428,9 +426,7 @@ public class Main {
 				boolean isRelateSuccessful = relate.isRelateSuccessful();
 
 				if (isRelateSuccessful) {
-					if (cmd.hasOption("v")) {
-						System.out.println("Done linking parent and child records. Everything was successful.");
-					}
+					AkImporterHelper.print(print, "Done linking parent and child records. Everything was successful.");
 					postProcess();
 				}
 				break;
@@ -606,7 +602,7 @@ public class Main {
 
 			case "O": {
 
-				System.out.println("Starting OAI harvesting for " + oaiName + " ...");				
+				AkImporterHelper.print(print, "Starting OAI harvesting for " + oaiName + " ...");				
 
 				OaiUpdater oaiUpdater = new OaiUpdater();
 				try {
@@ -665,17 +661,17 @@ public class Main {
 
 			case "X": {
 
-				System.out.println("Starting XML import for " + xmlName + " ...");
+				AkImporterHelper.print(print, "Starting XML import for " + xmlName + " ...");
 				new XmlIndex(xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, print, optimize);
-				System.out.println("Done importing XML for " + xmlName + ".");
+				AkImporterHelper.print(print, "Done importing XML for " + xmlName + ".");
 				postProcess();
 				break;
 			}
 			
 			case "enrich": {
-				System.out.println("Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
+				AkImporterHelper.print(print, "Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
 				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichRemotePathMoveTo, enrichIsSftp, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, print, optimize);
-				System.out.println("\nDone enrichment.");
+				AkImporterHelper.print(print, "\nDone enrichment.");
 				break;
 			}
 
@@ -1124,7 +1120,8 @@ public class Main {
 					if (!isConnected) {
 						ftpErrorMsg = "FTP connection failed. Check if values \"update.ftpHost\" and \"update.ftpPort\" in \"AkImporter.properties\" are correct.";
 					} else { // FTP connection was successful.
-						// Check if remote path exists and if files with suffix ".tar.gz" exists:
+
+						// Check if files with suffix ".tar.gz" exists:
 						FTPFile[] ftpFiles = ftpClient.listFiles(uRemotePath, new FTPFileFilter() {
 							@Override
 							public boolean accept(FTPFile ftpFile) {
@@ -1136,6 +1133,8 @@ public class Main {
 						} else {
 							ftpIsOk = true;
 						}
+
+
 						// We can now logout and disconnect.
 						ftpClient.logout();
 						ftpClient.disconnect();
