@@ -82,7 +82,7 @@ public class Updater {
 		if (isDownloadSuccessful) {
 
 			// Extract downloaded .tar.gz file(s):
-			AkImporterHelper.print(print, "Extracting downloaded files to "+localPathExtracted+" ... ");
+			AkImporterHelper.print(print, "\nExtracting downloaded files to "+localPathExtracted+" ... ");
 			ExtractTarGz etg = new ExtractTarGz();
 			etg.extractTarGz(localPathOriginal, timeStamp, localPathExtracted);
 			AkImporterHelper.print(print, "Done");

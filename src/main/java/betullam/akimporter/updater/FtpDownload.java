@@ -58,7 +58,7 @@ public class FtpDownload {
 	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String timeStamp, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
-		AkImporterHelper.print(showMessages, "\nDownloading data from " + host + " to "+localPathTarGz+" ... ");
+		AkImporterHelper.print(showMessages, "\nDownloading data from FTP " + host + " to "+localPathTarGz+" ... ");
 		
 		try {
 
@@ -132,7 +132,7 @@ public class FtpDownload {
 				ftpOk = true; // Everything is OK ... there was just nothing to download.
 			}
 
-			AkImporterHelper.print(showMessages, "Done\n");
+			AkImporterHelper.print(showMessages, "Done");
 			ftpClient.logout();
 			ftpClient.disconnect();
 
@@ -149,6 +149,7 @@ public class FtpDownload {
 		boolean sftpOk = false;
 		SSHClient ssh = new SSHClient();
 		ssh.addHostKeyVerifier(hostKey);
+		AkImporterHelper.print(showMessages, "\nDownloading data from SFTP " + host + " to "+localPathTarGz+" ... ");
 
 		try {
 			ssh.loadKnownHosts();
@@ -206,7 +207,7 @@ public class FtpDownload {
 				e.printStackTrace();
 			}
 		}
-
+		AkImporterHelper.print(showMessages, "Done");
 		return sftpOk;
 	}
 
