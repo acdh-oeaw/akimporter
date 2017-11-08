@@ -73,7 +73,7 @@ public class AkIndexAllFields {
 		XmlParser xmlp = new XmlParser();
 		try {
 			String phpArrayString = "";
-			Node fieldsNode = xmlp.getNodesByXpath(lukeDoc, "/response/lst[@name='fields']");
+			Node fieldsNode = xmlp.getNodeByXpath(lukeDoc, "/response/lst[@name='fields']");
 			NodeList fieldsNodeChilds = fieldsNode.getChildNodes();
 			
 			for (int i = 0; i < fieldsNodeChilds.getLength(); i++) {
