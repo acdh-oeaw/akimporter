@@ -2,8 +2,12 @@ package main.java.betullam.akimporter.updater;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 
 import ak.xmlhelper.XmlMerger;
@@ -22,7 +26,8 @@ public class Enrich {
 	private String enrichRemotePathMoveTo;
 	private boolean enrichIsSftp;
 	private String enrichHostKey;
-	private String enrichLocalPath; 
+	private String enrichLocalPathInitial;
+	private String enrichLocalPathOngoing;
 	private boolean enrichUnpack; 
 	private boolean enrichMerge;
 	private String enrichMergeTag;
@@ -30,15 +35,17 @@ public class Enrich {
 	private String enrichMergeParentTag;
 	private String enrichProperties; 
 	private String enrichSolr;
+	private boolean reimport;
 	private boolean print;
 	private boolean optimize;
 
 	
 	public Enrich(String enrichName, boolean enrichDownload, String enrichFtpHost, String enrichFtpPort,
 			String enrichFtpUser, String enrichFtpPass, String enrichRemotePath, String enrichRemotePathMoveTo,
-			boolean enrichIsSftp, String enrichHostKey, String enrichLocalPath, boolean enrichUnpack,
-			boolean enrichMerge, String enrichMergeTag, String enrichMergeLevel, String enrichMergeParentTag,
-			String enrichProperties, String enrichSolr, boolean print, boolean optimize) {
+			boolean enrichIsSftp, String enrichHostKey, String enrichLocalPathInitial, String enrichLocalPathOngoing,
+			boolean enrichUnpack, boolean enrichMerge, String enrichMergeTag, String enrichMergeLevel,
+			String enrichMergeParentTag, String enrichProperties, String enrichSolr, boolean reimport, boolean print,
+			boolean optimize) {
 		this.enrichName = enrichName;
 		this.enrichDownload = enrichDownload;
 		this.enrichFtpHost = enrichFtpHost;
@@ -49,7 +56,8 @@ public class Enrich {
 		this.enrichRemotePathMoveTo = enrichRemotePathMoveTo;
 		this.enrichIsSftp = enrichIsSftp;
 		this.enrichHostKey = enrichHostKey;
-		this.enrichLocalPath = enrichLocalPath;
+		this.enrichLocalPathInitial = enrichLocalPathInitial;
+		this.enrichLocalPathOngoing = enrichLocalPathOngoing;
 		this.enrichUnpack = enrichUnpack;
 		this.enrichMerge = enrichMerge;
 		this.enrichMergeTag = enrichMergeTag;
@@ -57,6 +65,7 @@ public class Enrich {
 		this.enrichMergeParentTag = enrichMergeParentTag;
 		this.enrichProperties = enrichProperties;
 		this.enrichSolr = enrichSolr;
+		this.reimport = reimport;
 		this.print = print;
 		this.optimize = optimize;
 
@@ -66,14 +75,16 @@ public class Enrich {
 	
 	private void enrich() {
 		String timeStamp = String.valueOf(new Date().getTime());
-		String localPath = AkImporterHelper.stripFileSeperatorFromPath(this.enrichLocalPath);
+		String localPath = AkImporterHelper.stripFileSeperatorFromPath(this.enrichLocalPathOngoing);
 		String localPathOriginal = localPath;
 		String localPathExtracted = localPath;
 		String localPathMerged = localPath;
-		String pathToEnrichFile = localPath;
+		String pathToEnrichFile = this.enrichLocalPathInitial;
+		String directoryOfTranslationFiles = new File(this.enrichProperties).getParent();
+		HttpSolrServer enrichSolrServer = (this.enrichSolr != null && !this.enrichSolr.isEmpty()) ? new HttpSolrServer(this.enrichSolr) : null;
 		
 		// Download data from given FTP server
-		if (this.enrichDownload) {
+		if (this.enrichDownload && !this.reimport) {
 			localPathOriginal = localPath + File.separator + "original" + File.separator + timeStamp;
 			AkImporterHelper.mkDirIfNotExists(localPathOriginal);
 			int enrichFtpPortInt = Integer.valueOf(this.enrichFtpPort);
@@ -106,7 +117,7 @@ public class Enrich {
 		}
 
 		// Unpack .tar.gz files
-		if (this.enrichUnpack) {
+		if (this.enrichUnpack && !this.reimport) {
 			localPathExtracted = localPath + File.separator + "extracted" + File.separator + timeStamp;
 			
 			// Check if there is at least one .tar.gz file to unpack
@@ -129,7 +140,7 @@ public class Enrich {
 		}
 		
 		// Merge multiple xml files into one file
-		if (this.enrichMerge) {
+		if (this.enrichMerge && !this.reimport) {
 			// Check if there is at least one XML file to merge
 			File mergeSourceDir = new File(localPathExtracted);
 			File[] filesInMergeSourceDir = (mergeSourceDir.exists()) ? mergeSourceDir.listFiles(new FilenameFilter() {
@@ -152,15 +163,37 @@ public class Enrich {
 			}
 		}
 		
-		// Start enrichment, but only if the enrich file exists and is an XML file
-		File enrichFile = new File(pathToEnrichFile);
-		boolean enrichFileIsXml = (enrichFile.exists() && enrichFile.isFile() && enrichFile.getName().toLowerCase().endsWith(".xml"));
-		if (enrichFileIsXml) {
-			AkImporterHelper.print(print, "\nEnriching data from \"" + this.enrichName + "\" in file " + pathToEnrichFile + " to Solr server " + this.enrichSolr + " ... ");
-			String directoryOfTranslationFiles = new File(this.enrichProperties).getParent();
-			HttpSolrServer enrichSolrServer = (this.enrichSolr != null && !this.enrichSolr.isEmpty()) ? new HttpSolrServer(this.enrichSolr) : null;
+		// Check if we reimport existing enrichment files or not
+		if (!this.reimport) {
+			// Start default enrichment (= no reimport), but only if the enrich file exists and is an XML file
+			File enrichFile = new File(pathToEnrichFile);
+			boolean enrichFileIsXml = (enrichFile.exists() && enrichFile.isFile() && enrichFile.getName().toLowerCase().endsWith(".xml"));
+			if (enrichFileIsXml) {
+				AkImporterHelper.print(print, "\nEnriching data from \"" + this.enrichName + "\" in file " + pathToEnrichFile + " to Solr server " + this.enrichSolr + " ... ");
+				new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, false);
+				AkImporterHelper.print(print, "Done");
+			}
+		} else {
+			// Reimport initial enrichment file based on the enrich.???.localPath.initial property in AkImporter.properties
+			AkImporterHelper.print(this.print, "\nReimport enrichment from initial file\n");
 			new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, false);
 			AkImporterHelper.print(print, "Done");
+			
+			// Reimport all existing enrichment files based on the enrich.???.localPath.ongoing property in AkImporter.properties
+			// Get a sorted list (oldest to newest) from all ongoing data deliveries:
+			File fPathToEnrichDir = new File(AkImporterHelper.stripFileSeperatorFromPath(localPath));
+			List<File> fileList = (List<File>)FileUtils.listFiles(fPathToEnrichDir, new String[] {"xml"}, true); // Get all xml-files recursively
+			Collections.sort(fileList); // Sort oldest to newest
+			for (File file : fileList) {
+				AkImporterHelper.print(this.print, "\nReimport enrichment from ongoing file " + (fileList.indexOf(file)+1) + " of " + fileList.size() + "\n");
+				String originalTimestamp = file.getName().replace(".xml", "");
+				String originalEnrichmentDate = DateFormatUtils.format(Long.valueOf(originalTimestamp), "dd.MM.yyyy HH:mm:ss");
+				AkImporterHelper.print(this.print, "Original enrichment time: " + originalEnrichmentDate + "\n");
+				
+				// Enrich metadata to Solr
+				new Index(file.getAbsolutePath(), enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, false);
+			}
+			
 		}
 	}
 

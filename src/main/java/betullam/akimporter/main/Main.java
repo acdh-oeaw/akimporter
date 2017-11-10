@@ -241,7 +241,9 @@ public class Main {
 			String enrichRemotePathMoveTo = (enrichDownload && importerProperties.getProperty("enrich." + enrichName + ".remotePathMoveTo") != null && !importerProperties.getProperty("enrich." + enrichName + ".remotePathMoveTo").trim().equals("")) ? importerProperties.getProperty("enrich." + enrichName + ".remotePathMoveTo") : null;
 			boolean enrichIsSftp = (importerProperties.getProperty("enrich." + enrichName + ".isSftp") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".isSftp")) : false;
 			String enrichHostKey = importerProperties.getProperty("enrich." + enrichName + ".hostKey");
-			String enrichLocalPath = importerProperties.getProperty("enrich." + enrichName + ".localPath");
+			//String enrichLocalPath = importerProperties.getProperty("enrich." + enrichName + ".localPath");
+			String enrichLocalPathInitial = importerProperties.getProperty("enrich." + enrichName + ".localPath.initial");
+			String enrichLocalPathOngoing = importerProperties.getProperty("enrich." + enrichName + ".localPath.ongoing");
 			boolean enrichUnpack = (importerProperties.getProperty("enrich." + enrichName + ".unpack") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".unpack")) : false;
 			boolean enrichMerge = (importerProperties.getProperty("enrich." + enrichName + ".merge") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".merge")) : false;
 			String enrichMergeTag = importerProperties.getProperty("enrich." + enrichName + ".mergeTag");
@@ -255,7 +257,7 @@ public class Main {
 			if (cmd.hasOption("ak_index")) {
 				akiName = cmd.getOptionValue("ak_index");
 			}
-			
+
 			// Get "Save Loans" properteis. We need to get them here because we need the "cmd" variable for it.
 			String saveLoansArg = null;
 			if (cmd.hasOption("save_loans")) {
@@ -667,11 +669,18 @@ public class Main {
 				postProcess();
 				break;
 			}
-			
+
 			case "enrich": {
 				AkImporterHelper.print(print, "Start enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
-				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichRemotePathMoveTo, enrichIsSftp, enrichHostKey, enrichLocalPath, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, print, optimize);
+				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichRemotePathMoveTo, enrichIsSftp, enrichHostKey, enrichLocalPathInitial, enrichLocalPathOngoing, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, false, print, optimize);
 				AkImporterHelper.print(print, "\nDone enrichment.");
+				break;
+			}
+			
+			case "enrich_reimport": {
+				AkImporterHelper.print(print, "Start reimporting enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
+				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichRemotePathMoveTo, enrichIsSftp, enrichHostKey, enrichLocalPathInitial, enrichLocalPathOngoing, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, true, print, optimize);
+				AkImporterHelper.print(print, "\nDone reimporting enrichment.");
 				break;
 			}
 
@@ -685,7 +694,7 @@ public class Main {
 				new Import(true, iSolr, iDefaultMabProperties, iCustomMabProperties);
 				break;
 			}
-			
+
 			case "ak_index": {	
 				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
 				boolean akiValidateSkip = (importerProperties.getProperty("akindex.setting.validate.skip") != null && !importerProperties.getProperty("akindex.setting.validate.skip").isEmpty()) ? Boolean.valueOf(importerProperties.getProperty("akindex.setting.validate.skip")) : false;
@@ -694,12 +703,12 @@ public class Main {
 				String akiElements = importerProperties.getProperty("akindex." + akiName + ".elements");
 				String akiElementsLevel = importerProperties.getProperty("akindex." + akiName + ".elements.level");
 				String akiIdXpath = importerProperties.getProperty("akindex." + akiName + ".xpath.id");
-				
+
 				new AkIndex(akiSolr, akiPath, akiElements, akiElementsLevel, akiIdXpath, akiValidateSkip, print, optimize);
 				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
 				break;
 			}
-			
+
 			case "ak_index_allfields": {
 				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
 				String akiAllFieldsPath = importerProperties.getProperty("akindex.setting.path.allfields");
@@ -707,12 +716,12 @@ public class Main {
 				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
 				break;
 			}
-			
+
 			case "save_loans": {
 				new SaveLoans(saveLoansArg, print);
 				break;
 			}
-			
+
 			default: {
 				HelpFormatter helpFormatter = new HelpFormatter();
 				helpFormatter.printHelp("AkImporter", "", options, "", true);
@@ -1586,7 +1595,7 @@ public class Main {
 				.longOpt("index_sampledata")
 				.desc("Index sample data from AK Bibliothek Wien.")
 				.build();
-		
+
 		// enrich (enrich Solr data)
 		Option oEnrich = Option
 				.builder()
@@ -1598,6 +1607,18 @@ public class Main {
 				.desc("Enrich data in the index with other data. For section name, see AkImporter.properties, e. g.: enrich.SECTION_NAME.properties")
 				.build();
 
+		// enrich_reimport (reimport enrichment Solr data)
+		Option oEnrichReimport = Option
+				.builder()
+				.required(false)
+				.longOpt("enrich_reimport")
+				.hasArg(true)
+				.argName("section name")
+				.numberOfArgs(1)
+				.desc("Reimport all enrichment data (initial and ongoing) to the index with other data. For section name, see AkImporter.properties, e. g.: enrich.SECTION_NAME.properties")
+				.build();
+
+
 		// ak_index (for indexing to the AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
 		Option oAkIndex = Option
 				.builder()
@@ -1608,7 +1629,7 @@ public class Main {
 				.numberOfArgs(1)
 				.desc("Indexing fields for AKindex (a.k.a. browse index). For section name, see AkImporter.properties, e. g.: akindex.SECTION_NAME.elements")
 				.build();
-		
+
 		// ak_index_allfields (generating the "all fields" file for AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
 		Option oAkIndexAllFields = Option
 				.builder()
@@ -1616,7 +1637,7 @@ public class Main {
 				.longOpt("ak_index_allfields")
 				.desc("Generate the \"all fields\" php file for AKindex (a.k.a. browse index)")
 				.build();
-		
+
 		// ak_index (for indexing to the AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
 		Option oSaveLoans = Option
 				.builder()
@@ -1647,6 +1668,7 @@ public class Main {
 		optionGroup.addOption(oHelp);
 		optionGroup.addOption(oIndexSampleData);
 		optionGroup.addOption(oEnrich);
+		optionGroup.addOption(oEnrichReimport);
 		optionGroup.addOption(oAkIndex);
 		optionGroup.addOption(oAkIndexAllFields);
 		optionGroup.addOption(oSaveLoans);
