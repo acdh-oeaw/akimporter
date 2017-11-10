@@ -231,6 +231,8 @@ public class Main {
 			String enrichName = null;
 			if (cmd.hasOption("enrich")) {
 				enrichName = cmd.getOptionValue("enrich");
+			} else if (cmd.hasOption("enrich_reimport")) {
+				enrichName = cmd.getOptionValue("enrich_reimport");
 			}
 			boolean enrichDownload = (importerProperties.getProperty("enrich." + enrichName + ".download") != null) ? Boolean.valueOf(importerProperties.getProperty("enrich." + enrichName + ".download")) : false;
 			String enrichFtpHost = (enrichDownload) ? importerProperties.getProperty("enrich." + enrichName + ".ftpHost") : null;
