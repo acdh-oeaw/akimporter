@@ -101,7 +101,7 @@ public class ReImport {
 			if (allFilesValid) {
 				AkImporterHelper.print(this.print, "\nValidation of all data was successful.\n");
 
-				// If there are errors in at lease one file, stop the import process:
+				// If there are errors in at least one file, stop the import process:
 			} else {
 				System.err.println("\nError while validating. Import process was cancelled!\n");
 				return;
