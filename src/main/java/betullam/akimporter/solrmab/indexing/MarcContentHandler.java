@@ -377,42 +377,50 @@ public class MarcContentHandler implements ContentHandler {
 			Collection<SolrInputDocument> docsForAtomicUpdates = new ArrayList<SolrInputDocument>();
 			
 			for (SolrRecord solrRecord : solrRecordSet) {
-				//System.out.println(solrRecord);
-				String docId = solrRecord.getRecordID();
-				
-				// Prepare record for atomic updates:
-				SolrInputDocument enrichSolrDoc = null;
-				enrichSolrDoc = new SolrInputDocument();
-				enrichSolrDoc.setField("id", docId);
-				
-				for (SolrField solrField : solrRecord.getSolrFields()) {
+	
+				// Check if there is more than only one field. If there is only one field, it is only the ID field. If that
+				// is the case, the record would get updated with null values and therefore would be nearly empty and not
+				// searchable in the index anymore.
+				if (solrRecord.getSolrFields().size() > 1) {
 					
-					String atomicUpdateMode = null;
-					if (solrField.isEnrichSet()) {
-						atomicUpdateMode = "set";
-					} else if (solrField.isEnrichAdd()) {
-						atomicUpdateMode = "add";
+					// Get the document ID
+					String docId = solrRecord.getRecordID();
+					
+					// Prepare record for atomic updates:
+					SolrInputDocument enrichSolrDoc = null;
+					enrichSolrDoc = new SolrInputDocument();
+					enrichSolrDoc.setField("id", docId);
+					
+					for (SolrField solrField : solrRecord.getSolrFields()) {
+						
+						String atomicUpdateMode = null;
+						if (solrField.isEnrichSet()) {
+							atomicUpdateMode = "set";
+						} else if (solrField.isEnrichAdd()) {
+							atomicUpdateMode = "add";
+						}
+						
+						String fieldName = solrField.getFieldname();
+						
+						Object fieldValue = null;
+						if (solrField.isMultivalued()) {
+							fieldValue = solrField.getFieldvalues();
+						} else {
+							fieldValue = solrField.getFieldvalues().get(0);
+						}
+						
+						// Add values to record with atomic update:
+						Map<String, Object> mapRecordField = new HashMap<String, Object>();
+						mapRecordField.put(atomicUpdateMode, fieldValue);
+						if (solrField.isEnrichSet()) {
+							enrichSolrDoc.setField(fieldName, mapRecordField);
+						} else if (solrField.isEnrichAdd()) {
+							enrichSolrDoc.addField(fieldName, mapRecordField);
+						}
 					}
 					
-					String fieldName = solrField.getFieldname();
-					
-					Object fieldValue = null;
-					if (solrField.isMultivalued()) {
-						fieldValue = solrField.getFieldvalues();
-					} else {
-						fieldValue = solrField.getFieldvalues().get(0);
-					}
-
-					// Add values to record with atomic update:
-					Map<String, Object> mapRecordField = new HashMap<String, Object>();
-					mapRecordField.put(atomicUpdateMode, fieldValue);
-					if (solrField.isEnrichSet()) {
-						enrichSolrDoc.setField(fieldName, mapRecordField);
-					} else if (solrField.isEnrichAdd()) {
-						enrichSolrDoc.addField(fieldName, mapRecordField);
-					}
+					docsForAtomicUpdates.add(enrichSolrDoc);
 				}
-				docsForAtomicUpdates.add(enrichSolrDoc);
 			}
 			
 			if (!docsForAtomicUpdates.isEmpty()) {
