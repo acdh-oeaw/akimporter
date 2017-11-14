@@ -42,6 +42,10 @@ public class Consolidate {
 	private String pathToInitialDataset = null;
 	private String pathToUpdateDir = null;
 	private String pathToConsolidatedFile = null;
+	private String splitNodeNameToExtract = null;
+	private int splitNodeLevel = 0;
+	private String splitNodeNameForFileName = null;
+	private Map<String, String> splitNodeAttrForFileName = new HashMap<String, String>();
 	private boolean print = false;
 
 	/**
@@ -52,10 +56,16 @@ public class Consolidate {
 	 * @param pathToConsolidatedFile	String: Path to where the new consolidated file should be saved
 	 * @param print						boolean indicating if status messages should be print
 	 */
-	public Consolidate(String pathToInitialDataset, String pathToUpdateDir, String pathToConsolidatedFile, boolean print) {
+	public Consolidate(String pathToInitialDataset, String pathToUpdateDir, String pathToConsolidatedFile, String splitNodeNameToExtract, int splitNodeLevel, String splitNodeNameForFileName, Map<String, String> splitNodeAttrForFileName, boolean print) {
 		this.pathToInitialDataset = pathToInitialDataset;
 		this.pathToUpdateDir = pathToUpdateDir;
 		this.pathToConsolidatedFile = pathToConsolidatedFile;
+		
+		this.splitNodeNameToExtract = splitNodeNameToExtract;
+		this.splitNodeLevel = splitNodeLevel;
+		this.splitNodeNameForFileName = splitNodeNameForFileName;
+		this.splitNodeAttrForFileName = splitNodeAttrForFileName;
+		
 		this.print = print;
 		this.start();
 	}
@@ -85,10 +95,9 @@ public class Consolidate {
 			AkImporterHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
 			Map<String, String> condAttrs = new HashMap<String, String>();
 			condAttrs.put("tag", "SYS");
-			xmls.split(fileForSplitting.getAbsolutePath(), "record", 0, "controlfield", condAttrs);
+			xmls.split(fileForSplitting.getAbsolutePath(), this.splitNodeNameToExtract, this.splitNodeLevel, this.splitNodeNameForFileName, this.splitNodeAttrForFileName);
 		}
 		
-
 		// Merge XML:
 		System.out.println("\nStart merging splitted files into a new consolidated file. This could take a while ...");
 		XmlMerger xmlm = new XmlMerger(); // Start merging

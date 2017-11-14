@@ -38,6 +38,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -213,6 +214,20 @@ public class Main {
 			String deleteBeforeImport = importerProperties.getProperty("oai." + oaiName + ".deleteBeforeImport");
 			boolean deleteOldLocalFiles = (importerProperties.getProperty("oai." + oaiName + ".deleteOldLocal") != null) ? Boolean.valueOf(importerProperties.getProperty("oai." + oaiName + ".deleteOldLocal")) : false;
 
+			// Consolidation of files - options:
+			String nodeNameToExtract = null;
+			int nodeLevel = 0;
+			String nodeNameForFileName = null;
+			Map<String, String> nodeAttrForFileName = new HashMap<String, String>();
+			if (cmd.hasOption("c")) {
+				String[] optionValues = cmd.getOptionValues("c");
+				nodeNameToExtract = optionValues[0];
+				nodeLevel = Integer.valueOf(optionValues[1]);
+				nodeNameForFileName = optionValues[2];
+				String nodeAttrForFileNameStr = optionValues[3];
+				String[] nodeAttrForFileNameArr = nodeAttrForFileNameStr.split("=");
+				nodeAttrForFileName.put(nodeAttrForFileNameArr[0], nodeAttrForFileNameArr[1]);
+			}
 
 			// Get XML import properties. We need to get them here because we need the "cmd" variable for it.
 			String xmlName = null;
@@ -595,12 +610,18 @@ public class Main {
 
 			case "c": {
 				String consolidatedFile = new File(iPath).getParent() + File.separator + "consolidated.xml";
+
 				new Consolidate(
 						iPath,
 						uLocalPath,
 						consolidatedFile,
+						nodeNameToExtract,
+						nodeLevel,
+						nodeNameForFileName,
+						nodeAttrForFileName,
 						true
 						);
+				 
 				break;
 			}
 
@@ -678,7 +699,7 @@ public class Main {
 				AkImporterHelper.print(print, "\nDone enrichment.");
 				break;
 			}
-			
+
 			case "enrich_reimport": {
 				AkImporterHelper.print(print, "Start reimporting enrichment with data from \"" + enrichName + "\" to data in Solr index " + enrichSolr + " ...");
 				new Enrich(enrichName, enrichDownload, enrichFtpHost, enrichFtpPort, enrichFtpUser, enrichFtpPass, enrichRemotePath, enrichRemotePathMoveTo, enrichIsSftp, enrichHostKey, enrichLocalPathInitial, enrichLocalPathOngoing, enrichUnpack, enrichMerge, enrichMergeTag, enrichMergeLevel, enrichMergeParentTag, enrichProperties, enrichSolr, true, print, optimize);
@@ -1503,8 +1524,9 @@ public class Main {
 				.builder("c")
 				.required(true)
 				.longOpt("consolidate")
-				.desc("Consolidate all data (initial dataset and all ongoing updates) and get one new "
-						+ "file which is up to date")
+				.hasArg(true)
+				.numberOfArgs(4)
+				.desc("Consolidate all data (initial dataset and all ongoing updates) and get one new file which is up to date")
 				.build();
 
 		// h (help)
