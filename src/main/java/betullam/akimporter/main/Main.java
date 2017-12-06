@@ -116,6 +116,7 @@ public class Main {
 	static String uFtpHost = importerProperties.getProperty("update.ftpHost");
 	static String uFtpPortStr = importerProperties.getProperty("update.ftpPort");
 	static int uFtpPort = (uFtpPortStr != null && !uFtpPortStr.isEmpty() && uFtpPortStr.matches("^\\d+$")) ? Integer.valueOf(importerProperties.getProperty("update.ftpPort")) : 21;
+	static String uHostKey = importerProperties.getProperty("update.hostKey");
 	static String uFtpUser = importerProperties.getProperty("update.ftpUser");
 	static String uFtpPass = importerProperties.getProperty("update.ftpPass");
 	static String uRemotePath = importerProperties.getProperty("update.remotePath");
@@ -459,7 +460,7 @@ public class Main {
 			case "u": {
 
 				// Check if update properties are correct
-				if(checkUpdateProperties(true)) {
+				if(checkUpdateProperties(false)) {
 					if (test) {
 						// If test option is specified, just tell the user if the properties are OK, but do not start the process
 						System.out.println("Properties are OK");
@@ -473,6 +474,7 @@ public class Main {
 								uLocalPath,
 								uFtpHost,
 								uFtpPort,
+								uHostKey,
 								uFtpUser,
 								uFtpPass,
 								uSolr,
@@ -1177,9 +1179,9 @@ public class Main {
 			} catch (UnknownHostException e) {
 				ftpErrorMsg = "FTP host problem. Check if value \"update.ftpHost\" in \"AkImporter.properties\" is correct.";
 			} catch (MalformedServerReplyException e) {
-				ftpErrorMsg = "FTP problem. Check if value \"update.ftpPort\" in \"AkImporter.properties\" is correct.";
+				ftpErrorMsg = "FTP problem. Check if connection values in \"AkImporter.properties\" are correct. Error Message from FTP:\n" + e.getMessage();
 			} catch (ConnectException e) {
-				ftpErrorMsg = "FTP problem. Check if value \"update.ftpPort\" in \"AkImporter.properties\" is correct.";
+				ftpErrorMsg = "FTP problem. Check if connection values in \"AkImporter.properties\" are correct. Error Message from FTP:\n" + e.getMessage();
 			} catch (SocketException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
