@@ -81,7 +81,7 @@ public class Updater {
 		if (port == 22) {
 			isDownloadSuccessful = new FtpDownload().downloadFilesSftp(remotePath, remotePathMoveTo, localPathOriginal, host, port, user, password, hostKey, timeStamp, print);
 		} else {
-			isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, remotePathMoveTo, localPathOriginal, host, port, user, password, timeStamp, print);
+			isDownloadSuccessful = ftpDownload.downloadFiles(remotePath, remotePathMoveTo, localPathOriginal, host, port, user, password, timeStamp, false, print);
 		}
 		
 		if (isDownloadSuccessful) {

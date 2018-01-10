@@ -52,10 +52,11 @@ public class FtpDownload {
 	 * @param port				FTP port.
 	 * @param user				FTP username.
 	 * @param password			FTP password.
+	 * @param compareFiles		Compare files between local and remote path to avoid multiple download and indexing of data.
 	 * @param showMessages		True if status messages should be printed to console.
 	 * @return					True if download process was successful.
 	 */
-	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String timeStamp, boolean showMessages) {
+	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String timeStamp, boolean compareFiles, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
 		AkImporterHelper.print(showMessages, "\nDownloading data from FTP " + host + " to "+localPathTarGz+" ... ");
@@ -79,7 +80,6 @@ public class FtpDownload {
 					OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
 					ftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
 					success = ftpClient.retrieveFile(remotePath + File.separator + fileName, outputStream);
-
 					if (success) {
 						ftpOk = true;
 					} else {
@@ -210,5 +210,7 @@ public class FtpDownload {
 		AkImporterHelper.print(showMessages, "Done");
 		return sftpOk;
 	}
+	
+	private
 
 }

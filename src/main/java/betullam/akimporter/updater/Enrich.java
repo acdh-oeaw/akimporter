@@ -91,7 +91,7 @@ public class Enrich {
 			if (this.enrichIsSftp) {
 				new FtpDownload().downloadFilesSftp(this.enrichRemotePath, this.enrichRemotePathMoveTo, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, this.enrichHostKey, timeStamp, this.print);
 			} else {
-				new FtpDownload().downloadFiles(this.enrichRemotePath, this.enrichRemotePathMoveTo, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, timeStamp, this.print);
+				new FtpDownload().downloadFiles(this.enrichRemotePath, this.enrichRemotePathMoveTo, localPathOriginal, this.enrichFtpHost, enrichFtpPortInt, this.enrichFtpUser, this.enrichFtpPass, timeStamp, false, this.print);
 			}
 			
 			// Check if at least one XML or .tar.gz file was downloaded

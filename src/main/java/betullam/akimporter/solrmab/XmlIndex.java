@@ -21,9 +21,11 @@ import org.xml.sax.helpers.XMLReaderFactory;
 import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.solrmab.indexing.XmlContentHandler;
+import main.java.betullam.akimporter.updater.FtpDownload;
 
 public class XmlIndex {
 
+	private String xmlName;
 	private String path;
 	private String propertiesFile;
 	private String solrBibl;
@@ -31,11 +33,20 @@ public class XmlIndex {
 	private List<String> include;
 	private List<String> exclude;
 	private String deleteBeforeImport;
+	private boolean ftpDownload;
+	private String xmlFtpHost;
+	private int xmlFtpPort;
+	private String xmlFtpUser;
+	private String xmlFtpPass;
+	private String xmlFtpRemotePath;
+	private String xmlFtpLocalPath;
+	private boolean compareFiles;
 	private boolean print;
 	private boolean optimize;
 	private String indexTimestamp;
 
 	public XmlIndex(
+			String xmlName,
 			String path,
 			String propertiesFile,
 			String solrBibl,
@@ -43,9 +54,18 @@ public class XmlIndex {
 			List<String> include,
 			List<String> exclude,
 			String deleteBeforeImport,
+			boolean ftpDownload,
+			String xmlFtpHost,
+			int xmlFtpPort,
+			String xmlFtpUser,
+			String xmlFtpPass,
+			String xmlFtpRemotePath,
+			String xmlFtpLocalPath,
+			boolean compareFiles,
 			boolean print,
 			boolean optimize) {
 
+		this.xmlName = xmlName;
 		this.path = path;
 		this.propertiesFile = propertiesFile;
 		this.solrBibl = solrBibl;
@@ -53,6 +73,14 @@ public class XmlIndex {
 		this.include = include;
 		this.exclude = exclude;
 		this.deleteBeforeImport = deleteBeforeImport;
+		this.ftpDownload = ftpDownload;
+		this.xmlFtpHost = xmlFtpHost;
+		this.xmlFtpPort = xmlFtpPort;
+		this.xmlFtpUser = xmlFtpUser;
+		this.xmlFtpPass = xmlFtpPass;
+		this.xmlFtpRemotePath = xmlFtpRemotePath;
+		this.xmlFtpLocalPath = xmlFtpLocalPath;
+		this.compareFiles = compareFiles;
 		this.print = print;
 		this.optimize = optimize;
 		this.indexTimestamp = String.valueOf(new Date().getTime());
@@ -67,6 +95,16 @@ public class XmlIndex {
 		AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
 		AkImporterHelper.print(print, "\nStarting XML importing: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 
+		if (this.ftpDownload) {
+			if (this.xmlFtpHost != null && this.xmlFtpUser != null && this.xmlFtpPass != null && this.xmlFtpLocalPath != null) {
+				FtpDownload ftpDownload = new FtpDownload();
+				ftpDownload.downloadFiles(this.xmlFtpRemotePath, null, this.xmlFtpLocalPath, this.xmlFtpHost, this.xmlFtpPort, this.xmlFtpUser, this.xmlFtpPass, this.indexTimestamp, this.compareFiles, true);
+			} else {
+				System.err.println("Error: Check if settings \"xml."+this.xmlName+".ftpHost\", \"xml."+this.xmlName+".ftpUser\", \"xml."+this.xmlName+".ftpPass\" and \"xml."+this.xmlName+".ftpLocalPath\" are set in AkImporter.properties.");
+				System.exit(1);
+			}
+		}
+		
 		// Creating Solr server
 		HttpSolrServer sServerBiblio =  new HttpSolrServer(this.solrBibl);
 

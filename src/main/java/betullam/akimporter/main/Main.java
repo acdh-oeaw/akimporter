@@ -242,6 +242,14 @@ public class Main {
 			List<String> xmlInclude = (importerProperties.getProperty("xml." + xmlName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("xml." + xmlName + ".include").split("\\s*,\\s*")) : null;
 			List<String> xmlExclude = (importerProperties.getProperty("xml." + xmlName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("xml." + xmlName + ".exclude").split("\\s*,\\s*")) : null;
 			String xmlDeleteBeforeImport = importerProperties.getProperty("xml." + xmlName + ".deleteBeforeImport");
+			boolean ftpDownload = (importerProperties.getProperty("xml." + xmlName + ".download") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".download")) : false;
+			String xmlFtpHost = (importerProperties.getProperty("xml." + xmlName + ".ftpHost") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpHost") : null;
+			int xmlFtpPort = (importerProperties.getProperty("xml." + xmlName + ".ftpPort") != null) ? Integer.valueOf(importerProperties.getProperty("xml." + xmlName + ".ftpPort")) : 21;
+			String xmlFtpUser = (importerProperties.getProperty("xml." + xmlName + ".ftpUser") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpUser") : null;
+			String xmlFtpPass = (importerProperties.getProperty("xml." + xmlName + ".ftpPass") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpPass") : null;
+			String xmlFtpRemotePath = (importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath") : "";
+			String xmlFtpLocalPath = (importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath") : null;
+			boolean compareFiles = (importerProperties.getProperty("xml." + xmlName + ".compareFiles") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".compareFiles")) : false;
 
 			// Get enrich properties. We need to get them here because we need the "cmd" variable for it.
 			String enrichName = null;
@@ -689,7 +697,7 @@ public class Main {
 			case "X": {
 
 				AkImporterHelper.print(print, "Starting XML import for " + xmlName + " ...");
-				new XmlIndex(xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, print, optimize);
+				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlFtpLocalPath, compareFiles, print, optimize);
 				AkImporterHelper.print(print, "Done importing XML for " + xmlName + ".");
 				postProcess();
 				break;
