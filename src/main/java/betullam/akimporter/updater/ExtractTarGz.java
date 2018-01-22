@@ -33,8 +33,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
@@ -52,7 +53,7 @@ public class ExtractTarGz {
 	/**
 	 * Extracting compressed file (generic)
 	 * 
-	 * @param pathToCompressed	Full path to a directory containing at least one compressed file that should be extracted.
+	 * @param pathToCompressed	Full path to a directory (containing at least one compressed file) or single compressed file that should be extracted.
 	 * @param timeStamp			Timestamp when the update process was started (used for renaming files).
 	 * @param pathToExtracted	Path to a directory where the extracted content should be stored.
 	 */
@@ -60,48 +61,72 @@ public class ExtractTarGz {
 		File pathOriginal = new File(pathToCompressed);
 		String fileToExtract = null;
 		File decompressedFile = null;
+		
+		// Check if we have a single compressed file or a whole directory with compressed files
+		File[] filesOriginal = null;
+		if (pathOriginal.isFile()) {
+			List<File> filesOriginalList = new ArrayList<File>();
+			filesOriginalList.add(pathOriginal);
+			filesOriginal = filesOriginalList.toArray(new File[0]);
+		} else {
+			filesOriginal = pathOriginal.listFiles();
+		}
+		
 
 		try {
-			for (File fileOriginal : pathOriginal.listFiles()) {
+			for (File fileOriginal : filesOriginal) {
 				if (fileOriginal.isFile()) {
 
 					// Decompress compressed file if applicable
+					FileInputStream compressedFis = null;
+					BufferedInputStream compressedBin = null;
+					OutputStream decompressedOs = null;
+					CompressorInputStream compressorIs = null;
 					try {
-						FileInputStream compressedFis = null;
-						BufferedInputStream compressedBin = null;
+						
+						
 						compressedFis = new FileInputStream(fileOriginal);
 						compressedBin = new BufferedInputStream(compressedFis);
 						
 						fileToExtract = fileOriginal.getAbsolutePath() + "." + timeStamp + ".tar";
 						decompressedFile = new File(fileToExtract);
-						OutputStream decompressedOs = Files.newOutputStream(Paths.get(fileToExtract));
-						CompressorInputStream compressorIs = new CompressorStreamFactory().createCompressorInputStream(compressedBin);
+						decompressedOs = Files.newOutputStream(Paths.get(fileToExtract));
+						compressorIs = new CompressorStreamFactory().createCompressorInputStream(compressedBin);
 						
 						final byte[] compressorBuffer = new byte[1024];
 						int i = 0;
 						while (-1 != (i = compressorIs.read(compressorBuffer))) {
 							decompressedOs.write(compressorBuffer, 0, i);
 						}
-						
-						// Close streams
-						compressedFis.close();
-						compressedBin.close();
-						decompressedOs.close();
-						compressorIs.close();
 					} catch (CompressorException e) {
 						// No compression! Skip to archiver.
 						fileToExtract = fileOriginal.getAbsolutePath();
+					} finally {
+						// Close streams
+						if (compressedFis != null) {
+							compressedFis.close();
+						}
+						if (compressedBin != null) {
+							compressedBin.close();
+						}
+						if (decompressedOs != null) {
+							decompressedOs.close();
+						}
+						if (compressorIs != null) {
+							compressorIs.close();
+						}
 					}
 					
 					// De-archive the archive file
+					FileInputStream archivedFis = null;
+					BufferedInputStream archivedBin = null;
+					FileOutputStream extractedFos = null;
+					ArchiveInputStream archiverIs = null;
 					try {
-						FileInputStream archivedFis = null;
-						BufferedInputStream archivedBin = null;
 						ArchiveEntry archiveEntry = null;
-						FileOutputStream extractedFos = null;
 						archivedFis = new FileInputStream(fileToExtract);
 						archivedBin = new BufferedInputStream(archivedFis);				
-						ArchiveInputStream archiverIs = new ArchiveStreamFactory().createArchiveInputStream(archivedBin);
+						archiverIs = new ArchiveStreamFactory().createArchiveInputStream(archivedBin);
 						
 						// Process archive entry
 						final byte[] archiveBuffer = new byte[1024];
@@ -121,15 +146,24 @@ public class ExtractTarGz {
 							}
 							archiveEntry = archiverIs.getNextEntry();
 						}
-						
-						// Close streams
-						archivedFis.close();
-						archivedBin.close();
-						extractedFos.flush();
-						extractedFos.close();
-						archiverIs.close();
 					} catch (ArchiveException e) {
-						e.printStackTrace();
+						// No known archive file! Skip it.
+						decompressedFile = null;
+					} finally {
+						// Close streams
+						if (archivedFis != null) {
+							archivedFis.close();
+						}
+						if (archivedBin != null) {
+							archivedBin.close();
+						}
+						if (extractedFos != null) {
+							extractedFos.flush();
+							extractedFos.close();
+						}
+						if (archiverIs != null) {
+							archiverIs.close();
+						}
 					}
 					
 					// Delete decompressed file if it exists

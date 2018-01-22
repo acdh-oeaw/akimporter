@@ -115,7 +115,6 @@ public class XmlIndex {
 				FtpDownload ftpDownload = new FtpDownload();
 				ftpDownload.downloadFiles(this.xmlFtpRemotePath, null, localBasePath, this.xmlFtpHost, this.xmlFtpPort, this.xmlFtpUser, this.xmlFtpPass, this.indexTimestamp, this.compareFiles, true);
 				filesToUnpack = ftpDownload.getDownloadedFiles();
-				System.out.println("filesToUnpack: " + filesToUnpack);
 			} else {
 				System.err.println("Error: Check if settings \"xml."+this.xmlName+".path\", \"xml."+this.xmlName+".ftpHost\", \"xml."+this.xmlName+".ftpUser\" and \"xml."+this.xmlName+".ftpPass\" are set in AkImporter.properties.");
 				System.exit(1);
@@ -129,24 +128,41 @@ public class XmlIndex {
 				
 			}
 		}
-		
+				
 		if (this.xmlUnpack && filesToUnpack	!= null && !filesToUnpack.isEmpty()) {
 			AkImporterHelper.print(print, "\nStart extracting files ... ");
 			String originalBasePath = (this.ftpDownload) ? this.path + File.separator + "original" : this.path;
-			List<String> relativeFilePathsToUnpack = getLocalFiles(originalBasePath);
+			String extractedBasePath = this.path + File.separator + "extracted";
+			//List<String> relativeFilePathsToUnpack = getLocalFiles(originalBasePath);
+			//System.out.println("\nrelativeFilePathsToUnpack: " + relativeFilePathsToUnpack);
 			
+			for (String fileToUnpack : filesToUnpack) {
+				
+				// Get (sub)folder for extracted files and create it
+				String localPathExtracted = new File(fileToUnpack.replace(originalBasePath, extractedBasePath)).getParent();
+				AkImporterHelper.mkDirIfNotExists(localPathExtracted);
+				
+				// Extract file
+				ExtractTarGz extractor = new ExtractTarGz();
+				extractor.extractGeneric(fileToUnpack, this.indexTimestamp, localPathExtracted);
+				
+			}
+			
+			/*
 			for (String relativeFileToUnpack : relativeFilePathsToUnpack) {
 				String relativeFileToUnpackParent = new File(relativeFileToUnpack).getParent();
 				File fToUnpack = new File(originalBasePath + File.separator + relativeFileToUnpack);
 				if (fToUnpack.isFile()) {
-					String parentFolder = fToUnpack.getParent();
+					//String parentFolder = fToUnpack.getParent();
 					String directories = (relativeFileToUnpackParent != null && !relativeFileToUnpackParent.isEmpty()) ? File.separator + relativeFileToUnpackParent : "";
 					String localPathExtracted = this.path + File.separator + "extracted" + directories;
 					AkImporterHelper.mkDirIfNotExists(localPathExtracted);
 					ExtractTarGz extractor = new ExtractTarGz();
-					extractor.extractGeneric(parentFolder, this.indexTimestamp, localPathExtracted);
+					extractor.extractGeneric(fToUnpack.getAbsolutePath(), this.indexTimestamp, localPathExtracted);
 				}
 			}
+			*/
+			
 			AkImporterHelper.print(print, "Done");
 		}
 		
