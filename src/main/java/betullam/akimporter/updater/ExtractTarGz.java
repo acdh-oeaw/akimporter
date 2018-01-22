@@ -31,13 +31,120 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorInputStream;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 public class ExtractTarGz {
 
+	/**
+	 * Extracting compressed file (generic)
+	 * 
+	 * @param pathToCompressed	Full path to a directory containing at least one compressed file that should be extracted.
+	 * @param timeStamp			Timestamp when the update process was started (used for renaming files).
+	 * @param pathToExtracted	Path to a directory where the extracted content should be stored.
+	 */
+	public void extractGeneric(String pathToCompressed, String timeStamp, String pathToExtracted) {
+		File pathOriginal = new File(pathToCompressed);
+		String fileToExtract = null;
+		File decompressedFile = null;
+
+		try {
+			for (File fileOriginal : pathOriginal.listFiles()) {
+				if (fileOriginal.isFile()) {
+
+					// Decompress compressed file if applicable
+					try {
+						FileInputStream compressedFis = null;
+						BufferedInputStream compressedBin = null;
+						compressedFis = new FileInputStream(fileOriginal);
+						compressedBin = new BufferedInputStream(compressedFis);
+						
+						fileToExtract = fileOriginal.getAbsolutePath() + "." + timeStamp + ".tar";
+						decompressedFile = new File(fileToExtract);
+						OutputStream decompressedOs = Files.newOutputStream(Paths.get(fileToExtract));
+						CompressorInputStream compressorIs = new CompressorStreamFactory().createCompressorInputStream(compressedBin);
+						
+						final byte[] compressorBuffer = new byte[1024];
+						int i = 0;
+						while (-1 != (i = compressorIs.read(compressorBuffer))) {
+							decompressedOs.write(compressorBuffer, 0, i);
+						}
+						
+						// Close streams
+						compressedFis.close();
+						compressedBin.close();
+						decompressedOs.close();
+						compressorIs.close();
+					} catch (CompressorException e) {
+						// No compression! Skip to archiver.
+						fileToExtract = fileOriginal.getAbsolutePath();
+					}
+					
+					// De-archive the archive file
+					try {
+						FileInputStream archivedFis = null;
+						BufferedInputStream archivedBin = null;
+						ArchiveEntry archiveEntry = null;
+						FileOutputStream extractedFos = null;
+						archivedFis = new FileInputStream(fileToExtract);
+						archivedBin = new BufferedInputStream(archivedFis);				
+						ArchiveInputStream archiverIs = new ArchiveStreamFactory().createArchiveInputStream(archivedBin);
+						
+						// Process archive entry
+						final byte[] archiveBuffer = new byte[1024];
+						archiveEntry = archiverIs.getNextEntry();
+						while (archiveEntry != null) {
+							File destPath = new File(pathToExtracted + File.separator + archiveEntry.getName());
+							if (!archiveEntry.isDirectory()) {
+								extractedFos = new FileOutputStream(destPath); // Write archived file to output, e. g. to an XML file
+								int j = 0;
+								while (-1 != (j = archiverIs.read(archiveBuffer))) {
+									extractedFos.write(archiveBuffer, 0, j);
+								}
+								extractedFos.close();
+							}
+							else {
+								destPath.mkdir();
+							}
+							archiveEntry = archiverIs.getNextEntry();
+						}
+						
+						// Close streams
+						archivedFis.close();
+						archivedBin.close();
+						extractedFos.flush();
+						extractedFos.close();
+						archiverIs.close();
+					} catch (ArchiveException e) {
+						e.printStackTrace();
+					}
+					
+					// Delete decompressed file if it exists
+					if (decompressedFile != null && decompressedFile.exists()) {
+						decompressedFile.delete();
+					}
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
+	}
+	
 	/**
 	 * Extracting a tar.gz file
 	 * 

@@ -30,8 +30,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -42,12 +46,14 @@ import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.SFTPClient;
 
 public class FtpDownload {
+	
+	List<String> downloadedFiles = new ArrayList<String>();
 
 	/**
 	 * Downloads a files from an FTP-Server.
 	 * @param remotePath		Path to a directory in which the file for downloading are stored.
 	 * @param remotePathMoveTo	Path to which the downloaded files should be moved after downloading.
-	 * @param localPathTarGz	Local path where the downloaded files should be stored.
+	 * @param localPath	Local path where the downloaded files should be stored.
 	 * @param host				FTP host name.
 	 * @param port				FTP port.
 	 * @param user				FTP username.
@@ -56,10 +62,10 @@ public class FtpDownload {
 	 * @param showMessages		True if status messages should be printed to console.
 	 * @return					True if download process was successful.
 	 */
-	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPathTarGz, String host, int port, String user, String password, String timeStamp, boolean compareFiles, boolean showMessages) {
+	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPath, String host, int port, String user, String password, String timeStamp, boolean compareFiles, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
-		AkImporterHelper.print(showMessages, "\nDownloading data from FTP " + host + " to "+localPathTarGz+" ... ");
+		AkImporterHelper.print(showMessages, "\nDownloading data from FTP " + host + " to "+localPath+" ... ");
 		
 		try {
 
@@ -67,7 +73,55 @@ public class FtpDownload {
 			ftpClient.enterLocalPassiveMode();
 			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 			ftpOk &= ftpClient.login(user, password);
-
+			
+			List<String> filesToDownload = null;
+			if (compareFiles) {
+				filesToDownload = this.getFileTreeDiff(ftpClient, localPath, remotePath, host, port, user, password, showMessages);
+			} else {
+				filesToDownload = new ArrayList<String>();
+				FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
+				for (FTPFile ftpFile : ftpFiles) {
+					if (ftpFile.isFile()) {
+						filesToDownload.add(ftpFile.getName());
+					}
+				}
+			}
+			
+			int fileCounter = 0;
+			if (filesToDownload != null) {
+				for (String fileToDownload : filesToDownload) {
+					boolean success = false;
+					fileCounter++;
+					
+					// Get filename and (sub)directories from path.
+					Path path = Paths.get(fileToDownload);
+					String directories = (path.getParent() != null) ? File.separator + path.getParent().toString() : "";
+					AkImporterHelper.mkDirIfNotExists(localPath + directories); // Create directories if they don't exist
+					String fileName = path.getFileName().toString();
+					String localFileFullPath = localPath + directories + File.separator + fileName;
+					
+					// Set local file
+					File localFile = new File(localFileFullPath);
+					
+					OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
+					ftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
+					
+					success = ftpClient.retrieveFile(remotePath + File.separator + fileToDownload, outputStream);
+					if (success) {
+						this.downloadedFiles.add(localFileFullPath);
+						ftpOk = true;
+					} else {
+						ftpOk = false;
+						AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
+					}
+					outputStream.close();
+				}
+			}
+			
+			
+			
+			/*
+			// ORIGINAL BEFORE COMPARING LOCAL AND REMOTE FILES - BEGIN
 			FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
 			int fileCounter = 0;
 			
@@ -89,7 +143,10 @@ public class FtpDownload {
 					outputStream.close();
 				}
 			}
-
+			// ORIGINAL BEFORE COMPARING LOCAL AND REMOTE FILES - END
+			*/
+			
+			// Move files on remote path if applicable
 			if (fileCounter > 0 && remotePathMoveTo != null && !remotePathMoveTo.trim().equals("")) {
 				// Check if "move to" directory exists. If not, create it (including subdirectories).
 				boolean moveToDirectoryExists = false;
@@ -116,22 +173,27 @@ public class FtpDownload {
 
 				if (moveToDirectoryExists) {
 					ftpClient.changeWorkingDirectory("/");
-					for (FTPFile ftpFile : ftpFiles) {
-						if (ftpFile.isFile()) {
-							String from = AkImporterHelper.stripFileSeperatorFromPath(remotePath) + File.separator + ftpFile.getName();
-							String to = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + File.separator + ftpFile.getName();
 
-							boolean moveSuccess = ftpClient.rename(from, to);
-							if (!moveSuccess) {
-								System.err.println("Error moving from " + from + " to " + to);
-							}
+					for (String fileToDownload : filesToDownload) {
+						// Get filename from path
+						Path path = Paths.get(fileToDownload);
+						String directories = (path.getParent() != null) ? File.separator + path.getParent().toString() : "";
+						String fileName = path.getFileName().toString();
+						
+						// Move files including subdirectories
+						String from = AkImporterHelper.stripFileSeperatorFromPath(remotePath) + directories + File.separator + fileName;
+						String to = AkImporterHelper.stripFileSeperatorFromPath(remotePathMoveTo) + directories + File.separator + fileName;
+
+						boolean moveSuccess = ftpClient.rename(from, to);
+						if (!moveSuccess) {
+							System.err.println("Error moving from " + from + " to " + to);
 						}
 					}
 				}				
 			} else if (fileCounter == 0) {
 				ftpOk = true; // Everything is OK ... there was just nothing to download.
 			}
-
+			
 			AkImporterHelper.print(showMessages, "Done");
 			ftpClient.logout();
 			ftpClient.disconnect();
@@ -211,6 +273,91 @@ public class FtpDownload {
 		return sftpOk;
 	}
 	
-	private
+	
+	private List<String> getFileTreeDiff(FTPClient ftpClient, String localBasePath, String remoteBasePath, String host, int port, String user, String pass, boolean print) {
+		AkImporterHelper.print(print, "\nStart comparing file trees and getting the difference ... ");
+		
+		List<String> filesToDownload = null;
+		
+		// Get local file names
+		List<String> localFileNames = null;
+		localFileNames = getLocalFiles(localBasePath);
+		
+		// Get remote file names
+		List<String> remoteFileNames = null;
+		remoteFileNames = getRemoteFiles(ftpClient, remoteBasePath, "", new ArrayList<String>());
+		
+		// Compare the two lists (local and remote)
+		remoteFileNames.removeAll(localFileNames);
+		
+		// Check if there is a difference between the lists
+		if (!remoteFileNames.isEmpty()) {
+			filesToDownload = remoteFileNames;
+		}
+		
+		AkImporterHelper.print(print, "Done");
+		
+		return filesToDownload;
+	}
+	
+	
+	private List<String> getLocalFiles(String localBasePath) {
+		List<String> localFileNames = new ArrayList<String>();
+		
+		File localBaseFile = new File(localBasePath);
+		List<File> localFiles = new ArrayList<File>();
+		if (localBaseFile.isDirectory()) {
+			localFiles = (List<File>)FileUtils.listFiles(localBaseFile, null, true);
+		}
+		
+		for(File localFile : localFiles) {
+			String localRelativeFilePath = new File(localBasePath).toURI().relativize(localFile.toURI()).getPath();
+			localFileNames.add(localRelativeFilePath);
+		}
+		
+		return localFileNames;
+	}
+	
+	
+	private List<String> getRemoteFiles(FTPClient ftpClient, String remoteBasePath, String remoteRelativePath, List<String> remoteFileNames) {
+		FTPFile[] ftpFiles;
+		try {
+			
+			// Get files in current FTP folder
+			ftpFiles = ftpClient.listFiles(remoteBasePath + File.separator + remoteRelativePath);
+			
+			// Iterate over files
+			for (FTPFile ftpFile : ftpFiles) {
+				// Variable for file name
+				String relativeFtpPath = "";
+				
+				// Check if current FTP file is a directory or a real file
+				if (ftpFile.isDirectory()) {
+					// If it is a directory, get the name of it
+					String currentDirName = ftpFile.getName();
+					
+					// Create a new relative path that can be added to the base path and check
+					// the directory for files by calling this method again.
+					relativeFtpPath += (remoteRelativePath.isEmpty()) ? currentDirName : remoteRelativePath + File.separator + currentDirName;
+					getRemoteFiles(ftpClient, remoteBasePath, relativeFtpPath, remoteFileNames);
+				} else {
+					// If it is a file, get it's name and add it to a list
+					String fileName = ftpFile.getName();			
+					String remoteFileName = (remoteRelativePath.isEmpty()) ? fileName : remoteRelativePath + File.separator + fileName;
+					remoteFileNames.add(remoteFileName);
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return remoteFileNames;
+	}
 
+
+	public List<String> getDownloadedFiles() {
+		return this.downloadedFiles;
+	}
+	
+	
 }

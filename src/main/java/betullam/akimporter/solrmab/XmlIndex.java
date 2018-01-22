@@ -4,13 +4,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
@@ -18,9 +24,9 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-import ak.xmlhelper.XmlValidator;
 import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.solrmab.indexing.XmlContentHandler;
+import main.java.betullam.akimporter.updater.ExtractTarGz;
 import main.java.betullam.akimporter.updater.FtpDownload;
 
 public class XmlIndex {
@@ -39,8 +45,10 @@ public class XmlIndex {
 	private String xmlFtpUser;
 	private String xmlFtpPass;
 	private String xmlFtpRemotePath;
-	private String xmlFtpLocalPath;
+	//private String xmlFtpLocalPath;
 	private boolean compareFiles;
+	private boolean xmlUnpack;
+	private boolean xmlMerge;
 	private boolean print;
 	private boolean optimize;
 	private String indexTimestamp;
@@ -60,8 +68,10 @@ public class XmlIndex {
 			String xmlFtpUser,
 			String xmlFtpPass,
 			String xmlFtpRemotePath,
-			String xmlFtpLocalPath,
+			//String xmlFtpLocalPath,
 			boolean compareFiles,
+			boolean xmlUnpack,
+			boolean xmlMerge,
 			boolean print,
 			boolean optimize) {
 
@@ -79,8 +89,10 @@ public class XmlIndex {
 		this.xmlFtpUser = xmlFtpUser;
 		this.xmlFtpPass = xmlFtpPass;
 		this.xmlFtpRemotePath = xmlFtpRemotePath;
-		this.xmlFtpLocalPath = xmlFtpLocalPath;
+		//this.xmlFtpLocalPath = xmlFtpLocalPath;
 		this.compareFiles = compareFiles;
+		this.xmlUnpack = xmlUnpack;
+		this.xmlMerge = xmlMerge;
 		this.print = print;
 		this.optimize = optimize;
 		this.indexTimestamp = String.valueOf(new Date().getTime());
@@ -95,16 +107,51 @@ public class XmlIndex {
 		AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
 		AkImporterHelper.print(print, "\nStarting XML importing: " + new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date(Long.valueOf(this.indexTimestamp))));
 
+		List<String> filesToUnpack = null;
+		
 		if (this.ftpDownload) {
-			if (this.xmlFtpHost != null && this.xmlFtpUser != null && this.xmlFtpPass != null && this.xmlFtpLocalPath != null) {
+			if (this.xmlFtpHost != null && this.xmlFtpUser != null && this.xmlFtpPass != null && this.path != null) {
+				String localBasePath = this.path + File.separator + "original";
 				FtpDownload ftpDownload = new FtpDownload();
-				ftpDownload.downloadFiles(this.xmlFtpRemotePath, null, this.xmlFtpLocalPath, this.xmlFtpHost, this.xmlFtpPort, this.xmlFtpUser, this.xmlFtpPass, this.indexTimestamp, this.compareFiles, true);
+				ftpDownload.downloadFiles(this.xmlFtpRemotePath, null, localBasePath, this.xmlFtpHost, this.xmlFtpPort, this.xmlFtpUser, this.xmlFtpPass, this.indexTimestamp, this.compareFiles, true);
+				filesToUnpack = ftpDownload.getDownloadedFiles();
+				System.out.println("filesToUnpack: " + filesToUnpack);
 			} else {
-				System.err.println("Error: Check if settings \"xml."+this.xmlName+".ftpHost\", \"xml."+this.xmlName+".ftpUser\", \"xml."+this.xmlName+".ftpPass\" and \"xml."+this.xmlName+".ftpLocalPath\" are set in AkImporter.properties.");
+				System.err.println("Error: Check if settings \"xml."+this.xmlName+".path\", \"xml."+this.xmlName+".ftpHost\", \"xml."+this.xmlName+".ftpUser\" and \"xml."+this.xmlName+".ftpPass\" are set in AkImporter.properties.");
 				System.exit(1);
+			}
+		} else {
+			filesToUnpack = new ArrayList<String>();
+			for (File file : FileUtils.listFiles(new File(this.path), null, true)) {
+				if (file.isFile()) {
+					filesToUnpack.add(file.getAbsolutePath());
+				}
+				
 			}
 		}
 		
+		if (this.xmlUnpack && filesToUnpack	!= null && !filesToUnpack.isEmpty()) {
+			AkImporterHelper.print(print, "\nStart extracting files ... ");
+			String originalBasePath = (this.ftpDownload) ? this.path + File.separator + "original" : this.path;
+			List<String> relativeFilePathsToUnpack = getLocalFiles(originalBasePath);
+			
+			for (String relativeFileToUnpack : relativeFilePathsToUnpack) {
+				String relativeFileToUnpackParent = new File(relativeFileToUnpack).getParent();
+				File fToUnpack = new File(originalBasePath + File.separator + relativeFileToUnpack);
+				if (fToUnpack.isFile()) {
+					String parentFolder = fToUnpack.getParent();
+					String directories = (relativeFileToUnpackParent != null && !relativeFileToUnpackParent.isEmpty()) ? File.separator + relativeFileToUnpackParent : "";
+					String localPathExtracted = this.path + File.separator + "extracted" + directories;
+					AkImporterHelper.mkDirIfNotExists(localPathExtracted);
+					ExtractTarGz extractor = new ExtractTarGz();
+					extractor.extractGeneric(parentFolder, this.indexTimestamp, localPathExtracted);
+				}
+			}
+			AkImporterHelper.print(print, "Done");
+		}
+		
+		
+		/*
 		// Creating Solr server
 		HttpSolrServer sServerBiblio =  new HttpSolrServer(this.solrBibl);
 
@@ -165,6 +212,7 @@ public class XmlIndex {
 				}
 			}
 		}
+		*/
 		
 		return isIndexingSuccessful;
 
@@ -219,7 +267,95 @@ public class XmlIndex {
 
 		return isIndexingSuccessful;
 	}
-
 	
+	
+	private List<String> getFileTreeDiff (String localBasePath, String remoteBasePath) {
+		AkImporterHelper.print(this.print, "\nStart comparing file trees and getting the difference ... ");
+		
+		List<String> filesToDownload = null;
+		
+		// Get local file names
+		List<String> localFileNames = null;
+		localFileNames = getLocalFiles(localBasePath);
+
+		// Get remote file names
+		List<String> remoteFileNames = null;
+		FTPClient ftpClient = new FTPClient();
+		try {
+			ftpClient.connect(this.xmlFtpHost, this.xmlFtpPort);
+			ftpClient.enterLocalPassiveMode();
+			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+			ftpClient.login(this.xmlFtpUser, this.xmlFtpPass);
+			remoteFileNames = getRemoteFiles(ftpClient, remoteBasePath, "", new ArrayList<String>());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		// Compare the two lists (local and remote)
+		remoteFileNames.removeAll(localFileNames);
+		
+		// Check if there is a difference between the lists
+		if (!remoteFileNames.isEmpty()) {
+			filesToDownload = remoteFileNames;
+		}
+		
+		AkImporterHelper.print(this.print, "Done");
+		
+		return filesToDownload;
+	}
+	
+	
+	private List<String> getLocalFiles(String localBasePath) {
+		List<String> localFileNames = new ArrayList<String>();
+		
+		File localBaseFile = new File(localBasePath);
+		List<File> localFiles = new ArrayList<File>();
+		if (localBaseFile.isDirectory()) {
+			localFiles = (List<File>)FileUtils.listFiles(localBaseFile, null, true);
+		}
+		
+		for(File localFile : localFiles) {
+			String localRelativeFilePath = new File(localBasePath).toURI().relativize(localFile.toURI()).getPath();
+			localFileNames.add(localRelativeFilePath);
+		}
+		
+		return localFileNames;
+	}
+	
+	
+	private List<String> getRemoteFiles(FTPClient ftpClient, String remoteBasePath, String remoteRelativePath, List<String> remoteFileNames) {
+		FTPFile[] ftpFiles;
+		try {
+			
+			// Get files in current FTP folder
+			ftpFiles = ftpClient.listFiles(remoteBasePath + File.separator + remoteRelativePath);
+			
+			// Iterate over files
+			for (FTPFile ftpFile : ftpFiles) {
+				// Variable for file name
+				String relativeFtpPath = "";
+				
+				// Check if current FTP file is a directory or a real file
+				if (ftpFile.isDirectory()) {
+					// If it is a directory, get the name of it
+					String currentDirName = ftpFile.getName();
+					
+					// Create a new relative path that can be added to the base path and check
+					// the directory for files by calling this method again.
+					relativeFtpPath += (remoteRelativePath.isEmpty()) ? currentDirName : remoteRelativePath + File.separator + currentDirName;
+					getRemoteFiles(ftpClient, remoteBasePath, relativeFtpPath, remoteFileNames);
+				} else {
+					// If it is a file, get it's name and add it to a list
+					String fileName = ftpFile.getName();			
+					String remoteFileName = (remoteRelativePath.isEmpty()) ? fileName : remoteRelativePath + File.separator + fileName;
+					remoteFileNames.add(remoteFileName);
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return remoteFileNames;
+	}
 	
 }
