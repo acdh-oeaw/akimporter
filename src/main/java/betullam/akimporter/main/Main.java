@@ -248,11 +248,13 @@ public class Main {
 			String xmlFtpUser = (importerProperties.getProperty("xml." + xmlName + ".ftpUser") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpUser") : null;
 			String xmlFtpPass = (importerProperties.getProperty("xml." + xmlName + ".ftpPass") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpPass") : null;
 			String xmlFtpRemotePath = (importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath") : "";
-			String xmlFtpLocalPath = (importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpLocalPath") : null;
 			boolean xmlCompareFiles = (importerProperties.getProperty("xml." + xmlName + ".compareFiles") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".compareFiles")) : false;
 			boolean xmlUnpack = (importerProperties.getProperty("xml." + xmlName + ".unpack") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".unpack")) : false;
 			boolean xmlMerge = (importerProperties.getProperty("xml." + xmlName + ".merge") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".merge")) : false;
-
+			String xmlMergeTag = importerProperties.getProperty("xml." + xmlName + ".mergeTag");
+			String xmlMergeLevel = importerProperties.getProperty("xml." + xmlName + ".mergeLevel");
+			String xmlMergeParentTag = importerProperties.getProperty("xml." + xmlName + ".mergeParentTag");
+			
 			// Get enrich properties. We need to get them here because we need the "cmd" variable for it.
 			String enrichName = null;
 			if (cmd.hasOption("enrich")) {
@@ -697,17 +699,12 @@ public class Main {
 			}
 
 			case "X": {
-				
-				/*
 				AkImporterHelper.print(print, "Starting XML import for " + xmlName + " ...");
-				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlFtpLocalPath, xmlCompareFiles, xmlUnpack, xmlMerge, print, optimize);
-				AkImporterHelper.print(print, "Done importing XML for " + xmlName + ".");
+				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlCompareFiles, xmlUnpack, xmlMerge, xmlMergeTag, xmlMergeLevel, xmlMergeParentTag, print, optimize);
+				AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
+				AkImporterHelper.print(print, "\nDone importing XML for " + xmlName + ".");
 				postProcess();
-				*/
 				
-				// TEST COMPARING FILES:
-				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath/*, xmlFtpLocalPath*/, xmlCompareFiles, xmlUnpack, xmlMerge, print, optimize);
-
 				break;
 			}
 

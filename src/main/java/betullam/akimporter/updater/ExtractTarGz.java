@@ -50,6 +50,9 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 public class ExtractTarGz {
 
+	
+	List<String> extractedFiles = new ArrayList<String>();
+	
 	/**
 	 * Extracting compressed file (generic)
 	 * 
@@ -83,8 +86,6 @@ public class ExtractTarGz {
 					OutputStream decompressedOs = null;
 					CompressorInputStream compressorIs = null;
 					try {
-						
-						
 						compressedFis = new FileInputStream(fileOriginal);
 						compressedBin = new BufferedInputStream(compressedFis);
 						
@@ -140,6 +141,7 @@ public class ExtractTarGz {
 									extractedFos.write(archiveBuffer, 0, j);
 								}
 								extractedFos.close();
+								this.extractedFiles.add(destPath.getAbsolutePath());
 							}
 							else {
 								destPath.mkdir();
@@ -256,5 +258,11 @@ public class ExtractTarGz {
 			e.printStackTrace();
 		}
 	}
+
+	
+	public List<String> getExtractedFiles() {
+		return this.extractedFiles;
+	}
+
 
 }
