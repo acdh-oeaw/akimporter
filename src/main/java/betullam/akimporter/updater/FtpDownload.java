@@ -65,10 +65,8 @@ public class FtpDownload {
 	public boolean downloadFiles(String remotePath, String remotePathMoveTo, String localPath, String host, int port, String user, String password, String timeStamp, boolean compareFiles, boolean showMessages) {
 		boolean ftpOk = false;
 		FTPClient ftpClient = new FTPClient();
-		AkImporterHelper.print(showMessages, "\nDownloading data from FTP " + host + " to "+localPath+" ... ");
 		
 		try {
-
 			ftpClient.connect(host, port);
 			ftpClient.enterLocalPassiveMode();
 			ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -76,7 +74,9 @@ public class FtpDownload {
 			
 			List<String> filesToDownload = null;
 			if (compareFiles) {
+				AkImporterHelper.print(showMessages, "\nStart comparing file trees and getting the difference ... ");
 				filesToDownload = this.getFileTreeDiff(ftpClient, localPath, remotePath, host, port, user, password, showMessages);
+				AkImporterHelper.print(showMessages, "Done");			
 			} else {
 				filesToDownload = new ArrayList<String>();
 				FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
@@ -88,7 +88,8 @@ public class FtpDownload {
 			}
 			
 			int fileCounter = 0;
-			if (filesToDownload != null) {
+			if (filesToDownload != null && !filesToDownload.isEmpty()) {
+				AkImporterHelper.print(showMessages, "\nDownloading data from FTP " + host + " to "+localPath+" ... ");
 				for (String fileToDownload : filesToDownload) {
 					boolean success = false;
 					fileCounter++;
@@ -116,35 +117,10 @@ public class FtpDownload {
 					}
 					outputStream.close();
 				}
+				AkImporterHelper.print(showMessages, "Done");
+			} else {
+				AkImporterHelper.print(showMessages, "\nThere are no files to download!");
 			}
-			
-			
-			
-			/*
-			// ORIGINAL BEFORE COMPARING LOCAL AND REMOTE FILES - BEGIN
-			FTPFile[] ftpFiles = ftpClient.listFiles(remotePath);
-			int fileCounter = 0;
-			
-			for (FTPFile ftpFile : ftpFiles) {
-				boolean success = false;
-				if (ftpFile.isFile()) {
-					fileCounter++;
-					String fileName = ftpFile.getName();
-					File localFile = new File(localPathTarGz + File.separator + fileName);
-					OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
-					ftpClient.setFileType(FTP.BINARY_FILE_TYPE); // Set this here, not further above! IMPORTANT!
-					success = ftpClient.retrieveFile(remotePath + File.separator + fileName, outputStream);
-					if (success) {
-						ftpOk = true;
-					} else {
-						ftpOk = false;
-						AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
-					}
-					outputStream.close();
-				}
-			}
-			// ORIGINAL BEFORE COMPARING LOCAL AND REMOTE FILES - END
-			*/
 			
 			// Move files on remote path if applicable
 			if (fileCounter > 0 && remotePathMoveTo != null && !remotePathMoveTo.trim().equals("")) {
@@ -194,7 +170,6 @@ public class FtpDownload {
 				ftpOk = true; // Everything is OK ... there was just nothing to download.
 			}
 			
-			AkImporterHelper.print(showMessages, "Done");
 			ftpClient.logout();
 			ftpClient.disconnect();
 
@@ -274,9 +249,7 @@ public class FtpDownload {
 	}
 	
 	
-	private List<String> getFileTreeDiff(FTPClient ftpClient, String localBasePath, String remoteBasePath, String host, int port, String user, String pass, boolean print) {
-		AkImporterHelper.print(print, "\nStart comparing file trees and getting the difference ... ");
-		
+	private List<String> getFileTreeDiff(FTPClient ftpClient, String localBasePath, String remoteBasePath, String host, int port, String user, String pass, boolean print) {		
 		List<String> filesToDownload = null;
 		
 		// Get local file names
@@ -294,8 +267,6 @@ public class FtpDownload {
 		if (!remoteFileNames.isEmpty()) {
 			filesToDownload = remoteFileNames;
 		}
-		
-		AkImporterHelper.print(print, "Done");
 		
 		return filesToDownload;
 	}

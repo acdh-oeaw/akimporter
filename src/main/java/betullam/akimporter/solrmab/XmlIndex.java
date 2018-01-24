@@ -4,15 +4,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -133,11 +129,8 @@ public class XmlIndex {
 			AkImporterHelper.print(print, "\nStart extracting files ... ");
 			String originalBasePath = (this.ftpDownload) ? this.path + File.separator + "original" : this.path;
 			String extractedBasePath = this.path + File.separator + "extracted";
-			//List<String> relativeFilePathsToUnpack = getLocalFiles(originalBasePath);
-			//System.out.println("\nrelativeFilePathsToUnpack: " + relativeFilePathsToUnpack);
 			
 			for (String fileToUnpack : filesToUnpack) {
-				
 				// Get (sub)folder for extracted files and create it
 				String localPathExtracted = new File(fileToUnpack.replace(originalBasePath, extractedBasePath)).getParent();
 				AkImporterHelper.mkDirIfNotExists(localPathExtracted);
@@ -145,23 +138,7 @@ public class XmlIndex {
 				// Extract file
 				ExtractTarGz extractor = new ExtractTarGz();
 				extractor.extractGeneric(fileToUnpack, this.indexTimestamp, localPathExtracted);
-				
 			}
-			
-			/*
-			for (String relativeFileToUnpack : relativeFilePathsToUnpack) {
-				String relativeFileToUnpackParent = new File(relativeFileToUnpack).getParent();
-				File fToUnpack = new File(originalBasePath + File.separator + relativeFileToUnpack);
-				if (fToUnpack.isFile()) {
-					//String parentFolder = fToUnpack.getParent();
-					String directories = (relativeFileToUnpackParent != null && !relativeFileToUnpackParent.isEmpty()) ? File.separator + relativeFileToUnpackParent : "";
-					String localPathExtracted = this.path + File.separator + "extracted" + directories;
-					AkImporterHelper.mkDirIfNotExists(localPathExtracted);
-					ExtractTarGz extractor = new ExtractTarGz();
-					extractor.extractGeneric(fToUnpack.getAbsolutePath(), this.indexTimestamp, localPathExtracted);
-				}
-			}
-			*/
 			
 			AkImporterHelper.print(print, "Done");
 		}
