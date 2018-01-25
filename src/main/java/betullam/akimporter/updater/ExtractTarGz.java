@@ -48,6 +48,8 @@ import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
+import main.java.betullam.akimporter.main.AkImporterHelper;
+
 public class ExtractTarGz {
 
 	
@@ -58,7 +60,7 @@ public class ExtractTarGz {
 	 * 
 	 * @param pathToCompressed	Full path to a directory (containing at least one compressed file) or single compressed file that should be extracted.
 	 * @param timeStamp			Timestamp when the update process was started (used for renaming files).
-	 * @param pathToExtracted	Path to a directory where the extracted content should be stored.
+	 * @param pathToExtracted	Path to a directory where the extracted content should be stored. Will be created if it does not exist.
 	 */
 	public void extractGeneric(String pathToCompressed, String timeStamp, String pathToExtracted) {
 		File pathOriginal = new File(pathToCompressed);
@@ -88,12 +90,12 @@ public class ExtractTarGz {
 					try {
 						compressedFis = new FileInputStream(fileOriginal);
 						compressedBin = new BufferedInputStream(compressedFis);
+						compressorIs = new CompressorStreamFactory().createCompressorInputStream(compressedBin);
 						
 						fileToExtract = fileOriginal.getAbsolutePath() + "." + timeStamp + ".tar";
 						decompressedFile = new File(fileToExtract);
 						decompressedOs = Files.newOutputStream(Paths.get(fileToExtract));
-						compressorIs = new CompressorStreamFactory().createCompressorInputStream(compressedBin);
-						
+
 						final byte[] compressorBuffer = new byte[1024];
 						int i = 0;
 						while (-1 != (i = compressorIs.read(compressorBuffer))) {
@@ -128,6 +130,9 @@ public class ExtractTarGz {
 						archivedFis = new FileInputStream(fileToExtract);
 						archivedBin = new BufferedInputStream(archivedFis);				
 						archiverIs = new ArchiveStreamFactory().createArchiveInputStream(archivedBin);
+						
+						// Create destination directory
+						AkImporterHelper.mkDirIfNotExists(pathToExtracted);
 						
 						// Process archive entry
 						final byte[] archiveBuffer = new byte[1024];

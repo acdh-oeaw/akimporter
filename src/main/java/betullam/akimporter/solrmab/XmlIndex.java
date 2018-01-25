@@ -115,7 +115,7 @@ public class XmlIndex {
 
 		List<String> downloadedFiles = null;
 		List<String> extractedFiles = null;
-		List<String> mergedFiles = null;
+		List<String> mergedFiles = new ArrayList<String>();
 		
 		if (this.ftpDownload) {
 			if (this.xmlFtpHost != null && this.xmlFtpUser != null && this.xmlFtpPass != null && this.path != null) {
@@ -143,11 +143,10 @@ public class XmlIndex {
 			ExtractTarGz extractor = new ExtractTarGz();
 			
 			for (String fileToUnpack : downloadedFiles) {
-				// Get (sub)folder for extracted files and create it
+				// Set destination (sub)folder(s) for extracted files
 				String localPathExtracted = new File(fileToUnpack.replace(originalBasePath, extractedBasePath)).getParent();
-				AkImporterHelper.mkDirIfNotExists(localPathExtracted);
 				
-				// Extract file
+				// Extract file (destination [sub]folder[s] will be created if they don't exist)
 				extractor.extractGeneric(fileToUnpack, this.indexTimestamp, localPathExtracted);
 			}
 			extractedFiles = extractor.getExtractedFiles();
@@ -159,7 +158,6 @@ public class XmlIndex {
 		
 		if (this.xmlMerge && extractedFiles != null && !extractedFiles.isEmpty()) {
 			AkImporterHelper.print(this.print, "\nMerging files ... ");
-			mergedFiles = new ArrayList<String>();
 			
 			String sourceBasePath = this.path;
 			if (this.ftpDownload) {
@@ -194,12 +192,24 @@ public class XmlIndex {
 			}
 			AkImporterHelper.print(this.print, "Done");
 		} else {
-			mergedFiles = downloadedFiles;
+			// Base files.
+			for (String downloadedFile : downloadedFiles) {
+				if (downloadedFile.endsWith(".xml")) { // Check for XML as only XML files can be indexed.
+					mergedFiles.add(downloadedFile);
+				}
+			}
+			
+			// If files were extracted, use these.
 			if (this.xmlUnpack) {
-				mergedFiles = extractedFiles;
+				mergedFiles.clear(); // Clear the list
+				for (String extractedFile : extractedFiles) {
+					if (extractedFile.endsWith(".xml")) { // Check for XML as only XML files can be indexed.
+						mergedFiles.add(extractedFile);
+					}
+				}
 			}
 		}
-		
+				
 		if (mergedFiles != null && !mergedFiles.isEmpty()) {
 			// Creating Solr server
 			HttpSolrServer sServerBiblio =  new HttpSolrServer(this.solrBibl);
@@ -269,6 +279,8 @@ public class XmlIndex {
 					}
 				}
 			}
+		} else {
+			AkImporterHelper.print(this.print, "\nNo file available, nothing was imported.");
 		}
 
 		return isIndexingSuccessful;
