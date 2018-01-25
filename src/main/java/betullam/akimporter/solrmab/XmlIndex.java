@@ -135,8 +135,8 @@ public class XmlIndex {
 				}
 			}
 		}
-				
-		if (this.xmlUnpack && downloadedFiles	!= null && !downloadedFiles.isEmpty()) {
+		
+		if (this.xmlUnpack && downloadedFiles != null && !downloadedFiles.isEmpty()) {
 			AkImporterHelper.print(this.print, "\nStart extracting files ... ");
 			String originalBasePath = (this.ftpDownload) ? this.path + File.separator + "original" : this.path;
 			String extractedBasePath = this.path + File.separator + "extracted";
@@ -155,6 +155,7 @@ public class XmlIndex {
 		} else {
 			extractedFiles = downloadedFiles;
 		}
+
 		
 		if (this.xmlMerge && extractedFiles != null && !extractedFiles.isEmpty()) {
 			AkImporterHelper.print(this.print, "\nMerging files ... ");
@@ -193,14 +194,12 @@ public class XmlIndex {
 			}
 			AkImporterHelper.print(this.print, "Done");
 		} else {
-			if (this.ftpDownload) {
-				mergedFiles = downloadedFiles;
-			}
+			mergedFiles = downloadedFiles;
 			if (this.xmlUnpack) {
 				mergedFiles = extractedFiles;
 			}
 		}
-
+		
 		if (mergedFiles != null && !mergedFiles.isEmpty()) {
 			// Creating Solr server
 			HttpSolrServer sServerBiblio =  new HttpSolrServer(this.solrBibl);

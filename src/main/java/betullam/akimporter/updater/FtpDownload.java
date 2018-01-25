@@ -85,6 +85,9 @@ public class FtpDownload {
 						filesToDownload.add(ftpFile.getName());
 					}
 				}
+				
+				// Get remote file names recursively
+				filesToDownload = getRemoteFiles(ftpClient, remotePath, "", new ArrayList<String>());				
 			}
 			
 			int fileCounter = 0;
@@ -136,7 +139,6 @@ public class FtpDownload {
 						if (madeDirectory) {
 							ftpClient.changeWorkingDirectory(subDirectory);
 							moveToDirectoryExists = true;
-							//System.out.println("Created subdirectory " + subDirectory);
 						} else {
 							System.err.println("Error creating directory " + subDirectory + " on FTP server " + host + ".");
 							moveToDirectoryExists = false;
@@ -256,7 +258,7 @@ public class FtpDownload {
 		List<String> localFileNames = null;
 		localFileNames = getLocalFiles(localBasePath);
 		
-		// Get remote file names
+		// Get remote file names recursively
 		List<String> remoteFileNames = null;
 		remoteFileNames = getRemoteFiles(ftpClient, remoteBasePath, "", new ArrayList<String>());
 		
