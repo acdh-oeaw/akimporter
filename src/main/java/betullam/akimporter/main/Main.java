@@ -1541,7 +1541,12 @@ public class Main {
 				.longOpt("consolidate")
 				.hasArg(true)
 				.numberOfArgs(4)
-				.desc("Consolidate all data (initial dataset and all ongoing updates) and get one new file which is up to date")
+				.argName("Node_Name_To_Extract, Node_Level, Node_Name_For_File_Name, Node_Attr_For_File_Name")
+				.desc("Consolidate all data (initial dataset and all ongoing updates) and get one new file which is up to date. Arguments:"
+						+ "\n1. Node name to extract: The name of the XML node that should be extracted from the original files, e. g. \"record\"."
+						+ "\n2. Node level: The level of the node that should be extracted from the original files, if there are nested nodes with the same name. Begins with \"1\"."
+						+ "\n3. Node name for file name: The node name that contains the (unique) value that should be used as file name for the single files that are created before merging them to a consolidated file, e. g. \"controlfield\"."
+						+ "\n4. Node attr for file name: An attribute name/value pair from the node that contains the value that should be used as file name for the single files that are created before merging them to a consolidated file (see 3.), e. g. \"tag=001\".")
 				.build();
 
 		// h (help)
