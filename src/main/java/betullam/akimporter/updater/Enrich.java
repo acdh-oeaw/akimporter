@@ -106,6 +106,9 @@ public class Enrich {
 			// If no XML or .tar.gz file was downloaded, remove the (emtpy and therefore) useless directory
 			if (filesInDownloadDest.length == 0) {
 				downloadDestination.delete();
+				
+				// Set the pathToEnrichFile variable to null because otherwise, the initial file would be taken
+				pathToEnrichFile = null;
 			}
 			
 			// Check also if the "original" directory is empty. If yes, delete it
@@ -165,13 +168,16 @@ public class Enrich {
 		
 		// Check if we reimport existing enrichment files or not
 		if (!this.reimport) {
-			// Start default enrichment (= no reimport), but only if the enrich file exists and is an XML file
-			File enrichFile = new File(pathToEnrichFile);
-			boolean enrichFileIsXml = (enrichFile.exists() && enrichFile.isFile() && enrichFile.getName().toLowerCase().endsWith(".xml"));
-			if (enrichFileIsXml) {
-				AkImporterHelper.print(print, "\nEnriching data from \"" + this.enrichName + "\" in file " + pathToEnrichFile + " to Solr server " + this.enrichSolr + " ... ");
-				new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, false);
-				AkImporterHelper.print(print, "Done");
+			
+			if (pathToEnrichFile != null) {
+				// Start default enrichment (= no reimport), but only if the enrich file exists and is an XML file
+				File enrichFile = new File(pathToEnrichFile);
+				boolean enrichFileIsXml = (enrichFile.exists() && enrichFile.isFile() && enrichFile.getName().toLowerCase().endsWith(".xml"));
+				if (enrichFileIsXml) {
+					AkImporterHelper.print(print, "\nEnriching data from \"" + this.enrichName + "\" in file " + pathToEnrichFile + " to Solr server " + this.enrichSolr + " ... ");
+					new Index(pathToEnrichFile, enrichSolrServer, this.enrichProperties, directoryOfTranslationFiles, timeStamp, this.optimize, false);
+					AkImporterHelper.print(print, "Done");
+				}
 			}
 		} else {
 			// Reimport initial enrichment file based on the enrich.???.localPath.initial property in AkImporter.properties
