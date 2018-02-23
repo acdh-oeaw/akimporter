@@ -214,7 +214,10 @@ public class ChildsToParentsFromParents {
 						// Get child infos
 						String childSys = (nonDeletedChild.getFieldValue("sysNo_txt") != null) ? nonDeletedChild.getFieldValue("sysNo_txt").toString() : "0";
 						String childAc = (nonDeletedChild.getFieldValue("acNo_txt") != null) ? nonDeletedChild.getFieldValue("acNo_txt").toString() : "0";
-						String childTitle = (nonDeletedChild.getFieldValue("title") != null) ? nonDeletedChild.getFieldValue("title").toString() : "0";
+						String childTitle = (nonDeletedChild.getFieldValue("title_part_txt") != null) ? nonDeletedChild.getFieldValue("title_part_txt").toString() : null;
+						if (childTitle == null) {
+							childTitle = (nonDeletedChild.getFieldValue("title") != null) ? nonDeletedChild.getFieldValue("title").toString() : "0";
+						}
 						String childVolumeNo = "0";
 						String childVolumeNoSort = "0";
 						if (childType.equals("multivolume")) {
@@ -367,6 +370,7 @@ public class ChildsToParentsFromParents {
 				"sysNo_txt",
 				"acNo_txt",
 				"title",
+				"title_part_txt",
 				"multiVolumeNo_str",
 				"multiVolumeNoSort_str",
 				"serialVolumeNo_str",
