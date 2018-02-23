@@ -186,8 +186,13 @@ public class Enrich {
 			AkImporterHelper.print(print, "Done");
 			
 			// Reimport all existing enrichment files based on the enrich.???.localPath.ongoing property in AkImporter.properties
+			// Check if a "merged" folder exists. If yes, take the XML files only from there. If not, search for all XML files in the local path.
+			File fPathToEnrichDir = new File(AkImporterHelper.stripFileSeperatorFromPath(localPath) + File.separator + "merged");
+			if (!fPathToEnrichDir.exists()) {
+				fPathToEnrichDir = new File(AkImporterHelper.stripFileSeperatorFromPath(localPath));
+			}
+			
 			// Get a sorted list (oldest to newest) from all ongoing data deliveries:
-			File fPathToEnrichDir = new File(AkImporterHelper.stripFileSeperatorFromPath(localPath));
 			List<File> fileList = (List<File>)FileUtils.listFiles(fPathToEnrichDir, new String[] {"xml"}, true); // Get all xml-files recursively
 			Collections.sort(fileList); // Sort oldest to newest
 			for (File file : fileList) {
