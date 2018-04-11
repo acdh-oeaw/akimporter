@@ -24,6 +24,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
 
 import ak.xmlhelper.XmlMerger;
 import ak.xmlhelper.XmlValidator;
+import main.java.betullam.akimporter.converter.Converter;
 import main.java.betullam.akimporter.main.AkImporterHelper;
 import main.java.betullam.akimporter.solrmab.indexing.XmlContentHandler;
 import main.java.betullam.akimporter.updater.ExtractTarGz;
@@ -47,10 +48,12 @@ public class XmlIndex {
 	private String xmlFtpRemotePath;
 	private boolean compareFiles;
 	private boolean xmlUnpack;
+	private boolean convertMarcBin2MarcXml;
 	private boolean xmlMerge;
 	private String xmlMergeTag;
 	private String xmlMergeLevel;
 	private String xmlMergeParentTag;
+	private boolean xmlIsMarcXml;
 	private boolean print;
 	private boolean optimize;
 	private String indexTimestamp;
@@ -72,10 +75,12 @@ public class XmlIndex {
 			String xmlFtpRemotePath,
 			boolean compareFiles,
 			boolean xmlUnpack,
+			boolean convertMarcBin2MarcXml,
 			boolean xmlMerge,
 			String xmlMergeTag,
 			String xmlMergeLevel,
 			String xmlMergeParentTag,
+			boolean xmlIsMarcXml,
 			boolean print,
 			boolean optimize) {
 
@@ -95,10 +100,12 @@ public class XmlIndex {
 		this.xmlFtpRemotePath = xmlFtpRemotePath;
 		this.compareFiles = compareFiles;
 		this.xmlUnpack = xmlUnpack;
+		this.convertMarcBin2MarcXml = convertMarcBin2MarcXml;
 		this.xmlMerge = xmlMerge;
 		this.xmlMergeTag = xmlMergeTag;
 		this.xmlMergeLevel = xmlMergeLevel;
-		this.xmlMergeParentTag = xmlMergeParentTag;		
+		this.xmlMergeParentTag = xmlMergeParentTag;
+		this.xmlIsMarcXml = xmlIsMarcXml;
 		this.print = print;
 		this.optimize = optimize;
 		this.indexTimestamp = String.valueOf(new Date().getTime());
@@ -155,8 +162,23 @@ public class XmlIndex {
 			extractedFiles = downloadedFiles;
 		}
 
-		
-		if (this.xmlMerge && extractedFiles != null && !extractedFiles.isEmpty()) {
+		if (this.convertMarcBin2MarcXml && extractedFiles != null && !extractedFiles.isEmpty()) {
+			AkImporterHelper.print(this.print, "\nConverting files ... ");
+			Converter converter = new Converter();
+			String convertedBasePath = this.path + File.separator + "converted";
+			AkImporterHelper.mkDirIfNotExists(convertedBasePath);
+			
+			for(String fileToConvert : extractedFiles) {
+				if (fileToConvert.endsWith(".mrc")) { // Check for binary MARC file ending as only MARC files can be indexed.
+					converter.marcBin2MarcXml(fileToConvert, convertedBasePath);
+				}
+			}
+			
+			extractedFiles = converter.getConvertedFiles();
+			AkImporterHelper.print(this.print, "Done");
+		}
+
+		if ((this.xmlMerge || this.convertMarcBin2MarcXml) && extractedFiles != null && !extractedFiles.isEmpty()) {
 			AkImporterHelper.print(this.print, "\nMerging files ... ");
 			
 			String sourceBasePath = this.path;
@@ -165,6 +187,9 @@ public class XmlIndex {
 			}
 			if (this.xmlUnpack) {
 				sourceBasePath = this.path + File.separator + "extracted";
+			}
+			if (this.convertMarcBin2MarcXml) {
+				sourceBasePath = this.path + File.separator + "converted";
 			}
 			String mergedBasePath = this.path + File.separator + "merged";
 			
@@ -258,7 +283,24 @@ public class XmlIndex {
 					}
 					
 					for (File file : fileList) {
-						isIndexingSuccessful = indexXmlData(file.getAbsolutePath(), sServerBiblio);
+						if (this.xmlIsMarcXml) {
+							// Start indexing by using default properties notation in .properties file
+							String directoryOfTranslationFiles = new File(this.propertiesFile).getParent();
+							Index index = new Index(
+									file.getAbsolutePath(),
+									sServerBiblio,
+									false,
+									this.propertiesFile,
+									directoryOfTranslationFiles,
+									this.indexTimestamp,
+									this.optimize,
+									this.print);
+							
+							isIndexingSuccessful = index.isIndexingSuccessful();
+						} else {
+							// Start indexing by using xPath notation in .properties file
+							isIndexingSuccessful = indexXmlData(file.getAbsolutePath(), sServerBiblio);
+						}
 
 						if (isIndexingSuccessful) {
 							try {
