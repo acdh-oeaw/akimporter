@@ -70,7 +70,7 @@ public class XmlContentHandler implements ContentHandler {
 		// Clear element content for fresh start
 		elementContent = "";
 		String startElement = "";
-
+		
 		if (qName.equals(recordName)) {
 			// Start fresh record
 			isRecord = true;
@@ -201,7 +201,7 @@ public class XmlContentHandler implements ContentHandler {
 
 
 	/**
-	 * Converts an XML record with the help of xPath to a Map that can be added to Solr.
+	 * Converts a DOM document (from an XML string) with the help of xPath to a Map that can be added to Solr.
 	 * @param xmlRecord		String: The XML record as a String. It will be converted to a DOM document that can be queried with xPath.
 	 * @return				Map&lt;String, List&lt;String&gt;&gt;: A Map that is used to add the data from the XML to Solr.
 	 * 						The key (String) is the Solr fieldname, the value (List&lt;String&gt;) are the values that should be indexed into this field.
