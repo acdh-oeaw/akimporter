@@ -70,6 +70,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
 import main.java.betullam.akimporter.akindex.AkIndex;
 import main.java.betullam.akimporter.akindex.AkIndexAllFields;
+import main.java.betullam.akimporter.converter.Converter;
 import main.java.betullam.akimporter.saveloans.SaveLoans;
 import main.java.betullam.akimporter.solrmab.PostProcess;
 import main.java.betullam.akimporter.solrmab.PostProcessor;
@@ -250,10 +251,12 @@ public class Main {
 			String xmlFtpRemotePath = (importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath") != null) ? importerProperties.getProperty("xml." + xmlName + ".ftpRemotePath") : "";
 			boolean xmlCompareFiles = (importerProperties.getProperty("xml." + xmlName + ".compareFiles") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".compareFiles")) : false;
 			boolean xmlUnpack = (importerProperties.getProperty("xml." + xmlName + ".unpack") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".unpack")) : false;
+			boolean convertMarcBin2MarcXml = (importerProperties.getProperty("xml." + xmlName + ".convert") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".convert")) : false;
 			boolean xmlMerge = (importerProperties.getProperty("xml." + xmlName + ".merge") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".merge")) : false;
 			String xmlMergeTag = importerProperties.getProperty("xml." + xmlName + ".mergeTag");
 			String xmlMergeLevel = importerProperties.getProperty("xml." + xmlName + ".mergeLevel");
 			String xmlMergeParentTag = importerProperties.getProperty("xml." + xmlName + ".mergeParentTag");
+			boolean xmlIsMarcXml = (importerProperties.getProperty("xml." + xmlName + ".isMarcXml") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".isMarcXml")) : false;
 			
 			// Get enrich properties. We need to get them here because we need the "cmd" variable for it.
 			String enrichName = null;
@@ -298,7 +301,7 @@ public class Main {
 			switch (selectedMainOption) {
 
 			case "k": { // FOR TESTING ONLY
-				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");				
+				System.out.println("No test case specified. DON'T EVER USE THIS COMMAND IN PRODUCTION ENVIRONMENT!");
 				break;
 			}
 
@@ -699,10 +702,10 @@ public class Main {
 			}
 
 			case "X": {
-				AkImporterHelper.print(print, "Starting XML import for " + xmlName + " ...");
-				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlCompareFiles, xmlUnpack, xmlMerge, xmlMergeTag, xmlMergeLevel, xmlMergeParentTag, print, optimize);
+				AkImporterHelper.print(print, "Starting (Marc)XML import for " + xmlName + " ...");
+				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlCompareFiles, xmlUnpack, convertMarcBin2MarcXml, xmlMerge, xmlMergeTag, xmlMergeLevel, xmlMergeParentTag, xmlIsMarcXml, print, optimize);
 				AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
-				AkImporterHelper.print(print, "\nDone importing XML for " + xmlName + ".");
+				AkImporterHelper.print(print, "\nDone importing (Marc)XML for " + xmlName + ".");
 				postProcess();
 				
 				break;
