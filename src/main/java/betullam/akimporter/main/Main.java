@@ -70,7 +70,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer.RemoteSolrException;
 
 import main.java.betullam.akimporter.akindex.AkIndex;
 import main.java.betullam.akimporter.akindex.AkIndexAllFields;
-import main.java.betullam.akimporter.converter.Converter;
 import main.java.betullam.akimporter.saveloans.SaveLoans;
 import main.java.betullam.akimporter.solrmab.PostProcess;
 import main.java.betullam.akimporter.solrmab.PostProcessor;
