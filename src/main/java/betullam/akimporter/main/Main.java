@@ -290,6 +290,25 @@ public class Main {
 			if (cmd.hasOption("ak_index")) {
 				akiName = cmd.getOptionValue("ak_index");
 			}
+			
+			// Get AKindex properties from CLI. We need to get them here because we need the "cmd" variable for it.
+			String akiCliPath = null;
+			String akiCliElements = null;
+			String akiCliElementsLevel = null;
+			String akiCliIdXpath = null;
+			String akiCliValidateSkip = null;
+			String akiCliSolr = null;
+			String akiCliAllFieldsPath = null;
+			if (cmd.hasOption("ak_index_cli")) {
+				String[] optionValues = cmd.getOptionValues("ak_index_cli");
+				akiCliPath = optionValues[0];
+				akiCliElements = optionValues[1];
+				akiCliElementsLevel = optionValues[2];
+				akiCliIdXpath = optionValues[3];
+				akiCliValidateSkip = optionValues[4];
+				akiCliSolr = optionValues[5];
+				akiCliAllFieldsPath = optionValues[6];
+			}
 
 			// Get "Save Loans" properteis. We need to get them here because we need the "cmd" variable for it.
 			String saveLoansArg = null;
@@ -749,7 +768,14 @@ public class Main {
 				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
 				break;
 			}
-
+			
+			case "ak_index_cli": {
+				boolean akiCliValidateSkipBool = (akiCliValidateSkip != null && !akiCliValidateSkip.isEmpty()) ? Boolean.valueOf(akiCliValidateSkip) : false;
+				new AkIndex(akiCliSolr, akiCliPath, akiCliElements, akiCliElementsLevel, akiCliIdXpath, akiCliValidateSkipBool, print, optimize);
+				new AkIndexAllFields(akiCliSolr, akiCliAllFieldsPath, print);
+				break;
+			}
+			
 			case "ak_index_allfields": {
 				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
 				String akiAllFieldsPath = importerProperties.getProperty("akindex.setting.path.allfields");
@@ -1671,6 +1697,17 @@ public class Main {
 				.builder()
 				.required(false)
 				.longOpt("ak_index")
+				.hasArg(true)
+				.argName("section name")
+				.numberOfArgs(1)
+				.desc("Indexing fields for AKindex (a.k.a. browse index). For section name, see AkImporter.properties, e. g.: akindex.SECTION_NAME.elements")
+				.build();
+
+		// ak_index_cli (for indexing to the AKindex [a.k.a. browse index] application from command line - has nothing to do with AKsearch/VuFind!)
+		Option oAkIndexCli = Option
+				.builder()
+				.required(false)
+				.longOpt("ak_index_cli")
 				.hasArg(true)
 				.argName("section name")
 				.numberOfArgs(1)
