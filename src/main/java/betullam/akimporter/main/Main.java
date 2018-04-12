@@ -1709,9 +1709,9 @@ public class Main {
 				.required(false)
 				.longOpt("ak_index_cli")
 				.hasArg(true)
-				.argName("section name")
-				.numberOfArgs(1)
-				.desc("Indexing fields for AKindex (a.k.a. browse index). For section name, see AkImporter.properties, e. g.: akindex.SECTION_NAME.elements")
+				.argName("file_to_index elements_to_index element_level id_xpath validate_skip solr_server php_allfields_path")
+				.numberOfArgs(7)
+				.desc("Indexing fields for AKindex (a.k.a. browse index) on command line")
 				.build();
 
 		// ak_index_allfields (generating the "all fields" file for AKindex [a.k.a. browse index] application - has nothing to do with AKsearch/VuFind!)
@@ -1754,6 +1754,7 @@ public class Main {
 		optionGroup.addOption(oEnrich);
 		optionGroup.addOption(oEnrichReimport);
 		optionGroup.addOption(oAkIndex);
+		optionGroup.addOption(oAkIndexCli);
 		optionGroup.addOption(oAkIndexAllFields);
 		optionGroup.addOption(oSaveLoans);
 		optionGroup.setRequired(true);
