@@ -771,7 +771,6 @@ public class Main {
 			case "ak_index_cli": {
 				boolean akiCliValidateSkipBool = (akiCliValidateSkip != null && !akiCliValidateSkip.isEmpty()) ? Boolean.valueOf(akiCliValidateSkip) : false;
 				new AkIndex(akiCliSolr, akiCliPath, akiCliElements, akiCliElementsLevel, akiCliIdXpath, akiCliValidateSkipBool, print, optimize);
-				new AkIndexAllFields(akiCliSolr, akiCliAllFieldsPath, print);
 				break;
 			}
 			
