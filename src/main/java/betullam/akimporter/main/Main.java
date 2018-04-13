@@ -297,7 +297,6 @@ public class Main {
 			String akiCliIdXpath = null;
 			String akiCliValidateSkip = null;
 			String akiCliSolr = null;
-			String akiCliAllFieldsPath = null;
 			if (cmd.hasOption("ak_index_cli")) {
 				String[] optionValues = cmd.getOptionValues("ak_index_cli");
 				akiCliPath = optionValues[0];
@@ -306,7 +305,6 @@ public class Main {
 				akiCliIdXpath = optionValues[3];
 				akiCliValidateSkip = optionValues[4];
 				akiCliSolr = optionValues[5];
-				akiCliAllFieldsPath = optionValues[6];
 			}
 
 			// Get "Save Loans" properteis. We need to get them here because we need the "cmd" variable for it.
@@ -758,19 +756,19 @@ public class Main {
 				String akiSolr = importerProperties.getProperty("akindex.setting.solr");
 				boolean akiValidateSkip = (importerProperties.getProperty("akindex.setting.validate.skip") != null && !importerProperties.getProperty("akindex.setting.validate.skip").isEmpty()) ? Boolean.valueOf(importerProperties.getProperty("akindex.setting.validate.skip")) : false;
 				String akiPath = importerProperties.getProperty("akindex." + akiName + ".path.data");
-				String akiAllFieldsPath = importerProperties.getProperty("akindex.setting.path.allfields");
 				String akiElements = importerProperties.getProperty("akindex." + akiName + ".elements");
 				String akiElementsLevel = importerProperties.getProperty("akindex." + akiName + ".elements.level");
 				String akiIdXpath = importerProperties.getProperty("akindex." + akiName + ".xpath.id");
 
 				new AkIndex(akiSolr, akiPath, akiElements, akiElementsLevel, akiIdXpath, akiValidateSkip, print, optimize);
-				new AkIndexAllFields(akiSolr, akiAllFieldsPath, print);
+				System.out.println("Finished. Don't forget to run AkImporter.jar --ak_index_allfields to generate a new php file with all indexed fields!");
 				break;
 			}
 			
 			case "ak_index_cli": {
 				boolean akiCliValidateSkipBool = (akiCliValidateSkip != null && !akiCliValidateSkip.isEmpty()) ? Boolean.valueOf(akiCliValidateSkip) : false;
 				new AkIndex(akiCliSolr, akiCliPath, akiCliElements, akiCliElementsLevel, akiCliIdXpath, akiCliValidateSkipBool, print, optimize);
+				System.out.println("Finished. Don't forget to run AkImporter.jar --ak_index_allfields to generate a new php file with all indexed fields!");
 				break;
 			}
 			
@@ -1707,8 +1705,8 @@ public class Main {
 				.required(false)
 				.longOpt("ak_index_cli")
 				.hasArg(true)
-				.argName("file_to_index elements_to_index element_level id_xpath validate_skip solr_server php_allfields_path")
-				.numberOfArgs(7)
+				.argName("file_to_index elements_to_index element_level id_xpath validate_skip solr_server")
+				.numberOfArgs(6)
 				.desc("Indexing fields for AKindex (a.k.a. browse index) on command line")
 				.build();
 
