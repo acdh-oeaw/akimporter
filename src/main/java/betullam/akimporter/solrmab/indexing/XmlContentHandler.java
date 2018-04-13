@@ -3,6 +3,8 @@ package main.java.betullam.akimporter.solrmab.indexing;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -104,7 +106,8 @@ public class XmlContentHandler implements ContentHandler {
 
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-
+		elementContent = Normalizer.normalize(elementContent, Form.NFC);
+		
 		if (isRecord) {
 			String endElement = "";
 			endElement += StringEscapeUtils.escapeXml10(elementContent).trim();

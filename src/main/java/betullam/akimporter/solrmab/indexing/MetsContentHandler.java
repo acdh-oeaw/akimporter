@@ -24,6 +24,8 @@
  */
 package main.java.betullam.akimporter.solrmab.indexing;
 
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -474,7 +476,8 @@ public class MetsContentHandler implements ContentHandler {
 
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-
+		elementContent = Normalizer.normalize(elementContent, Form.NFC);
+		
 		if (isClassification && isSswd) {
 			classifications.add(elementContent);
 		}

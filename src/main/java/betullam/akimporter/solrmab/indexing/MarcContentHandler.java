@@ -28,6 +28,8 @@
 package main.java.betullam.akimporter.solrmab.indexing;
 
 import java.io.IOException;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -229,6 +231,7 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
 		String content = nodeContent.toString();
+		content = Normalizer.normalize(content, Form.NFC);
 
 		// Parser encounters the end of the "leader"-tag
 		if(localName.equals("leader")) {
@@ -369,6 +372,7 @@ public class MarcContentHandler implements ContentHandler {
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
 		nodeContent += new String(ch, start, length);
+		//nodeContent = Normalizer.normalize(nodeContent, Form.NFC);
 	}
 
 	
