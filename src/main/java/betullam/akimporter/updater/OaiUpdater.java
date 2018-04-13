@@ -113,6 +113,8 @@ public class OaiUpdater {
 			String destinationPath,
 			String elementsToMerge,
 			int elementsToMergeLevel,
+			String mergeParentAttributes,
+			String mergeElementAttributes,
 			String oaiDatefile,
 			List<String> include,
 			List<String> exclude,
@@ -205,7 +207,7 @@ public class OaiUpdater {
 		// Start merging all downloaded updates into one file
 		AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
 		String mergedFileName = oaiPathMergedTimestamp + File.separator + this.indexTimestamp + ".xml";
-		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginalTimestamp, mergedFileName, elementsToMerge, elementsToMergeLevel);
+		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginalTimestamp, mergedFileName, elementsToMerge, elementsToMergeLevel, mergeParentAttributes, mergeElementAttributes);
 		if (isMergeSuccessful) {
 			AkImporterHelper.print(print, "Done");
 		} else {
@@ -511,7 +513,7 @@ public class OaiUpdater {
 		// Start merging all downloaded updates into one file
 		AkImporterHelper.print(print, "\nMerging downloaded XML data ... ");
 		String mergedFileName = oaiPathMergedTimestamp + File.separator + this.indexTimestamp + ".xml";
-		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginalTimestamp, mergedFileName, "slim:record", 1);
+		boolean isMergeSuccessful = mergeXmlFiles(oaiPathOriginalTimestamp, mergedFileName, "slim:record", 1, null, null);
 		if (isMergeSuccessful) {
 			AkImporterHelper.print(print, "Done");
 		} else {
@@ -733,9 +735,9 @@ public class OaiUpdater {
 	 * @param elementsToMergeLevel	int:		Level of the XML element that should be merge if there are more of one of the same name. As default and for the top level element, use 1.
 	 * @return						boolean:	True if the merging was successfull, false otherwise.
 	 */
-	private boolean mergeXmlFiles(String sourcePath, String destinationPath, String elementsToMerge, int elementsToMergeLevel) {
+	private boolean mergeXmlFiles(String sourcePath, String destinationPath, String elementsToMerge, int elementsToMergeLevel, String mergeParentAttributes, String mergeElementAttributes) {
 		XmlMerger xmlm = new XmlMerger();
-		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", elementsToMerge, elementsToMergeLevel);
+		boolean isMergeSuccessful = xmlm.mergeElements(sourcePath, destinationPath, "collection", elementsToMerge, elementsToMergeLevel, mergeParentAttributes, mergeElementAttributes);
 		return isMergeSuccessful;
 	}
 

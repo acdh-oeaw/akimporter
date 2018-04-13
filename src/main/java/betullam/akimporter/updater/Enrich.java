@@ -161,7 +161,7 @@ public class Enrich {
 				pathToEnrichFile = localPathMerged + File.separator + timeStamp + ".xml";
 				XmlMerger xmlm = new XmlMerger();
 				int enrichMergeTagInt = Integer.valueOf(this.enrichMergeLevel);
-				xmlm.mergeElements(localPathExtracted, pathToEnrichFile, this.enrichMergeParentTag, this.enrichMergeTag, enrichMergeTagInt);
+				xmlm.mergeElements(localPathExtracted, pathToEnrichFile, this.enrichMergeParentTag, this.enrichMergeTag, enrichMergeTagInt, null, null);
 				AkImporterHelper.print(print, "Done");
 			}
 		}

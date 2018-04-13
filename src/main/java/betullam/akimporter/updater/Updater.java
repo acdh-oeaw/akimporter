@@ -96,7 +96,7 @@ public class Updater {
 			AkImporterHelper.print(print, "\nMerging extracted files to "+localPathMerged + File.separator + timeStamp + ".xml ... ");
 			String pathToMabXmlFile = localPathMerged + File.separator + timeStamp + ".xml";
 			XmlMerger xmlm = new XmlMerger();
-			xmlm.mergeElements(localPathExtracted, pathToMabXmlFile, "collection", "record", 1);
+			xmlm.mergeElements(localPathExtracted, pathToMabXmlFile, "collection", "record", 1, null, null);
 			AkImporterHelper.print(print, "Done");
 
 			// Validate merged XML file:

@@ -53,6 +53,8 @@ public class XmlIndex {
 	private String xmlMergeTag;
 	private String xmlMergeLevel;
 	private String xmlMergeParentTag;
+	private String xmlMergeParentAttributes;
+	private String mergeElementAttributes;
 	private boolean xmlIsMarcXml;
 	private boolean print;
 	private boolean optimize;
@@ -80,6 +82,8 @@ public class XmlIndex {
 			String xmlMergeTag,
 			String xmlMergeLevel,
 			String xmlMergeParentTag,
+			String xmlMergeParentAttributes,
+			String mergeElementAttributes,
 			boolean xmlIsMarcXml,
 			boolean print,
 			boolean optimize) {
@@ -105,6 +109,8 @@ public class XmlIndex {
 		this.xmlMergeTag = xmlMergeTag;
 		this.xmlMergeLevel = xmlMergeLevel;
 		this.xmlMergeParentTag = xmlMergeParentTag;
+		this.xmlMergeParentAttributes = xmlMergeParentAttributes;
+		this.mergeElementAttributes = xmlMergeParentAttributes;
 		this.xmlIsMarcXml = xmlIsMarcXml;
 		this.print = print;
 		this.optimize = optimize;
@@ -209,7 +215,7 @@ public class XmlIndex {
 					
 					XmlMerger xmlm = new XmlMerger();
 					int xmlMergeLevelInt = Integer.valueOf(this.xmlMergeLevel);
-					boolean mergeSuccess = xmlm.mergeElements(pathToFilesToMerge, pathToMergedFile, this.xmlMergeParentTag, this.xmlMergeTag, xmlMergeLevelInt);
+					boolean mergeSuccess = xmlm.mergeElements(pathToFilesToMerge, pathToMergedFile, this.xmlMergeParentTag, this.xmlMergeTag, xmlMergeLevelInt, this.xmlMergeParentAttributes, this.mergeElementAttributes);
 					if (mergeSuccess) {
 						mergedFiles.add(pathToMergedFile);
 					}

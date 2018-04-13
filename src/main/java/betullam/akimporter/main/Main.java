@@ -209,6 +209,8 @@ public class Main {
 			//System.out.println("Elements Level for " + oaiName + ": " + importerProperties.getProperty("oai." + oaiName + ".elementsLevel"));
 			//if (importerProperties.getProperty("oai." + oaiName + ".elementsLevel") != null) { System.out.println ("Is NOT Null"); } else { System.out.println ("Is Null"); };
 			int elementsToMergeLevel = (importerProperties.getProperty("oai." + oaiName + ".elementsLevel") != null) ? Integer.valueOf(importerProperties.getProperty("oai." + oaiName + ".elementsLevel")) : 1;
+			String mergeParentAttributes = importerProperties.getProperty("oai." + oaiName + ".parentAttributes");
+			String mergeElementAttributes = importerProperties.getProperty("oai." + oaiName + ".elementAttributes");
 			List<String> structElements = (importerProperties.getProperty("oai." + oaiName + ".structElements") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".structElements").split("\\s*,\\s*")) : null;
 			List<String> include = (importerProperties.getProperty("oai." + oaiName + ".include") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".include").split("\\s*,\\s*")) : null;
 			List<String> exclude = (importerProperties.getProperty("oai." + oaiName + ".exclude") != null) ? Arrays.asList(importerProperties.getProperty("oai." + oaiName + ".exclude").split("\\s*,\\s*")) : null;
@@ -255,6 +257,8 @@ public class Main {
 			String xmlMergeTag = importerProperties.getProperty("xml." + xmlName + ".mergeTag");
 			String xmlMergeLevel = importerProperties.getProperty("xml." + xmlName + ".mergeLevel");
 			String xmlMergeParentTag = importerProperties.getProperty("xml." + xmlName + ".mergeParentTag");
+			String xmlMergeParentAttributes = importerProperties.getProperty("xml." + xmlName + ".mergeParentAttributes");
+			String xmlMergeElementAttributes = importerProperties.getProperty("xml." + xmlName + ".mergeElementAttributes");
 			boolean xmlIsMarcXml = (importerProperties.getProperty("xml." + xmlName + ".isMarcXml") != null) ? Boolean.valueOf(importerProperties.getProperty("xml." + xmlName + ".isMarcXml")) : false;
 			
 			// Get enrich properties. We need to get them here because we need the "cmd" variable for it.
@@ -672,6 +676,8 @@ public class Main {
 							destinationPath,
 							elementsToMerge,
 							elementsToMergeLevel,
+							mergeParentAttributes,
+							mergeElementAttributes,
 							oaiDatefile,
 							include,
 							exclude,
@@ -719,11 +725,10 @@ public class Main {
 
 			case "X": {
 				AkImporterHelper.print(print, "Starting (Marc)XML import for " + xmlName + " ...");
-				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlCompareFiles, xmlUnpack, convertMarcBin2MarcXml, xmlMerge, xmlMergeTag, xmlMergeLevel, xmlMergeParentTag, xmlIsMarcXml, print, optimize);
+				new XmlIndex(xmlName, xmlPath, xmlPropertiesFile, xmlSolrServerBiblio, xmlElements, xmlInclude, xmlExclude, xmlDeleteBeforeImport, ftpDownload, xmlFtpHost, xmlFtpPort, xmlFtpUser, xmlFtpPass, xmlFtpRemotePath, xmlCompareFiles, xmlUnpack, convertMarcBin2MarcXml, xmlMerge, xmlMergeTag, xmlMergeLevel, xmlMergeParentTag, xmlMergeParentAttributes, xmlMergeElementAttributes, xmlIsMarcXml, print, optimize);
 				AkImporterHelper.print(print, "\n-----------------------------------------------------------------------------");
 				AkImporterHelper.print(print, "\nDone importing (Marc)XML for " + xmlName + ".");
 				postProcess();
-				
 				break;
 			}
 
