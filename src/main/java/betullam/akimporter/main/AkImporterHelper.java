@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -115,6 +116,7 @@ public class AkImporterHelper {
 
 		Properties properties = new Properties();
 		String translationFile = pathToTranslationFiles + File.separator + filename;
+		InputStream inputStream = null;
 		BufferedInputStream translationStream = null;
 
 		try {
@@ -125,25 +127,31 @@ public class AkImporterHelper {
 				// right click on the project folder and select "Properties" -> "Java Build Path" -> "Source"-Tab -> Select "Included" and then "Edit ...".
 				// For "Inclusion patterns", click "Add multiple" and select the "resources" folder under the "main" folder. Now add it and export the
 				// .jar again. Maybe you have to use wildcards when using whole folders.
-				translationStream = new BufferedInputStream(Main.class.getResourceAsStream("/main/resources/" + filename));
-				
+				inputStream = Main.class.getResourceAsStream("/main/resources/" + filename);
+				if (inputStream == null) {
+					throw new FileNotFoundException();
+				} else {
+					translationStream = new BufferedInputStream(inputStream);
+				}
 			} else {
 				translationStream = new BufferedInputStream(new FileInputStream(translationFile));
 			}
 
-			properties.load(translationStream);
+			if (translationStream != null) {
+				properties.load(translationStream);
+				inputStream.close();
+				translationStream.close();
+			}
 		} catch (FileNotFoundException e) {
-			System.err.println("\nError: File not found! Please check if the file \"" + translationFile + "\" is in the same directory as mab.properties.\n");
+			if (useDefaultProperties) {
+				System.err.println("\nError: File not found in .jar file under /main/resources/" + filename + "! Please check if the file exist and is exported to the right place in the .jar file.\n");
+			} else {
+				System.err.println("\nError: File not found! Please check if the file \"" + translationFile + "\" is in the same directory as mab.properties.\n");
+			}
 			e.printStackTrace();
 		} catch (IOException e) {
 			System.err.println("\nError with file: " + filename);
 			e.printStackTrace();
-		} finally {
-			try {
-				translationStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		}
 
 		for (Map.Entry<?, ?> property : properties.entrySet()) {
