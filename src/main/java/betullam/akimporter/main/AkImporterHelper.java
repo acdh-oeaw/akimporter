@@ -132,13 +132,18 @@ public class AkImporterHelper {
 			}
 
 			properties.load(translationStream);
-			translationStream.close();
 		} catch (FileNotFoundException e) {
-			System.err.println("Error: File not found! Please check if the file \"" + translationFile + "\" is in the same directory as mab.properties.\n");
+			System.err.println("\nError: File not found! Please check if the file \"" + translationFile + "\" is in the same directory as mab.properties.\n");
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.err.println("Error with file: " + filename);
+			System.err.println("\nError with file: " + filename);
 			e.printStackTrace();
+		} finally {
+			try {
+				translationStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		for (Map.Entry<?, ?> property : properties.entrySet()) {
