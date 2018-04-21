@@ -118,7 +118,7 @@ public class AkImporterHelper {
 		String translationFile = pathToTranslationFiles + File.separator + filename;
 		InputStream inputStream = null;
 		BufferedInputStream translationStream = null;
-
+		
 		try {
 			// Get .properties file and load contents:
 			if (useDefaultProperties) {
@@ -139,8 +139,11 @@ public class AkImporterHelper {
 
 			if (translationStream != null) {
 				properties.load(translationStream);
-				inputStream.close();
 				translationStream.close();
+			}
+			
+			if (inputStream != null) {
+				inputStream.close();
 			}
 		} catch (FileNotFoundException e) {
 			if (useDefaultProperties) {
