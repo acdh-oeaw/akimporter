@@ -245,7 +245,7 @@ public class Generic {
 			}
 
 			counter = counter + 1;
-			AkImporterHelper.print(this.print, "Linking \"" + consoleDisplayText + "\". Processing record no " + counter  + " of " + noOfDocs + "                                      \r");
+			AkImporterHelper.print(this.print, "\nLinking \"" + consoleDisplayText + "\". Processing record no " + counter  + " of " + noOfDocs);
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

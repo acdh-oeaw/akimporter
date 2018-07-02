@@ -188,7 +188,7 @@ public class ParentToChilds {
 				}
 			}
 			
-			AkImporterHelper.print(this.print, "Linking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs + "                 \r");
+			AkImporterHelper.print(this.print, "\nLinking parent(s) to it's child(s). Processing record no " + counter  + " of " + noOfDocs);
 
 			// If the last document of the solr result page is reached, build a new filter query so that we can iterate over the next result page:
 			if (docId.equals(newLastDocId)) {

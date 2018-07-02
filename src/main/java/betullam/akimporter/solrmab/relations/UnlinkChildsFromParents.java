@@ -266,7 +266,7 @@ public class UnlinkChildsFromParents {
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-				AkImporterHelper.print(this.print, "Unlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents + "                   \r");
+				AkImporterHelper.print(this.print, "\nUnlinking childs from parent " + parentAc + ". Processing record no " + counter  + " of " + noOfParents);
 			}
 
 		}

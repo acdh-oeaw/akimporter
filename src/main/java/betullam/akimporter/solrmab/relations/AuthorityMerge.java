@@ -324,7 +324,7 @@ public class AuthorityMerge {
 					}
 				}
 				
-				AkImporterHelper.print(this.print, "Integrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords + "                                   \r");
+				AkImporterHelper.print(this.print, "\nIntegrating authority data to bibliographic record " + recordId + ". Records to process: " + noOfFoundBibRecords);
 
 				// Add documents from the class variable which was set before to Solr
 				if (counter % INDEX_RATE == 0) { // Every n-th record, add documents to solr

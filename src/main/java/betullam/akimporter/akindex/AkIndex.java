@@ -72,7 +72,7 @@ public class AkIndex {
 		// XML Validation
 		boolean allFilesValid = false;
 		if (!this.akiValidateSkip) {
-			AkImporterHelper.print(this.print, "\nStart validating XML data\t-> please wait ...\r");
+			AkImporterHelper.print(this.print, "\nStart validating XML data\t-> please wait ...");
 			XmlValidator bxh = new XmlValidator();
 			for (File file : fileList) {
 				boolean hasValidationPassed = bxh.validateXML(file.getAbsolutePath());
@@ -92,7 +92,7 @@ public class AkIndex {
 
 		// If all files are valid, go on with the import process
 		if (allFilesValid && !this.akiValidateSkip) {
-			AkImporterHelper.print(this.print, "Start validating XML data\t-> Done             ");
+			AkImporterHelper.print(this.print, "\nStart validating XML data\t-> Done");
 		} else if (!allFilesValid) {
 			// If there are errors in at least one file, stop the import process:
 			System.err.println("\nError while validating. Import process was cancelled!\n");
@@ -108,9 +108,9 @@ public class AkIndex {
 					sServerAkIndex.commit();
 
 					if (optimize) {
-						AkImporterHelper.print(this.print, "\nOptimizing Solr Server\t\t-> please wait ...\r");
+						AkImporterHelper.print(this.print, "\nOptimizing Solr Server\t\t-> please wait ...");
 						AkImporterHelper.solrOptimize(sServerAkIndex);
-						AkImporterHelper.print(this.print, "Optimizing Solr Server\t\t-> Done             ");
+						AkImporterHelper.print(this.print, "\nOptimizing Solr Server\t\t-> Done");
 					}
 				} catch (SolrServerException e) {
 					e.printStackTrace();
@@ -152,11 +152,11 @@ public class AkIndex {
 			xmlReader.setContentHandler(contentHandler);
 
 			// Start parsing & indexing:
-			AkImporterHelper.print(this.print, "\nIndexing documents to Solr\t-> please wait ...\r");
+			AkImporterHelper.print(this.print, "\nIndexing documents to Solr\t-> please wait ...");
 			xmlReader.parse(inputSource);
 			isIndexingSuccessful = true;
 			if (isIndexingSuccessful) {
-				AkImporterHelper.print(this.print, "Indexing documents to Solr\t-> Done             ");
+				AkImporterHelper.print(this.print, "\nIndexing documents to Solr\t-> Done");
 			} else {
 				System.err.println("ERROR");
 			}

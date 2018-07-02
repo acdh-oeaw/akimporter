@@ -92,7 +92,7 @@ public class Consolidate {
 
 		// Split XMLs. Older records will be overwritten by newer records:
 		for (File fileForSplitting : filesForSplitting) {
-			AkImporterHelper.print(this.print, "Splitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...                                             \r");
+			AkImporterHelper.print(this.print, "\nSplitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...");
 			Map<String, String> condAttrs = new HashMap<String, String>();
 			condAttrs.put("tag", "SYS");
 			xmls.split(fileForSplitting.getAbsolutePath(), this.splitNodeNameToExtract, this.splitNodeLevel, this.splitNodeNameForFileName, this.splitNodeAttrForFileName);

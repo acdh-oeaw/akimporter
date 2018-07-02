@@ -126,9 +126,6 @@ public class XmlContentHandler implements ContentHandler {
 				xmlSolrRecord = null;
 			}
 
-			// This generates too much output when using cron jobs or nohup:
-			//AkImporterHelper.print(print, "Indexing record no. " + recordCounter + "                                                        \r");
-
 			// Every n-th record (= NO_OF_DOCS), add the generic XML records to Solr. Then we will empty all objects (set to "null") to save memory
 			// and go on with the next n records. If there is a rest at the end of the file, do the same thing in the endDocument() method. E. g. NO_OF_DOCS 
 			// is set to 100 and we have 733 records, but at this point, only 700 are indexed. The 33 remaining records will be indexed in endDocument() method.

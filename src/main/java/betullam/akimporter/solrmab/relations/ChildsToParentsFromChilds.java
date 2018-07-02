@@ -339,7 +339,7 @@ public class ChildsToParentsFromChilds {
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-				AkImporterHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
+				AkImporterHelper.print(this.print, "\nLinking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents);
 			}
 		}
 	}

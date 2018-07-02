@@ -325,7 +325,7 @@ public class ChildsToParentsFromParents {
 			}
 
 			counter = counter + 1;
-			AkImporterHelper.print(this.print, "Linking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs + "                              \r");
+			AkImporterHelper.print(this.print, "\nLinking childs to parent from unlinked parents. Processing record no " + counter  + " of " + noOfDocs);
 			
 			docId = (recordWithNoChild.getFieldValue("id") != null) ? recordWithNoChild.getFieldValue("id").toString() : null;
 

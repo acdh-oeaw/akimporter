@@ -298,7 +298,7 @@ public class MarcContentHandler implements ContentHandler {
 			
 			rawRecords.add(rawRecord);
 
-			print(this.print, "Indexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter + "                 \r");
+			print(this.print, "\nIndexing record " + ((recordID != null) ? recordID : recordSYS) + ", No. indexed: " + counter);
 
 			// Every n-th record, match the XML records to the Solr records. We then get an appropirate List of SolrRecord object and can index
 			// it's values to Solr. Then we will empty all objects (clear and set to "null") to save memory and go on with the next n records.

@@ -188,7 +188,7 @@ public class AuthorityFlag {
 					}
 				}
 
-				AkImporterHelper.print(this.print, "Setting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds + "                                         \r");
+				AkImporterHelper.print(this.print, "\nSetting flag in authority record. Processing record no " + counter  + " of " + noOfGndIds);
 
 
 				// Add documents from the class variable which was set before to Solr

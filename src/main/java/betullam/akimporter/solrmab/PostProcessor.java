@@ -115,10 +115,6 @@ public class PostProcessor {
 					docsForAtomicUpdates.add(parentWithoutChilds);
 
 				}
-
-				//counter = counter + 1;
-				//AkImporterHelper.print(this.print, "Replace all values in field " + ppField + " with value " + ppValue + ". Processing record no " + counter  + " of " + numFound + "                       \r");
-
 			}
 		}
 	}
