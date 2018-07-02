@@ -804,10 +804,6 @@ public class Main {
 			e.printStackTrace();
 			return;
 		}
-
-		if (print) {
-			System.out.print("\n");
-		}
 	}
 
 
