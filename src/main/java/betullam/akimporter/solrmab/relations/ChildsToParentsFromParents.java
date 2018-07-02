@@ -142,8 +142,10 @@ public class ChildsToParentsFromParents {
 			try {
 				this.solrServer.commit();
 			} catch (SolrServerException e) {
+				System.err.println("Error while relating childs to parents from parents");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error while relating childs to parents from parents");
 				e.printStackTrace();
 			} finally {
 				docsForAtomicUpdates.clear();
@@ -392,6 +394,7 @@ public class ChildsToParentsFromParents {
 		try {
 			nonDeletedChildRecords = solrServer.query(querynonDeletedChilds).getResults();			
 		} catch (SolrServerException e) {
+			System.err.println("Error while relating childs to parents from parents");
 			nonDeletedChildRecords = null;
 			e.printStackTrace();
 		}

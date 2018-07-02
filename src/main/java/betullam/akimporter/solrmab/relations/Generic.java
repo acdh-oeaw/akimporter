@@ -124,8 +124,10 @@ public class Generic {
 			try {
 				this.solrServerBiblio.commit();
 			} catch (SolrServerException e) {
+				System.err.println("Error while generic relating");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error while generic relating");
 				e.printStackTrace();
 			} finally {
 				docsForAtomicUpdates.clear();
@@ -276,6 +278,7 @@ public class Generic {
 				relatedRecordSys = resultDocList.get(0).getFieldValue("id").toString();
 			}
 		} catch (SolrServerException e) {
+			System.err.println("Error while generic relating");
 			e.printStackTrace();
 		}
 

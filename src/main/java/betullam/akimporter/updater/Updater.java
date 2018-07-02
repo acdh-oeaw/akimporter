@@ -173,7 +173,7 @@ public class Updater {
 					AkImporterHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL!");
 					isUpdateSuccessful = true;
 				} else {
-					AkImporterHelper.print(print, "\nError while importing!\n");
+					System.err.println("Error while importing!");
 					isUpdateSuccessful = false;
 				}
 

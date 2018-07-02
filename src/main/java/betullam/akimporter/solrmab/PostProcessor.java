@@ -46,8 +46,10 @@ public class PostProcessor {
 					this.solrServerBiblio.optimize();
 				}
 			} catch (SolrServerException e) {
+				System.err.print("Error while post processing.");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.print("Error while post processing.");
 				e.printStackTrace();
 			}
 		}
@@ -84,6 +86,7 @@ public class PostProcessor {
 			// Execute query and get results
 			queryResult = this.solrServerBiblio.query(query).getResults();
 		} catch (SolrServerException e) {
+			System.err.print("Error while post processing.");
 			e.printStackTrace();
 		}
 

@@ -78,6 +78,7 @@ public class SaveLoans {
 			dbUsername = dbCredentials.get("dbUsername");
 			dbPassword = dbCredentials.get("dbPassword");
 		} else {
+			System.err.print("Error while saving loans. No DB credentials found.");
 			return;
 		}
 
@@ -110,6 +111,7 @@ public class SaveLoans {
 		try {
 			connection.close();
 		} catch (SQLException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		}
 	}
@@ -164,6 +166,7 @@ public class SaveLoans {
 				AkImporterHelper.print(this.print, "\nSaved loan to database. Item ID: " + loan.getItemId() + ", Title: " + loan.getTitle());
 				
 			} catch (SQLException e) {
+				System.err.print("Error while saving loans.");
 				e.printStackTrace();
 			}
 		}
@@ -264,12 +267,16 @@ public class SaveLoans {
 				doc = db.parse(xml);
 			}
 		} catch (MalformedURLException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		} catch (SAXException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		} finally {
 			httpUrlConnection.disconnect();
@@ -294,6 +301,7 @@ public class SaveLoans {
 			}
 
 		} catch (SQLException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		}
 
@@ -306,6 +314,7 @@ public class SaveLoans {
 		try {
 			connection = DriverManager.getConnection("jdbc:" + jdbcConnectionString + "?user=" + dbUsername + "&password=" + dbPassword + "&verifyServerCertificate=" + ((verifyServerCertificate) ? "true" : "false") + "&useSSL=" + ((useSSL) ? "true" : "false"));
 		} catch (SQLException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		}
 		return connection;
@@ -359,6 +368,7 @@ public class SaveLoans {
 			try {
 				returnValue.put("dbPassword", URLEncoder.encode(usernamePasswordArr[1], "UTF-8"));
 			} catch (UnsupportedEncodingException e) {
+				System.err.print("Error while saving loans.");
 				e.printStackTrace();
 			}
 		} else {
@@ -407,6 +417,7 @@ public class SaveLoans {
 		try {
 			iniConfig = configs.ini(iniConfigFile);
 		} catch (ConfigurationException e) {
+			System.err.print("Error while saving loans.");
 			e.printStackTrace();
 		}
 

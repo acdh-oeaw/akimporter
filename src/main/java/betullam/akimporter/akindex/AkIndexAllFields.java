@@ -173,18 +173,23 @@ public class AkIndexAllFields {
 				System.err.print("\nERROR: Getting HTTP response code " + httpResponseCode + " from url " + lukeUrl + "\n");
 			}
 		} catch (MalformedURLException e) {
+			System.err.print("Error while indexing all fields");
 			e.printStackTrace();
 			document = null;
 		}  catch (ParserConfigurationException e) {
+			System.err.print("Error while indexing all fields");
 			e.printStackTrace();
 			document = null;
 		} catch (SAXException e) {
+			System.err.print("Error while indexing all fields");
 			e.printStackTrace();
 			document = null;
 		} catch (IOException e) {
+			System.err.print("Error while indexing all fields");
 			e.printStackTrace();
 			document = null;
 		} catch (Exception e) {
+			System.err.print("Error while indexing all fields");
 			e.printStackTrace();
 			document = null;
 		} finally {

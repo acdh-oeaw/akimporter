@@ -800,6 +800,7 @@ public class Main {
 
 
 		} catch (ParseException e) {
+			System.err.print("Error parsing command line arguments.");
 			e.printStackTrace();
 			return;
 		}
@@ -883,7 +884,7 @@ public class Main {
 						isValidAnswer = true;
 					} else {
 						isValidAnswer = false;
-						System.out.println("Solr-Server ist unter \"" + userinput + "\" nicht erreichbar! Bitte prüfen Sie ob der Server läuft und der angegebene Core existiert und geben Sie die URL erneut ein!");
+						System.err.println("Solr-Server ist unter \"" + userinput + "\" nicht erreichbar! Bitte prüfen Sie ob der Server läuft und der angegebene Core existiert und geben Sie die URL erneut ein!");
 					}
 				} else if (possibleAnswers.equals("propertiesExists")) {
 					file = new File(userinput);
@@ -1030,6 +1031,7 @@ public class Main {
 			System.err.println("Properties file not found. Please make sure you have a file called \"AkImporter.properties\" in the same directory as AkImporter.jar");
 			System.exit(1); // Stop execution of program
 		} catch (IOException e) {
+			System.err.print("Error while getting importer properties.");
 			e.printStackTrace();
 		}
 
@@ -1058,8 +1060,10 @@ public class Main {
 			mabProperties.load(propertiesInputStream);
 			propertiesInputStream.close();
 		} catch (FileNotFoundException e) {
+			System.err.print("Error while getting translation files.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.print("Error while getting translation files.");
 			e.printStackTrace();
 		}
 
@@ -1113,7 +1117,7 @@ public class Main {
 		for (String translationFilename : translationFilenames) {
 			String pathToTranslationFiles = directoryOfTranslationFiles + File.separator + translationFilename;
 			if (fileExists(new File(pathToTranslationFiles)) == false) {
-				System.out.println("Die in der .properties-Datei \"" + pathToMabPropertiesFile + "\" angegebene Translation-Datei \"" + translationFilename + "\" existiert im Verzeichnis \"" + directoryOfTranslationFiles + "\" nicht."
+				System.err.println("Die in der .properties-Datei \"" + pathToMabPropertiesFile + "\" angegebene Translation-Datei \"" + translationFilename + "\" existiert im Verzeichnis \"" + directoryOfTranslationFiles + "\" nicht."
 						+ "\nBitte stellen Sie sicher, dass die Translation-Datei dort existiert und drücken Sie die Eingabetaste um fortzufahren.");
 				translationFilesExist = false;
 				return translationFilesExist;
@@ -1226,8 +1230,10 @@ public class Main {
 			} catch (ConnectException e) {
 				ftpErrorMsg = "FTP problem. Check if connection values in \"AkImporter.properties\" are correct. Error Message from FTP:\n" + e.getMessage();
 			} catch (SocketException e) {
+				ftpErrorMsg = "FTP problem";
 				e.printStackTrace();
 			} catch (IOException e) {
+				ftpErrorMsg = "FTP problem";
 				e.printStackTrace();
 			}
 
@@ -1328,7 +1334,6 @@ public class Main {
 		}
 
 		return authorityPropertiesOk;
-
 	}
 
 	/**

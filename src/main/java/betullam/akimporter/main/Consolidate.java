@@ -99,7 +99,7 @@ public class Consolidate {
 		}
 		
 		// Merge XML:
-		System.out.println("\nStart merging splitted files into a new consolidated file. This could take a while ...");
+		AkImporterHelper.print(this.print, "\nStart merging splitted files into a new consolidated file. This could take a while ...");
 		XmlMerger xmlm = new XmlMerger(); // Start merging
 		boolean isMergingSuccessful = xmlm.mergeElements(pathToSplittedFilesDir, this.pathToConsolidatedFile, "collection", "record", 1, null, null);
 

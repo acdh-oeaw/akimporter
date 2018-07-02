@@ -117,8 +117,10 @@ public class ChildsToParentsFromChilds {
 			try {
 				this.solrServer.commit();
 			} catch (SolrServerException e) {
+				System.err.println("Error while relating childs to parents from childs");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error while relating childs to parents from childs");
 				e.printStackTrace();
 			} finally {
 				docsForAtomicUpdates.clear();
@@ -337,7 +339,6 @@ public class ChildsToParentsFromChilds {
 					docsForAtomicUpdates = new ArrayList<SolrInputDocument>(); // Construct a new List for SolrInputDocument
 				}
 
-
 				AkImporterHelper.print(this.print, "Linking childs to parent from unlinked childs. Processing record no " + counter  + " of " + noOfParents + "                \r");
 			}
 		}
@@ -403,6 +404,7 @@ public class ChildsToParentsFromChilds {
 		try {
 			nonDeletedChildRecords = solrServer.query(querynonDeletedChilds).getResults();			
 		} catch (SolrServerException e) {
+			System.err.println("Error while relating childs to parents from childs");
 			nonDeletedChildRecords = null;
 			e.printStackTrace();
 		}
@@ -426,6 +428,5 @@ public class ChildsToParentsFromChilds {
 		}
 		return false;
 	}
-
 
 }

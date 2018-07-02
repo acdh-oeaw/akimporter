@@ -116,7 +116,7 @@ public class FtpDownload {
 						ftpOk = true;
 					} else {
 						ftpOk = false;
-						AkImporterHelper.print(showMessages, "ERROR downloading file \"" + fileName + "\" from FTP-Server!\n");
+						System.err.println("ERROR downloading file \"" + fileName + "\" from FTP-Server!");
 					}
 					outputStream.close();
 				}
@@ -177,6 +177,7 @@ public class FtpDownload {
 
 		} catch (IOException e) {
 			ftpOk = false;
+			System.err.println("Error while downloading file using FTP");
 			e.printStackTrace();
 		}
 		return ftpOk;
@@ -233,16 +234,20 @@ public class FtpDownload {
 				sftpOk = true;
 			} catch (Exception e) {
 				sftpOk = false;
+				System.err.println("Error while downloading file using SFTP");
+				e.printStackTrace();
 			} finally {
 				sftpClient.close();
 			}
 
 		} catch (IOException e) {
+			System.err.println("Error while downloading file using SFTP");
 			e.printStackTrace();
 		} finally {
 			try {
 				ssh.disconnect();
 			} catch (IOException e) {
+				System.err.println("Error while downloading file using SFTP");
 				e.printStackTrace();
 			}
 		}
@@ -321,6 +326,7 @@ public class FtpDownload {
 				}
 			}
 		} catch (IOException e) {
+			System.err.println("Error while getting remote files");
 			e.printStackTrace();
 		}
 		

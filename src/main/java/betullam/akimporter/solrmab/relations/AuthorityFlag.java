@@ -139,8 +139,10 @@ public class AuthorityFlag {
 				// Commit the changes
 				this.solrServerAuthority.commit();
 			} catch (SolrServerException e) {
+				System.err.println("Error whild flagging authorities");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error whild flagging authorities");
 				e.printStackTrace();
 			} finally {
 				docsForAtomicUpdates.clear();
@@ -222,8 +224,10 @@ public class AuthorityFlag {
 			AkImporterHelper.print(this.print, "\nDeleting wrong authority records");
 			solrServerAuthority.deleteByQuery("-heading:*");
 		} catch (SolrServerException e) {
+			System.err.println("Error whild flagging authorities");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error whild flagging authorities");
 			e.printStackTrace();
 		}
 	}
@@ -238,8 +242,10 @@ public class AuthorityFlag {
 			AkImporterHelper.print(this.print, "\nDeleting authority records without flag of existance.");
 			solrServerAuthority.deleteByQuery("-existsInBiblio_str:\"true\"");
 		} catch (SolrServerException e) {
+			System.err.println("Error whild flagging authorities");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error whild flagging authorities");
 			e.printStackTrace();
 		}
 	}

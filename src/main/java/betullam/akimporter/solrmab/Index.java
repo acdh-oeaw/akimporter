@@ -234,25 +234,27 @@ public class Index {
 
 		} catch (RemoteSolrException e) {
 			isIndexingSuccessful = false;
-			System.out.println("\n------------------------------------------------------------------------------------------------------------\n");
-			System.out.println("Solr error! Please check Solr-Setting in general.properties file. Maybe it's not set correctly! E. g. it could be a typo. Check also if the Solr-Server is up and running!");
-			System.out.println("\n\nSee also StackTrace:\n");
+			System.err.println("\n------------------------------------------------------------------------------------------------------------\n");
+			System.err.println("Solr error! Please check Solr-Setting in general.properties file. Maybe it's not set correctly! E. g. it could be a typo. Check also if the Solr-Server is up and running!");
+			System.err.println("\n\nSee also StackTrace:\n");
 			e.printStackTrace();
-			System.out.println("\n-----------------------------------------------------------------------\n");
+			System.err.println("\n-----------------------------------------------------------------------\n");
 		} catch (FileNotFoundException e) {
 			isIndexingSuccessful = false;
-			System.out.println("\n------------------------------------------------------------------------------------------------------------\n");
-			System.out.println("File error! Most possible reasons for this error:\n");
-			System.out.println("\n1. The \"general.properties\"-file is not in directory you are right now (at the moment you are in " + System.getProperty("user.dir") + "). Please change the command promt to the directory where the \"general.properties\"-file is. Also check if it's named correctly.");
-			System.out.println("\n2. The XML-file with the data from Aleph is not at the location that is specified in the general.properties-file (check \"mabXMLfile\" there).");
-			System.out.println("\n\nSee also StackTrace:\n");
+			System.err.println("\n------------------------------------------------------------------------------------------------------------\n");
+			System.err.println("File error! Most possible reasons for this error:\n");
+			System.err.println("\n1. The \"general.properties\"-file is not in directory you are right now (at the moment you are in " + System.getProperty("user.dir") + "). Please change the command promt to the directory where the \"general.properties\"-file is. Also check if it's named correctly.");
+			System.err.println("\n2. The XML-file with the data from Aleph is not at the location that is specified in the general.properties-file (check \"mabXMLfile\" there).");
+			System.err.println("\n\nSee also StackTrace:\n");
 			e.printStackTrace();
-			System.out.println("\n-----------------------------------------------------------------------\n");
+			System.err.println("\n-----------------------------------------------------------------------\n");
 		} catch (IOException e) {
 			isIndexingSuccessful = false;
+			System.err.println("Error while indexing");
 			e.printStackTrace();
 		} catch (Exception e) {
 			isIndexingSuccessful = false;
+			System.err.println("Error while indexing");
 			e.printStackTrace();
 		} finally {
 			// Close all streams and readers and set variables to null to free memory
@@ -261,6 +263,7 @@ public class Index {
 				if (xmlSampleDataStream != null) { xmlSampleDataStream.close(); }
 				if (reader != null) { reader.close(); }
 			} catch (IOException e) {
+				System.err.println("Error while closing streams");
 				e.printStackTrace();
 			}
 			listOfMatchingObjs = null;
@@ -379,7 +382,7 @@ public class Index {
 				if (openBracketsCounter != closeBracketsCounter) {
 					System.err.println("Please check in our mab properties file if you forgot an opening [ or closing ] square bracket. "
 							+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it with a double backslash, e. g.: \\\\[");
-					System.exit(0);
+					System.exit(1);
 				}
 
 				HashMap<String, String> translateProperties = new HashMap<String, String>();

@@ -204,7 +204,7 @@ public class Import {
 				hasValidationPassed = bxh.validateXML(pathToMabXmlFile);
 
 				while (hasValidationPassed == false) {
-					AkImporterHelper.print(this.print, "\nFound a problem in xml file!");
+					System.err.print("\\nFound a problem in xml file!");
 					if (!isWithCliArgs) {
 						isXmlCleanOk = Main.getUserInput("\nDo you want to continue with cleaning the data?"
 								+ " The original data won't be changed. This process can take some time."
@@ -226,8 +226,8 @@ public class Import {
 								hasValidationPassed = true;
 							}
 						} else {
-							AkImporterHelper.print(this.print, "\nProblem with cleaning the data! Maybe you do not have write permissions"
-									+ " to the folder, to which the cleaned data will be written. This is the same as the one of the original file: "
+							System.err.print("\nProblem with cleaning the data! Maybe you do not have write permissions"
+									+ " to the folder, to which the cleaned data will be written. This is the same as the one of the original file: " 
 									+ pathToMabXmlFile);
 							return;
 						}

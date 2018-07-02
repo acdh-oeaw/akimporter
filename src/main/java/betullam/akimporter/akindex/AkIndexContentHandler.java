@@ -166,6 +166,7 @@ public class AkIndexContentHandler implements ContentHandler {
 			String recordId = (recordIds != null) ? recordIds.get(0) : null;
 			singleRecordId.add(recordId);
 		} catch (XPathExpressionException e) {
+			System.err.println("Error in AKindex content handler.");
 			e.printStackTrace();
 		}
 
@@ -312,10 +313,13 @@ public class AkIndexContentHandler implements ContentHandler {
 			InputSource inputSource = new InputSource(new StringReader(xmlRecord));
 			domDocument = documentBuilder.parse(inputSource);
 		} catch (ParserConfigurationException e) {
+			System.err.println("Error in AKindex content handler.");
 			e.printStackTrace();
 		} catch (SAXException e) {
+			System.err.println("Error in AKindex content handler.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error in AKindex content handler.");
 			e.printStackTrace();
 		}
 		return domDocument;
@@ -361,8 +365,10 @@ public class AkIndexContentHandler implements ContentHandler {
 			try {
 				solrServer.add(docs);
 			} catch (SolrServerException e) {
+				System.err.println("Error in AKindex content handler.");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error in AKindex content handler.");
 				e.printStackTrace();
 			}
 

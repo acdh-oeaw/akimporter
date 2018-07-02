@@ -192,8 +192,10 @@ public class XmlContentHandler implements ContentHandler {
 			try {
 				solrServer.add(docs);
 			} catch (SolrServerException e) {
+				System.err.println("Error in XML content handler.");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error in XML content handler.");
 				e.printStackTrace();
 			}
 
@@ -240,6 +242,7 @@ public class XmlContentHandler implements ContentHandler {
 				}
 			}
 		} catch (XPathExpressionException e) {
+			System.err.println("Error in XML content handler.");
 			e.printStackTrace();
 		}
 
@@ -267,6 +270,7 @@ public class XmlContentHandler implements ContentHandler {
 							dataFieldValues.addAll(values);
 						}
 					} catch (XPathExpressionException e) {
+						System.err.println("Error in XML content handler.");
 						e.printStackTrace();
 					}
 				}
@@ -309,10 +313,13 @@ public class XmlContentHandler implements ContentHandler {
 			InputSource inputSource = new InputSource(new StringReader(xmlRecord));
 			domDocument = documentBuilder.parse(inputSource);
 		} catch (ParserConfigurationException e) {
+			System.err.println("Error in XML content handler.");
 			e.printStackTrace();
 		} catch (SAXException e) {
+			System.err.println("Error in XML content handler.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error in XML content handler.");
 			e.printStackTrace();
 		}
 

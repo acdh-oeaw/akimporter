@@ -436,8 +436,10 @@ public class MarcContentHandler implements ContentHandler {
 				docsForAtomicUpdates = null;
 			}
 		} catch (SolrServerException e) {
+			System.err.println("Error in Marc content handler.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error in Marc content handler.");
 			e.printStackTrace();
 		}
 	}
@@ -511,8 +513,10 @@ public class MarcContentHandler implements ContentHandler {
 			}
 
 		} catch (SolrServerException e) {
+			System.err.println("Error in Marc content handler.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error in Marc content handler.");
 			e.printStackTrace();
 		}
 	}

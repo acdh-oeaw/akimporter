@@ -157,9 +157,8 @@ public class AkIndex {
 			isIndexingSuccessful = true;
 			if (isIndexingSuccessful) {
 				AkImporterHelper.print(this.print, "Indexing documents to Solr\t-> Done             ");
-				//AkImporterHelper.print(this.print, "\nINDEXING WAS SUCCESSFUL");
 			} else {
-				AkImporterHelper.print(this.print, "ERROR");
+				System.err.println("ERROR");
 			}
 
 		} catch (FileNotFoundException e) {

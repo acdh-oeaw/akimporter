@@ -153,6 +153,7 @@ public class OaiUpdater {
 				FileUtils.cleanDirectory(new File(oaiPathOriginalTimestamp).getParentFile());
 				FileUtils.cleanDirectory(new File(oaiPathMergedTimestamp).getParentFile());
 			} catch (IOException e) {
+				System.err.println("Error while updating from OAI.");
 				e.printStackTrace();
 			}
 		}
@@ -243,12 +244,14 @@ public class OaiUpdater {
 
 				AkImporterHelper.print(print, "\nEVERYTHING WAS SUCCESSFUL");
 			} catch (SolrServerException e) {
+				System.err.println("Error while updating from OAI.");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error while updating from OAI.");
 				e.printStackTrace();
 			}
 		} else {
-			AkImporterHelper.print(print, "ERROR");
+			System.err.println("Error while updating from OAI.");
 		}
 
 	}
@@ -310,6 +313,7 @@ public class OaiUpdater {
 					FileUtils.deleteDirectory(mergedFileToDelete);
 					FileUtils.deleteDirectory(originalFileToDelete);
 				} catch (IOException e) {
+					System.err.println("Error while updating from OAI.");
 					e.printStackTrace();
 				}
 			}
@@ -376,12 +380,14 @@ public class OaiUpdater {
 						AkImporterHelper.print(print, "Done");
 					}					
 				} catch (SolrServerException e) {
+					System.err.println("Error while updating from OAI.");
 					e.printStackTrace();
 				} catch (IOException e) {
+					System.err.println("Error while updating from OAI.");
 					e.printStackTrace();
 				}
 			} else {
-				AkImporterHelper.print(print, "ERROR");
+				System.err.println("Error while updating from OAI.");
 			}
 		}
 
@@ -444,10 +450,13 @@ public class OaiUpdater {
 			xmlReader.parse(inputSource);
 			isIndexingSuccessful = true;
 		} catch (FileNotFoundException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (SAXException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 
@@ -668,8 +677,10 @@ public class OaiUpdater {
 				System.err.print("\nERROR: Getting HTTP response code " + httpResponseCode + " from OAI interface at " + oaiUrl);
 			}
 		} catch (MalformedURLException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 	}
@@ -696,10 +707,12 @@ public class OaiUpdater {
 			oaiDateTimeProperties = null;
 			System.exit(1); // Stop execution of program
 		} catch (IOException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 			oaiDateTimeProperties = null;
 			System.exit(1); // Stop execution of program
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 
@@ -719,8 +732,10 @@ public class OaiUpdater {
 		try {
 			FileUtils.writeStringToFile(oaiDateFile, content);
 		} catch (IOException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 	}
@@ -763,10 +778,13 @@ public class OaiUpdater {
 			Source source = new DOMSource(doc);
 			transformer.transform(source, result);
 		} catch (TransformerConfigurationException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (TransformerException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 	}
@@ -803,18 +821,23 @@ public class OaiUpdater {
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			document = db.parse(conn.getInputStream());
 		} catch (MalformedURLException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 			document = null;
 		}  catch (ParserConfigurationException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 			document = null;
 		} catch (SAXException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 			document = null;
 		} catch (IOException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 			document = null;
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 			document = null;
 		}
@@ -836,10 +859,13 @@ public class OaiUpdater {
 			httpResponseCode = conn.getResponseCode();
 			conn.disconnect();
 		} catch (MalformedURLException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 
@@ -860,8 +886,10 @@ public class OaiUpdater {
 		try {
 			resumptionToken = xmlParser.getTextValue(doc, xpath);
 		} catch (XPathExpressionException e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		} catch (Exception e) {
+			System.err.println("Error while updating from OAI.");
 			e.printStackTrace();
 		}
 		return resumptionToken;

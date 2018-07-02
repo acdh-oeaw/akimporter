@@ -1113,6 +1113,7 @@ public class MetsContentHandler implements ContentHandler {
 				docs = null;
 			}
 		} catch (Exception e) {
+			System.err.println("Error in Mets content handler.");
 			e.printStackTrace();
 		}
 	}

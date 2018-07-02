@@ -56,12 +56,14 @@ public class Converter {
 				counter++;
 			}
 		} catch (Exception e) {
+			System.err.println("Error while converting.");
 			e.printStackTrace();
 		} finally {
 			try {
 				inputBin.close();
 				outputXml.close();
 			} catch (IOException e) {
+				System.err.println("Error while converting.");
 				e.printStackTrace();
 			}
 		}

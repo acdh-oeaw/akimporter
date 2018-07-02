@@ -122,8 +122,10 @@ public class ParentToChilds {
 			try {
 				this.solrServer.commit();
 			} catch (SolrServerException e) {
+				System.err.println("Error while relating parents to childs");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error while relating parents to childs");
 				e.printStackTrace();
 			} finally {
 				docsForAtomicUpdates.clear();

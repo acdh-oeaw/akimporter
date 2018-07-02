@@ -96,7 +96,7 @@ public class AkImporterHelper {
 		if(openBracketsCounter != closeBracketsCounter) {
 			System.err.println("Please check in your properties file if you forgot an opening [ or closing ] square bracket. "
 					+ "If a square bracket is part of your desired matching result in a regEx rule, be sure to escape it, e. g.: \\[");
-			System.exit(0);
+			System.exit(1);
 		}		
 
 		return bracketValues;
@@ -197,8 +197,10 @@ public class AkImporterHelper {
 			solrQuery = solrQuery.replaceAll("\"","\\\"");
 			solrServer.deleteByQuery(solrQuery);
 		} catch (SolrServerException e) {
+			System.err.println("Error while deleting records by query");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error while deleting records by query");
 			e.printStackTrace();
 		}
 	}
@@ -239,8 +241,10 @@ public class AkImporterHelper {
 		try {
 			solrServer.optimize();
 		} catch (SolrServerException e) {
+			System.err.println("Error while optimizing Solr");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error while optimizing Solr");
 			e.printStackTrace();
 		}
 	}

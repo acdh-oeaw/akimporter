@@ -180,8 +180,10 @@ public class ExtractTarGz {
 				}
 			}
 		} catch (FileNotFoundException e) {
+			System.err.println("Error while extracting files!");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error while extracting files!");
 			e.printStackTrace();
 		}		
 	}
@@ -258,8 +260,10 @@ public class ExtractTarGz {
 			}
 
 		} catch (FileNotFoundException e) {
+			System.err.println("Error while extracting files!");
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.err.println("Error while extracting files!");
 			e.printStackTrace();
 		}
 	}

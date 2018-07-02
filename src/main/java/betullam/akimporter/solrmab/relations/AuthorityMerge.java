@@ -165,8 +165,10 @@ public class AuthorityMerge {
 					// Commit the changes to Solr
 					this.solrServerBiblio.commit();
 				} catch (SolrServerException e) {
+					System.err.println("Error whild merging authorities");
 					e.printStackTrace();
 				} catch (IOException e) {
+					System.err.println("Error whild merging authorities");
 					e.printStackTrace();
 				} finally {
 					this.docsForAtomicUpdates.clear();
@@ -385,6 +387,7 @@ public class AuthorityMerge {
 			SolrDocumentList resultList = this.solrServerAuth.query(queryGndRecords).getResults();
 			gndRecords = (resultList.getNumFound() > 0 && resultList != null) ? resultList : null; // Get GND records
 		} catch (SolrServerException e) {
+			System.err.println("Error whild merging authorities");
 			e.printStackTrace();
 		}
 

@@ -111,8 +111,10 @@ public class UnlinkChildsFromParents {
 			try {
 				this.solrServer.commit(); // Commit the changes
 			} catch (SolrServerException e) {
+				System.err.println("Error while unlinking childs from parents");
 				e.printStackTrace();
 			} catch (IOException e) {
+				System.err.println("Error while unlinking childs from parents");
 				e.printStackTrace();
 			} finally {
 				parentAcs.clear();
