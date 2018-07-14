@@ -261,20 +261,22 @@ public class MetsSolrRecord {
 	public void setOrderLogId(int orderLogId) {
 		this.orderLogId = orderLogId;
 	}
-	
-	
 	@Override
 	public String toString() {
-		return "MetsSolrRecord [isParentOfParent=" + isParentOfParent + ", parentOfParentUrn=" + parentOfParentUrn
-				+ ", parentOfParentTitle=" + parentOfParentTitle + ", parentOfParentType=" + parentOfParentType
-				+ ", parentOfParentLevel=" + parentOfParentLevel + ", isParent=" + isParent + ", parentId=" + parentId
-				+ ", parentUrn=" + parentUrn + ", parentTitle=" + parentTitle + ", parentSubtitle=" + parentSubtitle
-				+ ", parentType=" + parentType + ", parentLevel=" + parentLevel + ", isChild=" + isChild
-				+ ", classifications=" + classifications + ", publisher=" + publisher + ", place=" + place + ", year="
-				+ year + ", volume=" + volume + ", issueNo=" + issueNo + ", sortNo=" + sortNo + ", title=" + title
-				+ ", subTitle=" + subTitle + ", acNo=" + acNo + ", akIdentifier=" + akIdentifier + ", languageTerm="
-				+ languageTerm + ", abstractTexts=" + abstractTexts + ", participants=" + participants + ", type="
-				+ type + ", level=" + level + ", urn=" + urn + ", order=" + order + ", orderLabelFrom=" + orderLabelFrom
-				+ ", orderLabelTo=" + orderLabelTo + ", logId=" + logId + ", orderLogId=" + orderLogId + "]";
+		return "MetsSolrRecord [\n\tisParentOfParent=" + isParentOfParent + "\n\tparentOfParentUrn=" + parentOfParentUrn
+				+ "\n\tparentOfParentTitle=" + parentOfParentTitle + "\n\tparentOfParentType=" + parentOfParentType
+				+ "\n\tparentOfParentLevel=" + parentOfParentLevel + "\n\tisParent=" + isParent + "\n\tparentId="
+				+ parentId + "\n\tparentUrn=" + parentUrn + "\n\tparentTitle=" + parentTitle + "\n\tparentSubtitle="
+				+ parentSubtitle + "\n\tparentType=" + parentType + "\n\tparentLevel=" + parentLevel + "\n\tisChild="
+				+ isChild + "\n\tclassifications=" + classifications + "\n\tpublisher=" + publisher + "\n\tplace="
+				+ place + "\n\tyear=" + year + "\n\tvolume=" + volume + "\n\tissueNo=" + issueNo + "\n\tsortNo="
+				+ sortNo + "\n\ttitle=" + title + "\n\tsubTitle=" + subTitle + "\n\tacNo=" + acNo + "\n\takIdentifier="
+				+ akIdentifier + "\n\tlanguageTerm=" + languageTerm + "\n\tabstractTexts=" + abstractTexts
+				+ "\n\tparticipants=" + participants + "\n\ttype=" + type + "\n\tlevel=" + level + "\n\turn=" + urn
+				+ "\n\torder=" + order + "\n\torderLabelFrom=" + orderLabelFrom + "\n\torderLabelTo=" + orderLabelTo
+				+ "\n\tlogId=" + logId + "\n\torderLogId=" + orderLogId + "\n]";
 	}
+	
+	
+	
 }
