@@ -268,7 +268,7 @@ public class Generic {
 	private String getRelatedRecordSys(String id) {
 		String relatedRecordSys = null;
 		SolrQuery queryRelatedRecord = new SolrQuery(); // New Solr query
-		queryRelatedRecord.setQuery("acNo_txt:\""+id+"\" || zdbId_txt:\""+id+"\""); // Define a query
+		queryRelatedRecord.setQuery("id:\""+id+"\" || acNo_txt:\""+id+"\" || ids_txt_mv:\""+id+"\""); // Define a query
 		queryRelatedRecord.setFields("id"); // Set fields that should be given back from the query
 
 		try {
