@@ -156,7 +156,8 @@ public class Main {
 
 		if (args.length <= 0) {
 			HelpFormatter helpFormatter = new HelpFormatter();
-			helpFormatter.printHelp("AkImporter", "", options, "", true);
+			helpFormatter.setWidth(170);
+			helpFormatter.printHelp("AkImporter", "", options, "", true);		
 			return;
 		}
 
@@ -748,7 +749,8 @@ public class Main {
 
 			case "h": {
 				HelpFormatter helpFormatter = new HelpFormatter();
-				helpFormatter.printHelp("AkImporter", "", options, "", true);
+				helpFormatter.setWidth(170);
+				helpFormatter.printHelp("AkImporter", "", options, "", true);				
 				break;
 			}
 
@@ -792,7 +794,8 @@ public class Main {
 
 			default: {
 				HelpFormatter helpFormatter = new HelpFormatter();
-				helpFormatter.printHelp("AkImporter", "", options, "", true);
+				helpFormatter.setWidth(170);
+				helpFormatter.printHelp("AkImporter", "", options, "", true);		
 				break;
 			}
 
@@ -1575,20 +1578,18 @@ public class Main {
 				.argName("4 args")
 				.desc("Consolidate all data (initial dataset and all ongoing updates) and get one new file which is up to date. Arguments:"
 						+ "\n1. Node name to extract: The name of the XML node that should be extracted from the original files, e. g. \"record\"."
-						+ "\n2. Node level: The level of the node that should be extracted from the original files, if there are nested nodes with the same name. Begins with \"0\"."
+						+ "\n2. Node level: The level of the node that should be extracted from the original files, if there are nested nodes with the same name. Begins with \"1\"."
 						+ "\n3. Node name for file name: The node name that contains the (unique) value that should be used as file name for the single files that are created before merging them to a consolidated file, e. g. \"controlfield\"."
 						+ "\n4. Node attr for file name: An attribute name/value pair from the node that contains the value that should be used as file name for the single files that are created before merging them to a consolidated file (see 3.), e. g. \"tag=001\".")
 				.build();
 
-		// h (help)
+		// h (help)		
 		Option oHelp = Option
 				.builder("h")
 				.required(true)
 				.longOpt("help")
-				.desc("Print help")
+				.desc("Show help")
 				.build();
-
-
 
 		// v (verbose)
 		Option oVerbose = Option

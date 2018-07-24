@@ -43,7 +43,7 @@ public class Consolidate {
 	private String pathToUpdateDir = null;
 	private String pathToConsolidatedFile = null;
 	private String splitNodeNameToExtract = null;
-	private int splitNodeLevel = 0;
+	private int splitNodeLevel = 1;
 	private String splitNodeNameForFileName = null;
 	private Map<String, String> splitNodeAttrForFileName = new HashMap<String, String>();
 	private boolean print = false;
@@ -93,11 +93,9 @@ public class Consolidate {
 		// Split XMLs. Older records will be overwritten by newer records:
 		for (File fileForSplitting : filesForSplitting) {
 			AkImporterHelper.print(this.print, "\nSplitting file " + fileForSplitting.getAbsolutePath() + ". This could take a while ...");
-			Map<String, String> condAttrs = new HashMap<String, String>();
-			condAttrs.put("tag", "SYS");
 			xmls.split(fileForSplitting.getAbsolutePath(), this.splitNodeNameToExtract, this.splitNodeLevel, this.splitNodeNameForFileName, this.splitNodeAttrForFileName);
 		}
-		
+
 		// Merge XML:
 		AkImporterHelper.print(this.print, "\nStart merging splitted files into a new consolidated file. This could take a while ...");
 		XmlMerger xmlm = new XmlMerger(); // Start merging
@@ -109,6 +107,7 @@ public class Consolidate {
 			System.err.println("\nError while consolidating! Cancelled process.\n");
 			return;
 		}
+		
 	}
 
 
