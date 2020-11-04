@@ -257,6 +257,10 @@ public class ExtractTarGz {
 					// Remove TAR:
 					tarFile.delete();
 				}
+				//bugfix (wowasa): if we download a directory structure we have to go into it 
+				else if(fileTarGz.isDirectory()){
+					extractTarGz(fileTarGz.getPath(), timeStamp, pathToExtracted);
+				}
 			}
 
 		} catch (FileNotFoundException e) {

@@ -314,7 +314,7 @@ public class FtpDownload {
 					// If it is a directory, get the name of it
 					String currentDirName = ftpFile.getName();
 					
-					//bugfix by wowasa
+					//bugfix (wowasa): need to exclude reference to current and parent directory
 					if(currentDirName.equals(".")|| currentDirName.equals(".."))
 						continue;
 					
