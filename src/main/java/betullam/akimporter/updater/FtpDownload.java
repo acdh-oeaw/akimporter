@@ -314,6 +314,10 @@ public class FtpDownload {
 					// If it is a directory, get the name of it
 					String currentDirName = ftpFile.getName();
 					
+					//bugfix by wowasa
+					if(currentDirName.equals(".")|| currentDirName.equals(".."))
+						continue;
+					
 					// Create a new relative path that can be added to the base path and check
 					// the directory for files by calling this method again.
 					relativeFtpPath += (remoteRelativePath.isEmpty()) ? currentDirName : remoteRelativePath + File.separator + currentDirName;
